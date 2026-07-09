@@ -1,4 +1,10 @@
-const fileInput = document.getElementById('fileInput');
+const CONFIG = {
+  owner: 'hardycofre-commits',
+  repo: 'dashboard-confiabilidad-equipos',
+  branch: 'main',
+  folder: 'datos'
+};
+
 const btnActualizar = document.getElementById('btnActualizar');
 
 const kArchivo = document.getElementById('kArchivo');
@@ -21,29 +27,79 @@ const tbody = tabla.querySelector('tbody');
 let datosOriginales = [];
 let mapaColumnas = {};
 
-fileInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  await leerExcel(file);
-});
+document.addEventListener('DOMContentLoaded', cargarDesdeGitHub);
+btnActualizar.addEventListener('click', cargarDesdeGitHub);
 
-btnActualizar.addEventListener('click', () => {
-  if(datosOriginales.length) procesarDatos(datosOriginales, kArchivo.textContent);
-});
-
-async function leerExcel(file){
+async function cargarDesdeGitHub(){
   try{
-    const buffer = await file.arrayBuffer();
+    setEstado('Buscando', 'warning', 'Consultando carpeta datos/ en GitHub...');
+
+    const archivo = await obtenerUltimoExcelGitHub();
+
+    if(!archivo){
+      throw new Error('No se encontró ningún archivo Excel en la carpeta datos.');
+    }
+
+    setEstado('Cargando', 'warning', `Archivo detectado: ${archivo.name}<br>Descargando y procesando información SAP...`);
+    const response = await fetch(archivo.download_url + '?v=' + Date.now());
+
+    if(!response.ok){
+      throw new Error('No fue posible descargar el archivo Excel desde GitHub.');
+    }
+
+    const buffer = await response.arrayBuffer();
     const workbook = XLSX.read(buffer, {type:'array', cellDates:true});
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
 
     datosOriginales = rows;
-    procesarDatos(rows, file.name);
+    procesarDatos(rows, archivo.name);
   }catch(error){
-    mostrarError('No fue posible leer el archivo. Verifica que sea un Excel válido.');
+    mostrarError(error.message);
     console.error(error);
   }
+}
+
+async function obtenerUltimoExcelGitHub(){
+  const apiUrl = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.folder}?ref=${CONFIG.branch}`;
+  const response = await fetch(apiUrl + '&t=' + Date.now());
+
+  if(!response.ok){
+    throw new Error('No fue posible leer la carpeta datos desde GitHub. Revisa que exista la carpeta datos y que el repositorio sea público.');
+  }
+
+  const archivos = await response.json();
+
+  const excel = archivos
+    .filter(item => item.type === 'file')
+    .filter(item => /\.(xlsx|xls)$/i.test(item.name))
+    .sort((a,b) => compararArchivos(a.name, b.name));
+
+  return excel.length ? excel[excel.length - 1] : null;
+}
+
+function compararArchivos(a, b){
+  const fa = extraerFechaNombre(a);
+  const fb = extraerFechaNombre(b);
+
+  if(fa && fb) return fa - fb;
+  return a.localeCompare(b, 'es', {numeric:true, sensitivity:'base'});
+}
+
+function extraerFechaNombre(nombre){
+  const limpio = nombre.replace(/[_]/g,' ');
+  const iso = limpio.match(/(20\d{2})[-. ]?(\d{2})[-. ]?(\d{2})(?:[T _-]?(\d{2})?[:.-]?(\d{2})?[:.-]?(\d{2})?)?/);
+
+  if(!iso) return null;
+
+  const y = Number(iso[1]);
+  const m = Number(iso[2]) - 1;
+  const d = Number(iso[3]);
+  const hh = Number(iso[4] || 0);
+  const mm = Number(iso[5] || 0);
+  const ss = Number(iso[6] || 0);
+
+  return new Date(y, m, d, hh, mm, ss);
 }
 
 function procesarDatos(rows, fileName){
@@ -127,25 +183,21 @@ function validarColumnas(mapa, columnas){
   if(!mapa.fin) faltantes.push('Fin avería');
 
   if(faltantes.length === 0){
-    estadoValidacion.textContent = 'Validado';
-    estadoValidacion.className = 'status ok';
-    validacionDetalle.innerHTML = `
-      <b>Archivo validado correctamente.</b><br>
+    setEstado('Validado', 'ok', `
+      <b>Archivo SAP cargado correctamente desde GitHub.</b><br>
       Equipo: ${mapa.equipo}<br>
       Aviso: ${mapa.aviso}<br>
       Inicio avería: ${mapa.inicio}<br>
       Fin avería: ${mapa.fin}<br>
       Parada: ${mapa.parada || 'No detectada'}
-    `;
+    `);
   }else{
-    estadoValidacion.textContent = 'Revisar';
-    estadoValidacion.className = 'status error';
-    validacionDetalle.innerHTML = `
+    setEstado('Revisar', 'error', `
       <b>No se detectaron todas las columnas necesarias.</b><br>
       Faltantes: ${faltantes.join(', ')}<br><br>
       Columnas encontradas:<br>
       ${columnas.join(' | ')}
-    `;
+    `);
   }
 }
 
@@ -181,8 +233,20 @@ function formatearCelda(valor){
   return String(valor ?? '');
 }
 
+function setEstado(texto, tipo, detalle){
+  estadoValidacion.textContent = texto;
+  estadoValidacion.className = `status ${tipo}`;
+  validacionDetalle.innerHTML = detalle;
+}
+
 function mostrarError(msg){
-  estadoValidacion.textContent = 'Error';
-  estadoValidacion.className = 'status error';
-  validacionDetalle.textContent = msg;
+  kArchivo.textContent = 'Error';
+  txtArchivo.textContent = 'Sin archivo';
+  txtRegistros.textContent = '0 registros leídos';
+  kEquipos.textContent = '0';
+  kAvisos.textContent = '0';
+  filasPreview.textContent = '0 filas';
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+  setEstado('Error', 'error', msg);
 }

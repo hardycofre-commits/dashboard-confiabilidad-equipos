@@ -24,13 +24,13 @@
       <div class="title-box">
         <h1>DASHBOARD CONFIABILIDAD EQUIPOS</h1>
         <h2>Piscicultura Lago Verde</h2>
-        <p>⏱ Período analizado: según archivo SAP cargado</p>
+        <p>⏱ Período analizado: según último archivo SAP en carpeta datos</p>
       </div>
 
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 1.2</small>
+        <small>Versión 1.3</small>
       </div>
     </header>
 
@@ -41,7 +41,7 @@
       </div>
       <div>
         <span>Archivo</span>
-        <strong id="kArchivo">Sin cargar</strong>
+        <strong id="kArchivo">Buscando archivo...</strong>
       </div>
       <div>
         <span>Última actualización</span>
@@ -49,16 +49,11 @@
       </div>
       <div>
         <span>Versión</span>
-        <strong>v1.2 look</strong>
+        <strong>v1.3</strong>
       </div>
     </section>
 
     <section class="filters">
-      <div class="field">
-        <label>Seleccionar Excel SAP</label>
-        <input type="file" id="fileInput" accept=".xlsx,.xls" />
-      </div>
-
       <div class="field">
         <label>Fecha desde</label>
         <input type="date" id="fechaDesde" />
@@ -84,7 +79,9 @@
       <span class="pill" id="txtArchivo">Sin archivo</span>
       <strong>Última lectura:</strong>
       <span class="pill green" id="txtLectura">--</span>
-      <p>Fuente de datos: archivo Excel SAP cargado manualmente. En próximas versiones se usará la carpeta <b>datos/</b>.</p>
+      <p>
+        Fuente de datos: último archivo Excel detectado automáticamente en la carpeta <b>datos/</b> del repositorio GitHub.
+      </p>
     </section>
 
     <section id="resumen" class="kpi-grid">
@@ -151,10 +148,10 @@
       <article id="validacion" class="panel">
         <div class="panel-title">
           <h3>Validación archivo SAP</h3>
-          <span id="estadoValidacion" class="status warning">Pendiente</span>
+          <span id="estadoValidacion" class="status warning">Buscando</span>
         </div>
         <div id="validacionDetalle" class="validation">
-          Carga un archivo para validar columnas requeridas.
+          Buscando el último archivo Excel en GitHub...
         </div>
       </article>
 
@@ -163,10 +160,10 @@
           <h3>Próximas versiones</h3>
         </div>
         <ul class="roadmap">
-          <li><b>v1.3</b> Tabla automática de fallas</li>
-          <li><b>v1.4</b> Cálculo MTBF</li>
-          <li><b>v1.5</b> Cálculo MTTR</li>
-          <li><b>v1.6</b> Disponibilidad</li>
+          <li><b>v1.4</b> Tabla automática de fallas</li>
+          <li><b>v1.5</b> Cálculo MTBF</li>
+          <li><b>v1.6</b> Cálculo MTTR</li>
+          <li><b>v1.7</b> Disponibilidad</li>
         </ul>
       </article>
     </section>
