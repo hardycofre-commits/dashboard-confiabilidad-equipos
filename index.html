@@ -13,221 +13,132 @@
     <a class="menu-item" href="#base">📁 Datos Base</a>
     <a class="menu-item" href="#lyd">🧼 LYD</a>
     <a class="menu-item" href="#validacion">✅ Validación</a>
-    <a class="menu-item" href="#proximas">🧭 Próximas versiones</a>
   </aside>
 
   <main class="content">
     <header class="top-header">
-      <div class="logo-box">
-        <img src="logo.png" alt="Invermar">
-      </div>
-
+      <div class="logo-box"><img src="logo.png" alt="Invermar"></div>
       <div class="title-box">
         <h1>DASHBOARD CONFIABILIDAD EQUIPOS</h1>
         <h2>Piscicultura Lago Verde</h2>
         <p>⏱ Período por defecto: 01-01-2025 al 31-12-2026</p>
       </div>
-
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 2.0</small>
+        <small>Versión 2.1</small>
       </div>
     </header>
 
     <section class="info-bar">
-      <div>
-        <span>Unidad</span>
-        <strong>Piscicultura Lago Verde</strong>
-      </div>
-      <div>
-        <span>Archivo SAP</span>
-        <strong id="kArchivo">Buscando archivo...</strong>
-      </div>
-      <div>
-        <span>Archivo Gantt</span>
-        <strong id="kArchivoGantt">Buscando gantt...</strong>
-      </div>
-      <div>
-        <span>Versión</span>
-        <strong>v2.0</strong>
-      </div>
+      <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
+      <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
+      <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
+      <div><span>Versión</span><strong>v2.1</strong></div>
     </section>
 
     <section class="filters">
-      <div class="field">
-        <label>Fecha desde</label>
-        <input type="date" id="fechaDesde" value="2025-01-01" />
-      </div>
-
-      <div class="field">
-        <label>Fecha hasta</label>
-        <input type="date" id="fechaHasta" value="2026-12-31" />
-      </div>
-
+      <div class="field"><label>Fecha desde</label><input type="date" id="fechaDesde" value="2025-01-01" /></div>
+      <div class="field"><label>Fecha hasta</label><input type="date" id="fechaHasta" value="2026-12-31" /></div>
       <div class="field search-field">
         <label>Búsqueda rápida equipo</label>
         <input type="text" id="busquedaEquipo" placeholder="Ej: GN, BOMBA, UV, HATCHERY..." autocomplete="off" />
         <div id="sugerenciasEquipo" class="suggestions"></div>
       </div>
-
-      <div class="field">
-        <label>Lista de equipos</label>
-        <select id="equipoFiltro">
-          <option value="">Todos</option>
-        </select>
-      </div>
-
+      <div class="field"><label>Lista de equipos</label><select id="equipoFiltro"><option value="">Todos</option></select></div>
       <button id="btnActualizar">↻ Actualizar</button>
     </section>
 
     <section class="source-box">
       <strong>SAP:</strong> <span id="txtRegistros">0 registros leídos</span>
       <span class="pill" id="txtArchivo">Sin archivo SAP</span>
-      <strong>Gantt:</strong>
-      <span class="pill purple" id="txtGantt">Sin archivo Gantt</span>
-      <strong>Última lectura:</strong>
-      <span class="pill green" id="txtLectura">--</span>
+      <strong>Gantt:</strong> <span class="pill purple" id="txtGantt">Sin archivo Gantt</span>
+      <strong>Última lectura:</strong> <span class="pill green" id="txtLectura">--</span>
       <span class="pill blue" id="txtFiltro">Todos los equipos</span>
-      <button id="btnVolverNormal" class="mini-btn hidden">Volver a normalidad</button>
-      <p>
-        Fuente de datos: últimos archivos <b>SAP/EXPORT</b> y <b>GANTT</b> detectados automáticamente en la carpeta <b>datos/</b>.
-      </p>
+      <button id="btnLimpiarClasificacion" class="mini-btn secondary">Limpiar clasificaciones</button>
+      <p>Fuente de datos: últimos archivos <b>SAP/EXPORT</b> y <b>GANTT</b> detectados automáticamente en la carpeta <b>datos/</b>.</p>
     </section>
 
     <section id="resumen" class="kpi-grid">
-      <article class="kpi-card">
-        <div class="icon">🔧</div>
-        <div>
-          <span>Equipos</span>
-          <strong id="kEquipos">0</strong>
-          <small>Ubicaciones técnicas únicas</small>
-        </div>
+      <article class="kpi-card"><div class="icon">🔧</div><div><span>Equipos</span><strong id="kEquipos">0</strong><small>Ubicaciones técnicas únicas</small></div></article>
+      <article class="kpi-card"><div class="icon">📋</div><div><span>Avisos</span><strong id="kAvisos">0</strong><small>Número de aviso único</small></div></article>
+      <article class="kpi-card clickable" id="cardSinClasificar" title="Abrir asistente de clasificación">
+        <div class="icon">🧭</div><div><span>Sin clasificar</span><strong id="kSinClasificar">0</strong><small>Click para clasificar</small></div>
       </article>
-
-      <article class="kpi-card">
-        <div class="icon">📋</div>
-        <div>
-          <span>Avisos</span>
-          <strong id="kAvisos">0</strong>
-          <small>Número de aviso único</small>
-        </div>
-      </article>
-
-      <article class="kpi-card clickable" id="cardSinClasificar" title="Filtrar equipos sin clasificar">
-        <div class="icon">🧭</div>
-        <div>
-          <span>Sin clasificar</span>
-          <strong id="kSinClasificar">0</strong>
-          <small>Click para revisar</small>
-        </div>
-      </article>
-
-      <article class="kpi-card">
-        <div class="icon">🧼</div>
-        <div>
-          <span>Bloques LYD</span>
-          <strong id="kBloquesLYD">0</strong>
-          <small>Lavado y desinfección</small>
-        </div>
-      </article>
-
-      <article class="kpi-card">
-        <div class="icon">✅</div>
-        <div>
-          <span>Disponibilidad</span>
-          <strong>--</strong>
-          <small>Próxima versión</small>
-        </div>
-      </article>
+      <article class="kpi-card"><div class="icon">🧼</div><div><span>Bloques LYD</span><strong id="kBloquesLYD">0</strong><small>Lavado y desinfección</small></div></article>
+      <article class="kpi-card"><div class="icon">✅</div><div><span>Disponibilidad</span><strong>--</strong><small>Próxima versión</small></div></article>
     </section>
 
     <section class="dashboard-grid">
       <article id="base" class="panel wide">
-        <div class="panel-title">
-          <h3>DATOS BASE PARA CÁLCULO DE KPI</h3>
-          <span id="filasBase">0 filas</span>
-        </div>
-        <div class="table-wrap base-wrap">
-          <table id="tablaBase">
-            <thead></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <div class="panel-title"><h3>DATOS BASE PARA CÁLCULO DE KPI</h3><span id="filasBase">0 filas</span></div>
+        <div class="table-wrap base-wrap"><table id="tablaBase"><thead></thead><tbody></tbody></table></div>
       </article>
 
       <article id="validacion" class="panel">
-        <div class="panel-title">
-          <h3>Validación archivos</h3>
-          <span id="estadoValidacion" class="status warning">Buscando</span>
-        </div>
-        <div id="validacionDetalle" class="validation">
-          Buscando últimos archivos en GitHub...
-        </div>
+        <div class="panel-title"><h3>Validación archivos</h3><span id="estadoValidacion" class="status warning">Buscando</span></div>
+        <div id="validacionDetalle" class="validation">Buscando últimos archivos en GitHub...</div>
       </article>
 
-      <article id="proximas" class="panel">
-        <div class="panel-title">
-          <h3>Próximas versiones</h3>
-        </div>
+      <article class="panel">
+        <div class="panel-title"><h3>Módulo 2</h3></div>
         <ul class="roadmap">
-          <li><b>v2.0</b> Tabla de confiabilidad</li>
-          <li><b>v2.1</b> Cálculo MTBF</li>
-          <li><b>v2.2</b> Cálculo MTTR</li>
-          <li><b>v2.3</b> Disponibilidad ejecutiva</li>
+          <li><b>Actual:</b> Asistente de clasificación</li>
+          <li><b>Siguiente:</b> Tabla de confiabilidad</li>
+          <li><b>Después:</b> MTBF, MTTR y Disponibilidad</li>
         </ul>
       </article>
 
       <article id="lyd" class="panel full">
-        <div class="panel-title">
-          <h3>PERÍODOS LYD DETECTADOS EN GANTT</h3>
-          <span id="filasLYD">0 bloques</span>
-        </div>
-        <div class="table-wrap lyd-wrap">
-          <table id="tablaLYD">
-            <thead></thead>
-            <tbody></tbody>
-          </table>
-        </div>
+        <div class="panel-title"><h3>PERÍODOS LYD DETECTADOS EN GANTT</h3><span id="filasLYD">0 bloques</span></div>
+        <div class="table-wrap lyd-wrap"><table id="tablaLYD"><thead></thead><tbody></tbody></table></div>
       </article>
     </section>
   </main>
 
-
-  <div id="modalAsignacion" class="modal hidden">
-    <div class="modal-card">
-      <h3>Asignar unidad Gantt</h3>
-      <p class="modal-label">Equipo / texto SAP</p>
-      <div id="modalEquipo" class="modal-equipo"></div>
-
-      <label>Unidad Gantt</label>
-      <select id="modalUnidad">
-        <option value="">Seleccionar unidad</option>
-        <option value="Hat">Hat</option>
-        <option value="FF">FF</option>
-        <option value="Alev">Alev</option>
-        <option value="Pre">Pre</option>
-        <option value="Filtrado">Filtrado</option>
-        <option value="Riles">Riles</option>
-        <option value="Generadores">Generadores</option>
-        <option value="Otros">Otros</option>
-        <option value="__nueva__">+ Agregar nueva unidad</option>
-      </select>
-
-      <div id="nuevaUnidadBox" class="new-unit-box hidden">
-        <label>Nueva unidad Gantt</label>
-        <input type="text" id="nuevaUnidadInput" placeholder="Ej: Efluentes, Agua Potable, Biofiltro..." />
+  <div id="wizardClasificacion" class="modal hidden">
+    <div class="wizard-card">
+      <div class="wizard-header">
+        <div>
+          <h3>Clasificar equipo</h3>
+          <span id="wizardProgreso">0 de 0</span>
+        </div>
+        <button id="btnCerrarWizard" class="icon-btn">×</button>
       </div>
 
-      <div class="modal-actions">
-        <button id="btnCancelarAsignacion" class="btn-secondary">Cancelar</button>
-        <button id="btnGuardarAsignacion">Guardar regla</button>
+      <div id="wizardContenido">
+        <p class="modal-label">Denominación</p>
+        <div id="wizardEquipo" class="modal-equipo"></div>
+
+        <div class="context-grid">
+          <div><span>Ubicación técnica</span><strong id="wizardUbicacion">-</strong></div>
+          <div><span>Última descripción</span><strong id="wizardDescripcion">-</strong></div>
+          <div><span>Cantidad registros</span><strong id="wizardCantidad">0</strong></div>
+        </div>
+
+        <label>Unidad Gantt</label>
+        <select id="wizardUnidad"></select>
+
+        <div id="boxNuevaUnidad" class="hidden">
+          <label>Nueva unidad</label>
+          <input type="text" id="wizardNuevaUnidad" placeholder="Ej: Efluentes, Pozos, Casino..." />
+        </div>
+
+        <div class="modal-actions">
+          <button id="btnAnterior" class="btn-secondary">Anterior</button>
+          <button id="btnGuardarSiguiente">Guardar y siguiente</button>
+        </div>
       </div>
 
-      <small>La regla queda guardada en este navegador para futuras cargas del dashboard.</small>
+      <div id="wizardFinalizado" class="hidden final-box">
+        <h3>✔ Clasificación finalizada</h3>
+        <p>No quedan equipos pendientes por clasificar.</p>
+        <button id="btnFinalizarWizard">Cerrar</button>
+      </div>
+
+      <small>Las clasificaciones quedan guardadas en este navegador y se aplican automáticamente en futuras cargas.</small>
     </div>
   </div>
-
 
   <script src="app.js"></script>
 </body>

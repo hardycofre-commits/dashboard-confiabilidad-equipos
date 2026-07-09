@@ -1,22 +1,14 @@
-# Dashboard Confiabilidad Equipos - v2.0
+# Dashboard Confiabilidad Equipos - v2.1
 
-## Cambios principales
-- Mantiene botón/filtro **Sin clasificar**.
-- Mantiene botón **Volver a normalidad**.
-- Mantiene botón **Asignar** por registro sin clasificar.
-- Ahora permite agregar una **nueva unidad Gantt** desde el mismo modal.
-- Las unidades nuevas quedan guardadas en el navegador.
-- Las reglas de clasificación también quedan guardadas en el navegador.
+## Módulo 2: Asistente de clasificación
 
-## Flujo
-1. Click en **Sin clasificar**.
-2. Click en **Asignar**.
-3. Seleccionar una unidad existente o **+ Agregar nueva unidad**.
-4. Guardar regla.
-5. El dashboard recalcula la clasificación automáticamente.
-
-## Nota
-Las reglas y unidades nuevas se guardan en el navegador mediante localStorage.
+- Al hacer clic en el KPI **Sin clasificar**, se abre un asistente simple.
+- Muestra un equipo pendiente por vez.
+- Permite seleccionar unidad existente o crear nueva unidad.
+- Guarda la clasificación en el navegador.
+- Al guardar, pasa al siguiente equipo.
+- Al terminar, el KPI baja a 0 si todo quedó clasificado.
+- Se elimina la necesidad de un panel complejo de reglas.
 
 ## Próxima versión
-v2.1: Tabla de confiabilidad cruzando SAP + LYD.
+v2.2: Tabla de confiabilidad para cálculo de MTBF, MTTR y Disponibilidad.
