@@ -1,11 +1,19 @@
 # Dashboard Confiabilidad Equipos
 
-Versión 1.0
+Versión 1.1
 
-## Objetivo
-Base del sistema para calcular:
-- MTBF
-- MTTR
-- Disponibilidad
+## Funciones incluidas
 
-Las próximas versiones incorporarán la lectura automática del Excel SAP y los cálculos de confiabilidad.
+- Diseño profesional base.
+- Lectura de Excel SAP desde botón manual.
+- Carga opcional del último archivo desde `datos/manifest.json`.
+- Validación de columnas requeridas.
+- Tarjetas KPI generales.
+- Vista previa de registros SAP.
+
+## Próximas versiones
+
+- v1.2: Tabla automática de fallas.
+- v1.3: Cálculo MTBF.
+- v1.4: Cálculo MTTR.
+- v1.5: Disponibilidad.

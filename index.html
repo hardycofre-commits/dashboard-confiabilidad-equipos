@@ -1,14 +1,86 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dashboard Confiabilidad Equipos</title>
-<link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Confiabilidad Equipos</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-<h1>Dashboard Confiabilidad Equipos - v1.0</h1>
-<p>Base del proyecto.</p>
-<script src="js/app.js"></script>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">I</div>
+      <div>
+        <strong>INVERMAR</strong>
+        <span>Confiabilidad Equipos</span>
+      </div>
+    </div>
+    <nav>
+      <a class="active" href="#resumen">Resumen</a>
+      <a href="#datos">Datos SAP</a>
+      <a href="#validacion">Validación</a>
+      <a href="#proximas">Próximas versiones</a>
+    </nav>
+    <div class="version">Versión 1.1</div>
+  </aside>
+
+  <main class="main">
+    <header class="header">
+      <div>
+        <p class="eyebrow">KPI DE CONFIABILIDAD</p>
+        <h1>Dashboard Confiabilidad Equipos</h1>
+        <p class="subtitle">Base profesional para lectura de Excel SAP, vista previa y validación de datos.</p>
+      </div>
+      <div class="actions">
+        <label class="btn primary">
+          Seleccionar Excel SAP
+          <input id="fileInput" type="file" accept=".xlsx,.xls" hidden />
+        </label>
+        <button id="loadManifestBtn" class="btn">Cargar último archivo /datos</button>
+      </div>
+    </header>
+
+    <section id="resumen" class="cards">
+      <div class="card"><span>Archivo</span><strong id="kpiArchivo">Sin cargar</strong></div>
+      <div class="card"><span>Registros</span><strong id="kpiRegistros">0</strong></div>
+      <div class="card"><span>Equipos</span><strong id="kpiEquipos">0</strong></div>
+      <div class="card"><span>Avisos</span><strong id="kpiAvisos">0</strong></div>
+      <div class="card"><span>Período</span><strong id="kpiPeriodo">-</strong></div>
+    </section>
+
+    <section id="validacion" class="panel">
+      <div class="panel-title">
+        <h2>Validación del archivo SAP</h2>
+        <span id="estado" class="badge">Pendiente</span>
+      </div>
+      <div id="validacionLista" class="validation">Carga un archivo para validar columnas requeridas.</div>
+    </section>
+
+    <section id="datos" class="panel">
+      <div class="panel-title">
+        <h2>Vista previa de datos</h2>
+        <span id="rowsInfo">0 filas</span>
+      </div>
+      <div class="table-wrap">
+        <table id="previewTable">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="proximas" class="panel roadmap">
+      <h2>Próximas versiones</h2>
+      <div class="steps">
+        <div><b>v1.2</b><span>Tabla automática de fallas</span></div>
+        <div><b>v1.3</b><span>Cálculo MTBF</span></div>
+        <div><b>v1.4</b><span>Cálculo MTTR</span></div>
+        <div><b>v1.5</b><span>Disponibilidad</span></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
