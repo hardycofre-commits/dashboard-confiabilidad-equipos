@@ -11,6 +11,7 @@
   <aside class="sidebar">
     <a class="menu-item active" href="#resumen">📊 Resumen</a>
     <a class="menu-item" href="#base">📁 Datos Base</a>
+    <a class="menu-item" href="#gantt">📅 Gantt</a>
     <a class="menu-item" href="#validacion">✅ Validación</a>
     <a class="menu-item" href="#proximas">🧭 Próximas versiones</a>
   </aside>
@@ -30,7 +31,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 1.6</small>
+        <small>Versión 1.7</small>
       </div>
     </header>
 
@@ -40,16 +41,16 @@
         <strong>Piscicultura Lago Verde</strong>
       </div>
       <div>
-        <span>Archivo</span>
+        <span>Archivo SAP</span>
         <strong id="kArchivo">Buscando archivo...</strong>
       </div>
       <div>
-        <span>Última actualización</span>
-        <strong id="kActualizacion">--</strong>
+        <span>Archivo Gantt</span>
+        <strong id="kArchivoGantt">Buscando gantt...</strong>
       </div>
       <div>
         <span>Versión</span>
-        <strong>v1.6</strong>
+        <strong>v1.7</strong>
       </div>
     </section>
 
@@ -82,12 +83,14 @@
 
     <section class="source-box">
       <strong>SAP:</strong> <span id="txtRegistros">0 registros leídos</span>
-      <span class="pill" id="txtArchivo">Sin archivo</span>
+      <span class="pill" id="txtArchivo">Sin archivo SAP</span>
+      <strong>Gantt:</strong>
+      <span class="pill purple" id="txtGantt">Sin archivo Gantt</span>
       <strong>Última lectura:</strong>
       <span class="pill green" id="txtLectura">--</span>
       <span class="pill blue" id="txtFiltro">Todos los equipos</span>
       <p>
-        Fuente de datos: último archivo Excel detectado automáticamente en la carpeta <b>datos/</b> del repositorio GitHub.
+        Fuente de datos: últimos archivos <b>SAP/EXPORT</b> y <b>GANTT</b> detectados automáticamente en la carpeta <b>datos/</b>.
       </p>
     </section>
 
@@ -120,11 +123,11 @@
       </article>
 
       <article class="kpi-card">
-        <div class="icon">⏱</div>
+        <div class="icon">📅</div>
         <div>
-          <span>Horas parada</span>
-          <strong id="kHorasParada">0</strong>
-          <small>Duración parada</small>
+          <span>Gantt</span>
+          <strong id="kGantt">--</strong>
+          <small>Registros detectados</small>
         </div>
       </article>
 
@@ -154,11 +157,11 @@
 
       <article id="validacion" class="panel">
         <div class="panel-title">
-          <h3>Validación archivo SAP</h3>
+          <h3>Validación archivos</h3>
           <span id="estadoValidacion" class="status warning">Buscando</span>
         </div>
         <div id="validacionDetalle" class="validation">
-          Buscando el último archivo Excel en GitHub...
+          Buscando últimos archivos en GitHub...
         </div>
       </article>
 
@@ -167,11 +170,24 @@
           <h3>Próximas versiones</h3>
         </div>
         <ul class="roadmap">
-          <li><b>v1.7</b> Tabla de confiabilidad</li>
-          <li><b>v1.8</b> Cálculo MTBF</li>
-          <li><b>v1.9</b> Cálculo MTTR</li>
-          <li><b>v2.0</b> Disponibilidad y dashboard ejecutivo</li>
+          <li><b>v1.8</b> Tabla de confiabilidad</li>
+          <li><b>v1.9</b> Cálculo MTBF</li>
+          <li><b>v2.0</b> Cálculo MTTR</li>
+          <li><b>v2.1</b> Disponibilidad ejecutiva</li>
         </ul>
+      </article>
+
+      <article id="gantt" class="panel full">
+        <div class="panel-title">
+          <h3>GANTT PRODUCCIÓN DETECTADO</h3>
+          <span id="filasGantt">0 registros</span>
+        </div>
+        <div class="table-wrap gantt-wrap">
+          <table id="tablaGantt">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </article>
     </section>
   </main>

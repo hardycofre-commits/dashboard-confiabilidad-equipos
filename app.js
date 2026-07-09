@@ -8,13 +8,14 @@ const CONFIG = {
 const btnActualizar = document.getElementById('btnActualizar');
 
 const kArchivo = document.getElementById('kArchivo');
-const kActualizacion = document.getElementById('kActualizacion');
+const kArchivoGantt = document.getElementById('kArchivoGantt');
 const kEquipos = document.getElementById('kEquipos');
 const kAvisos = document.getElementById('kAvisos');
 const kOrdenes = document.getElementById('kOrdenes');
-const kHorasParada = document.getElementById('kHorasParada');
+const kGantt = document.getElementById('kGantt');
 const txtRegistros = document.getElementById('txtRegistros');
 const txtArchivo = document.getElementById('txtArchivo');
+const txtGantt = document.getElementById('txtGantt');
 const txtLectura = document.getElementById('txtLectura');
 const txtFiltro = document.getElementById('txtFiltro');
 
@@ -27,13 +28,19 @@ const equipoFiltro = document.getElementById('equipoFiltro');
 const estadoValidacion = document.getElementById('estadoValidacion');
 const validacionDetalle = document.getElementById('validacionDetalle');
 const filasBase = document.getElementById('filasBase');
+const filasGantt = document.getElementById('filasGantt');
 
 const tablaBase = document.getElementById('tablaBase');
 const theadBase = tablaBase.querySelector('thead');
 const tbodyBase = tablaBase.querySelector('tbody');
 
+const tablaGantt = document.getElementById('tablaGantt');
+const theadGantt = tablaGantt.querySelector('thead');
+const tbodyGantt = tablaGantt.querySelector('tbody');
+
 let datosOriginales = [];
 let datosBase = [];
+let ganttOriginal = [];
 let mapaColumnas = {};
 let listaEquipos = [];
 
@@ -72,35 +79,44 @@ function configurarFechasFijas(){
 
 async function cargarDesdeGitHub(){
   try{
+    limpiarEstadoCarga();
     setEstado('Buscando', 'warning', 'Consultando carpeta datos/ en GitHub...');
 
-    const archivo = await obtenerUltimoExcelGitHub();
+    const archivos = await listarArchivosDatos();
+    const archivoSAP = seleccionarUltimoArchivo(archivos, esArchivoSAP);
+    const archivoGantt = seleccionarUltimoArchivo(archivos, esArchivoGantt);
 
-    if(!archivo){
-      throw new Error('No se encontró ningún archivo Excel en la carpeta datos.');
+    if(!archivoSAP){
+      throw new Error('No se encontró archivo SAP/EXPORT en carpeta datos.');
     }
 
-    setEstado('Cargando', 'warning', `Archivo detectado: ${archivo.name}<br>Descargando y procesando información SAP...`);
-    const response = await fetch(archivo.download_url + '?v=' + Date.now());
+    await cargarSAP(archivoSAP);
 
-    if(!response.ok){
-      throw new Error('No fue posible descargar el archivo Excel desde GitHub.');
+    if(archivoGantt){
+      await cargarGantt(archivoGantt);
+    }else{
+      kArchivoGantt.textContent = 'No encontrado';
+      txtGantt.textContent = 'Sin archivo Gantt';
+      kGantt.textContent = '0';
+      renderTablaGantt([]);
     }
 
-    const buffer = await response.arrayBuffer();
-    const workbook = XLSX.read(buffer, {type:'array', cellDates:true});
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
-
-    datosOriginales = rows;
-    procesarDatos(rows, archivo.name);
+    txtLectura.textContent = new Date().toLocaleString('es-CL');
+    setEstado('Validado', 'ok', generarResumenValidacion(archivoSAP, archivoGantt));
   }catch(error){
     mostrarError(error.message);
     console.error(error);
   }
 }
 
-async function obtenerUltimoExcelGitHub(){
+function limpiarEstadoCarga(){
+  kArchivo.textContent = 'Buscando archivo...';
+  kArchivoGantt.textContent = 'Buscando gantt...';
+  txtArchivo.textContent = 'Sin archivo SAP';
+  txtGantt.textContent = 'Sin archivo Gantt';
+}
+
+async function listarArchivosDatos(){
   const apiUrl = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.folder}?ref=${CONFIG.branch}`;
   const response = await fetch(apiUrl + '&t=' + Date.now());
 
@@ -108,14 +124,129 @@ async function obtenerUltimoExcelGitHub(){
     throw new Error('No fue posible leer la carpeta datos desde GitHub. Revisa que exista la carpeta datos y que el repositorio sea público.');
   }
 
-  const archivos = await response.json();
+  return await response.json();
+}
 
-  const excel = archivos
-    .filter(item => item.type === 'file')
-    .filter(item => /\.(xlsx|xls)$/i.test(item.name))
+function esArchivoSAP(item){
+  const n = normalizar(item.name);
+  return item.type === 'file' &&
+    /\.(xlsx|xls)$/i.test(item.name) &&
+    (n.includes('sap') || n.includes('export')) &&
+    !n.includes('gantt');
+}
+
+function esArchivoGantt(item){
+  const n = normalizar(item.name);
+  return item.type === 'file' &&
+    /\.(xlsx|xls)$/i.test(item.name) &&
+    n.includes('gantt');
+}
+
+function seleccionarUltimoArchivo(archivos, filtro){
+  const seleccion = archivos
+    .filter(filtro)
     .sort((a,b) => compararArchivos(a.name, b.name));
 
-  return excel.length ? excel[excel.length - 1] : null;
+  return seleccion.length ? seleccion[seleccion.length - 1] : null;
+}
+
+async function cargarSAP(archivo){
+  setEstado('Cargando', 'warning', `Archivo SAP detectado: ${archivo.name}<br>Descargando y procesando...`);
+
+  const rows = await leerExcelDesdeUrl(archivo.download_url, 'json');
+
+  datosOriginales = rows;
+  const columnas = rows.length ? Object.keys(rows[0]) : [];
+  mapaColumnas = detectarColumnas(columnas);
+
+  kArchivo.textContent = archivo.name;
+  txtArchivo.textContent = archivo.name;
+  txtRegistros.textContent = `${rows.length.toLocaleString('es-CL')} registros SAP leídos`;
+
+  cargarFiltroEquipos(rows);
+  aplicarFiltros();
+}
+
+async function cargarGantt(archivo){
+  kArchivoGantt.textContent = archivo.name;
+  txtGantt.textContent = archivo.name;
+
+  const matriz = await leerExcelDesdeUrl(archivo.download_url, 'array');
+  ganttOriginal = procesarGantt(matriz);
+
+  kGantt.textContent = ganttOriginal.length.toLocaleString('es-CL');
+  filasGantt.textContent = `${ganttOriginal.length.toLocaleString('es-CL')} registros`;
+  renderTablaGantt(ganttOriginal.slice(0, 100));
+}
+
+async function leerExcelDesdeUrl(url, modo){
+  const response = await fetch(url + '?v=' + Date.now());
+
+  if(!response.ok){
+    throw new Error('No fue posible descargar un archivo desde GitHub.');
+  }
+
+  const buffer = await response.arrayBuffer();
+  const workbook = XLSX.read(buffer, {type:'array', cellDates:true});
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+  if(modo === 'array'){
+    return XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+  }
+
+  return XLSX.utils.sheet_to_json(sheet, {defval:''});
+}
+
+function procesarGantt(matriz){
+  if(!matriz || matriz.length < 2) return [];
+
+  const registros = [];
+  const maxFilas = Math.min(matriz.length, 500);
+
+  for(let i = 0; i < maxFilas; i++){
+    const fila = matriz[i];
+    const fecha = convertirFecha(fila[0]);
+
+    if(!fecha) continue;
+
+    for(let c = 1; c < fila.length; c++){
+      const valorCelda = fila[c];
+
+      if(valorCelda === null || valorCelda === undefined || valorCelda === '') continue;
+
+      const area = buscarEncabezadoSuperior(matriz, i, c);
+      const equipo = buscarEncabezadoColumna(matriz, c);
+
+      registros.push({
+        fecha,
+        area,
+        equipo,
+        estado: String(valorCelda)
+      });
+    }
+  }
+
+  return registros;
+}
+
+function buscarEncabezadoSuperior(matriz, filaActual, col){
+  for(let r = filaActual - 1; r >= 0; r--){
+    const valor = matriz[r]?.[col];
+    if(valor !== null && valor !== undefined && valor !== '' && !convertirFecha(valor)){
+      return String(valor);
+    }
+  }
+  return '';
+}
+
+function buscarEncabezadoColumna(matriz, col){
+  for(let r = 0; r < Math.min(8, matriz.length); r++){
+    const valor = matriz[r]?.[col];
+    if(valor !== null && valor !== undefined && valor !== '' && !convertirFecha(valor)){
+      return String(valor);
+    }
+  }
+  return `Columna ${col + 1}`;
 }
 
 function compararArchivos(a, b){
@@ -142,23 +273,6 @@ function extraerFechaNombre(nombre){
   );
 }
 
-function procesarDatos(rows, fileName){
-  const columnas = rows.length ? Object.keys(rows[0]) : [];
-  mapaColumnas = detectarColumnas(columnas);
-
-  kArchivo.textContent = fileName;
-  txtArchivo.textContent = fileName;
-  txtRegistros.textContent = `${rows.length.toLocaleString('es-CL')} registros leídos`;
-
-  const ahora = new Date().toLocaleString('es-CL');
-  kActualizacion.textContent = ahora;
-  txtLectura.textContent = ahora;
-
-  cargarFiltroEquipos(rows);
-  validarColumnas(mapaColumnas, columnas);
-  aplicarFiltros();
-}
-
 function aplicarFiltros(){
   let base = construirDatosBase(datosOriginales);
 
@@ -167,7 +281,7 @@ function aplicarFiltros(){
 
   if(desde || hasta){
     base = base.filter(r => {
-      const f = r.inicioAveriaFecha;
+      const f = r.inicioAveriaFecha || r.fechaAviso;
       if(!f) return true;
       if(desde && f < desde) return false;
       if(hasta && f > hasta) return false;
@@ -224,8 +338,6 @@ function actualizarKPIs(base){
   kEquipos.textContent = new Set(base.map(r => r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');
   kAvisos.textContent = new Set(base.map(r => r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
   kOrdenes.textContent = new Set(base.map(r => r.orden).filter(Boolean)).size.toLocaleString('es-CL');
-  const horas = base.reduce((acc,r) => acc + (Number(r.duracionParada) || 0), 0);
-  kHorasParada.textContent = horas.toLocaleString('es-CL', {maximumFractionDigits:1});
 }
 
 function detectarColumnas(columnas){
@@ -322,46 +434,42 @@ function ocultarSugerencias(){
   sugerenciasEquipo.style.display = 'none';
 }
 
-function validarColumnas(mapa, columnas){
+function generarResumenValidacion(archivoSAP, archivoGantt){
+  const faltantes = validarColumnasRequeridas();
+
+  let html = `<b>Archivos detectados correctamente.</b><br>
+    SAP: ${archivoSAP.name}<br>
+    Gantt: ${archivoGantt ? archivoGantt.name : 'No encontrado'}<br><br>`;
+
+  if(faltantes.length){
+    estadoValidacion.textContent = 'Revisar';
+    estadoValidacion.className = 'status error';
+    html += `<b>Columnas SAP faltantes:</b> ${faltantes.join(', ')}`;
+  }else{
+    html += `Columnas SAP requeridas: OK<br>`;
+    html += `Registros Gantt detectados: ${ganttOriginal.length.toLocaleString('es-CL')}`;
+  }
+
+  return html;
+}
+
+function validarColumnasRequeridas(){
   const requeridas = [
-    ['Fecha aviso', mapa.fechaAviso],
-    ['Clase aviso', mapa.claseAviso],
-    ['Aviso', mapa.aviso],
-    ['Orden', mapa.orden],
-    ['Descripción', mapa.descripcion],
-    ['Ubicación técnica', mapa.ubicacionTecnica],
-    ['Denominación ubicación técnica', mapa.denominacionUbicacionTecnica],
-    ['Inicio de avería', mapa.inicioFecha],
-    ['Inicio de avería hora', mapa.inicioHora],
-    ['Fin de avería', mapa.finFecha],
-    ['Fin de avería hora', mapa.finHora],
-    ['Duración de parada', mapa.duracionParada]
+    ['Fecha aviso', mapaColumnas.fechaAviso],
+    ['Clase aviso', mapaColumnas.claseAviso],
+    ['Aviso', mapaColumnas.aviso],
+    ['Orden', mapaColumnas.orden],
+    ['Descripción', mapaColumnas.descripcion],
+    ['Ubicación técnica', mapaColumnas.ubicacionTecnica],
+    ['Denominación ubicación técnica', mapaColumnas.denominacionUbicacionTecnica],
+    ['Inicio de avería', mapaColumnas.inicioFecha],
+    ['Inicio de avería hora', mapaColumnas.inicioHora],
+    ['Fin de avería', mapaColumnas.finFecha],
+    ['Fin de avería hora', mapaColumnas.finHora],
+    ['Duración de parada', mapaColumnas.duracionParada]
   ];
 
-  const faltantes = requeridas.filter(x => !x[1]).map(x => x[0]);
-
-  if(faltantes.length === 0){
-    setEstado('Validado', 'ok', `
-      <b>Archivo SAP cargado correctamente desde GitHub.</b><br>
-      Fecha aviso: ${mapa.fechaAviso}<br>
-      Clase aviso: ${mapa.claseAviso}<br>
-      Aviso: ${mapa.aviso}<br>
-      Orden: ${mapa.orden}<br>
-      Descripción: ${mapa.descripcion}<br>
-      Ubicación técnica: ${mapa.ubicacionTecnica}<br>
-      Denominación ubicación técnica: ${mapa.denominacionUbicacionTecnica}<br>
-      Inicio avería: ${mapa.inicioFecha} + ${mapa.inicioHora}<br>
-      Fin avería: ${mapa.finFecha} + ${mapa.finHora}<br>
-      Duración parada: ${mapa.duracionParada}
-    `);
-  }else{
-    setEstado('Revisar', 'error', `
-      <b>No se detectaron todas las columnas necesarias.</b><br>
-      Faltantes: ${faltantes.join(', ')}<br><br>
-      Columnas encontradas:<br>
-      ${columnas.join(' | ')}
-    `);
-  }
+  return requeridas.filter(x => !x[1]).map(x => x[0]);
 }
 
 function renderTablaBase(base){
@@ -397,6 +505,32 @@ function renderTablaBase(base){
       <td>${r.inicioAveria}</td>
       <td>${r.finAveria}</td>
       <td>${formatearNumero(r.duracionParada)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderTablaGantt(registros){
+  theadGantt.innerHTML = `
+    <tr>
+      <th>Fecha</th>
+      <th>Área / Encabezado</th>
+      <th>Columna</th>
+      <th>Estado / Código</th>
+    </tr>
+  `;
+
+  if(!registros.length){
+    tbodyGantt.innerHTML = '<tr><td colspan="4">No hay datos Gantt detectados</td></tr>';
+    filasGantt.textContent = '0 registros';
+    return;
+  }
+
+  tbodyGantt.innerHTML = registros.map(r => `
+    <tr>
+      <td>${formatearFechaCorta(r.fecha)}</td>
+      <td>${r.area}</td>
+      <td>${r.equipo}</td>
+      <td>${r.estado}</td>
     </tr>
   `).join('');
 }
@@ -441,11 +575,7 @@ function convertirHora(valorEntrada){
   if(!valorEntrada) return {horas:0,minutos:0,segundos:0};
 
   if(valorEntrada instanceof Date && !isNaN(valorEntrada)){
-    return {
-      horas: valorEntrada.getHours(),
-      minutos: valorEntrada.getMinutes(),
-      segundos: valorEntrada.getSeconds()
-    };
+    return {horas: valorEntrada.getHours(), minutos: valorEntrada.getMinutes(), segundos: valorEntrada.getSeconds()};
   }
 
   if(typeof valorEntrada === 'number'){
@@ -461,11 +591,7 @@ function convertirHora(valorEntrada){
   const match = texto.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
 
   if(match){
-    return {
-      horas: Number(match[1]),
-      minutos: Number(match[2]),
-      segundos: Number(match[3] || 0)
-    };
+    return {horas: Number(match[1]), minutos: Number(match[2]), segundos: Number(match[3] || 0)};
   }
 
   return {horas:0,minutos:0,segundos:0};
@@ -508,14 +634,19 @@ function setEstado(texto, tipo, detalle){
 
 function mostrarError(msg){
   kArchivo.textContent = 'Error';
-  txtArchivo.textContent = 'Sin archivo';
+  kArchivoGantt.textContent = 'Error';
+  txtArchivo.textContent = 'Sin archivo SAP';
+  txtGantt.textContent = 'Sin archivo Gantt';
   txtRegistros.textContent = '0 registros leídos';
   kEquipos.textContent = '0';
   kAvisos.textContent = '0';
   kOrdenes.textContent = '0';
-  kHorasParada.textContent = '0';
+  kGantt.textContent = '0';
   filasBase.textContent = '0 filas';
+  filasGantt.textContent = '0 registros';
   theadBase.innerHTML = '';
   tbodyBase.innerHTML = '';
+  theadGantt.innerHTML = '';
+  tbodyGantt.innerHTML = '';
   setEstado('Error', 'error', msg);
 }

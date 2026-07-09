@@ -7,6 +7,7 @@
   --text:#062b5f;
   --green:#16a34a;
   --red:#e11d48;
+  --purple:#7c3aed;
 }
 
 *{box-sizing:border-box}
@@ -40,8 +41,7 @@ body{
   margin-bottom:10px;
 }
 
-.menu-item.active,
-.menu-item:hover{background:#1767c5}
+.menu-item.active,.menu-item:hover{background:#1767c5}
 
 .content{
   margin-left:150px;
@@ -61,11 +61,7 @@ body{
   padding:10px 22px;
 }
 
-.logo-box img{
-  max-width:220px;
-  height:auto;
-}
-
+.logo-box img{max-width:220px;height:auto}
 .title-box{text-align:center}
 
 .title-box h1{
@@ -98,23 +94,9 @@ body{
   background:#fff;
 }
 
-.score-box span{
-  display:block;
-  font-size:12px;
-  font-weight:900;
-}
-
-.score-box strong{
-  display:block;
-  font-size:30px;
-  color:var(--red);
-  line-height:1.1;
-}
-
-.score-box small{
-  color:#002b66;
-  font-weight:800;
-}
+.score-box span{display:block;font-size:12px;font-weight:900}
+.score-box strong{display:block;font-size:30px;color:var(--red);line-height:1.1}
+.score-box small{color:#002b66;font-weight:800}
 
 .info-bar{
   background:#0c3a78;
@@ -122,7 +104,7 @@ body{
   border-radius:5px;
   padding:11px 16px;
   display:grid;
-  grid-template-columns:1.3fr 1fr 1.2fr .6fr;
+  grid-template-columns:1.1fr 1.3fr 1.3fr .5fr;
   gap:14px;
   margin-bottom:10px;
 }
@@ -138,6 +120,9 @@ body{
   display:block;
   font-size:14px;
   margin-top:3px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
 .filters{
@@ -211,11 +196,7 @@ button:hover{background:#082f66}
 
 .suggestion-item:hover{background:#e8f0fb}
 
-.suggestion-empty{
-  padding:9px 10px;
-  font-size:12px;
-  color:#6b7280;
-}
+.suggestion-empty{padding:9px 10px;font-size:12px;color:#6b7280}
 
 .source-box{
   background:white;
@@ -245,6 +226,7 @@ button:hover{background:#082f66}
 
 .pill.green{background:#dcfce7;color:#166534}
 .pill.blue{background:#dbeafe;color:#1e40af}
+.pill.purple{background:#ede9fe;color:#5b21b6}
 
 .kpi-grid{
   display:grid;
@@ -274,24 +256,9 @@ button:hover{background:#082f66}
   font-size:20px;
 }
 
-.kpi-card span{
-  display:block;
-  font-weight:900;
-  font-size:12px;
-}
-
-.kpi-card strong{
-  display:block;
-  font-size:26px;
-  color:#002b66;
-  line-height:1.1;
-}
-
-.kpi-card small{
-  display:block;
-  color:#002b66;
-  font-size:11px;
-}
+.kpi-card span{display:block;font-weight:900;font-size:12px}
+.kpi-card strong{display:block;font-size:26px;color:#002b66;line-height:1.1}
+.kpi-card small{display:block;color:#002b66;font-size:11px}
 
 .dashboard-grid{
   display:grid;
@@ -308,6 +275,7 @@ button:hover{background:#082f66}
 }
 
 .panel.wide{grid-row:span 2}
+.panel.full{grid-column:1 / -1}
 
 .panel-title{
   display:flex;
@@ -316,22 +284,10 @@ button:hover{background:#082f66}
   margin-bottom:10px;
 }
 
-.panel-title h3{
-  margin:0;
-  color:#002b66;
-  font-size:17px;
-}
+.panel-title h3{margin:0;color:#002b66;font-size:17px}
+.panel-title span,.status{font-size:12px;font-weight:900}
 
-.panel-title span,.status{
-  font-size:12px;
-  font-weight:900;
-}
-
-.status{
-  padding:5px 9px;
-  border-radius:20px;
-}
-
+.status{padding:5px 9px;border-radius:20px}
 .status.warning{background:#fef3c7;color:#92400e}
 .status.ok{background:#dcfce7;color:#166534}
 .status.error{background:#fee2e2;color:#991b1b}
@@ -342,13 +298,16 @@ button:hover{background:#082f66}
   overflow:auto;
 }
 
-.base-wrap{max-height:560px}
+.base-wrap{max-height:500px}
+.gantt-wrap{max-height:280px}
 
 table{
   width:100%;
   border-collapse:collapse;
   min-width:1450px;
 }
+
+#gantt table, #tablaGantt{min-width:900px}
 
 th{
   background:#e8f0fb;
@@ -371,28 +330,16 @@ td{
 
 tbody tr:hover{background:#f6faff}
 
-.descripcion{
-  max-width:260px;
-  white-space:normal;
-}
-
-.validation{
-  line-height:1.7;
-  color:#304761;
-}
-
-.roadmap{
-  margin:0;
-  padding-left:18px;
-  line-height:2;
-}
-
+.descripcion{max-width:260px;white-space:normal}
+.validation{line-height:1.7;color:#304761}
+.roadmap{margin:0;padding-left:18px;line-height:2}
 .roadmap b{color:#0b5cab}
 
 @media(max-width:1100px){
   .top-header{grid-template-columns:1fr;text-align:center}
   .logo-box,.score-box{justify-self:center}
   .filters,.info-bar,.kpi-grid,.dashboard-grid{grid-template-columns:1fr}
+  .panel.full{grid-column:auto}
   .content{margin-left:0;width:100%;padding:10px}
   .sidebar{position:static;width:100%;display:flex;gap:6px;overflow:auto}
   body{display:block}
