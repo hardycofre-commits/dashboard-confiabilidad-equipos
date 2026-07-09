@@ -11,8 +11,8 @@ const kArchivo = document.getElementById('kArchivo');
 const kActualizacion = document.getElementById('kActualizacion');
 const kEquipos = document.getElementById('kEquipos');
 const kAvisos = document.getElementById('kAvisos');
-const kFallasBase = document.getElementById('kFallasBase');
-const kHorasRep = document.getElementById('kHorasRep');
+const kOrdenes = document.getElementById('kOrdenes');
+const kHorasParada = document.getElementById('kHorasParada');
 const txtRegistros = document.getElementById('txtRegistros');
 const txtArchivo = document.getElementById('txtArchivo');
 const txtLectura = document.getElementById('txtLectura');
@@ -26,20 +26,14 @@ const equipoFiltro = document.getElementById('equipoFiltro');
 
 const estadoValidacion = document.getElementById('estadoValidacion');
 const validacionDetalle = document.getElementById('validacionDetalle');
-const filasPreview = document.getElementById('filasPreview');
-const filasFallas = document.getElementById('filasFallas');
+const filasBase = document.getElementById('filasBase');
 
-const tablaPreview = document.getElementById('tablaPreview');
-const theadPreview = tablaPreview.querySelector('thead');
-const tbodyPreview = tablaPreview.querySelector('tbody');
-
-const tablaFallas = document.getElementById('tablaFallas');
-const theadFallas = tablaFallas.querySelector('thead');
-const tbodyFallas = tablaFallas.querySelector('tbody');
+const tablaBase = document.getElementById('tablaBase');
+const theadBase = tablaBase.querySelector('thead');
+const tbodyBase = tablaBase.querySelector('tbody');
 
 let datosOriginales = [];
-let datosFiltrados = [];
-let tablaBaseFallas = [];
+let datosBase = [];
 let mapaColumnas = {};
 let listaEquipos = [];
 
@@ -160,20 +154,20 @@ function procesarDatos(rows, fileName){
   kActualizacion.textContent = ahora;
   txtLectura.textContent = ahora;
 
-  cargarFiltroEquipos(rows, mapaColumnas.equipo);
+  cargarFiltroEquipos(rows);
   validarColumnas(mapaColumnas, columnas);
   aplicarFiltros();
 }
 
 function aplicarFiltros(){
-  let rows = [...datosOriginales];
+  let base = construirDatosBase(datosOriginales);
 
   const desde = fechaDesde.value ? new Date(fechaDesde.value + 'T00:00:00') : null;
   const hasta = fechaHasta.value ? new Date(fechaHasta.value + 'T23:59:59') : null;
 
-  if(mapaColumnas.inicio && (desde || hasta)){
-    rows = rows.filter(r => {
-      const f = convertirFecha(r[mapaColumnas.inicio]);
+  if(desde || hasta){
+    base = base.filter(r => {
+      const f = r.inicioAveriaFecha;
       if(!f) return true;
       if(desde && f < desde) return false;
       if(hasta && f > hasta) return false;
@@ -184,99 +178,72 @@ function aplicarFiltros(){
   const textoBusqueda = normalizar(busquedaEquipo.value);
   const equipoLista = equipoFiltro.value;
 
-  if(mapaColumnas.equipo){
-    if(equipoLista){
-      rows = rows.filter(r => String(r[mapaColumnas.equipo]) === equipoLista);
-      txtFiltro.textContent = equipoLista;
-    }else if(textoBusqueda){
-      rows = rows.filter(r => normalizar(r[mapaColumnas.equipo]).includes(textoBusqueda));
-      txtFiltro.textContent = `Búsqueda: ${busquedaEquipo.value}`;
-    }else{
-      txtFiltro.textContent = 'Todos los equipos';
-    }
+  if(equipoLista){
+    base = base.filter(r => String(r.denominacionUbicacionTecnica) === equipoLista || String(r.ubicacionTecnica) === equipoLista);
+    txtFiltro.textContent = equipoLista;
+  }else if(textoBusqueda){
+    base = base.filter(r =>
+      normalizar(r.denominacionUbicacionTecnica).includes(textoBusqueda) ||
+      normalizar(r.ubicacionTecnica).includes(textoBusqueda) ||
+      normalizar(r.descripcion).includes(textoBusqueda)
+    );
+    txtFiltro.textContent = `Búsqueda: ${busquedaEquipo.value}`;
+  }else{
+    txtFiltro.textContent = 'Todos los equipos';
   }
 
-  datosFiltrados = rows;
-  tablaBaseFallas = construirTablaBaseFallas(rows);
-
-  actualizarKPIs(rows, tablaBaseFallas);
-  renderTablaPreview(rows.slice(0, 25), datosOriginales.length ? Object.keys(datosOriginales[0]) : []);
-  renderTablaFallas(tablaBaseFallas.slice(0, 100));
-
-  filasPreview.textContent = `${Math.min(rows.length,25)} de ${rows.length} filas`;
-  filasFallas.textContent = `${tablaBaseFallas.length} fallas`;
+  datosBase = base;
+  actualizarKPIs(base);
+  renderTablaBase(base.slice(0, 300));
+  filasBase.textContent = `${base.length.toLocaleString('es-CL')} filas`;
 }
 
-function construirTablaBaseFallas(rows){
-  if(!mapaColumnas.equipo || !mapaColumnas.aviso || !mapaColumnas.inicio || !mapaColumnas.fin){
-    return [];
-  }
+function construirDatosBase(rows){
+  return rows.map(r => {
+    const inicio = unirFechaHora(r[mapaColumnas.inicioFecha], r[mapaColumnas.inicioHora]);
+    const fin = unirFechaHora(r[mapaColumnas.finFecha], r[mapaColumnas.finHora]);
 
-  const fallas = rows
-    .filter(r => {
-      const clase = mapaColumnas.clase ? String(r[mapaColumnas.clase]).trim().toUpperCase() : '';
-      if(clase && clase !== 'Z2') return false;
-      return r[mapaColumnas.equipo] && r[mapaColumnas.aviso];
-    })
-    .map(r => {
-      const inicio = convertirFecha(r[mapaColumnas.inicio]);
-      const fin = convertirFecha(r[mapaColumnas.fin]);
-      const horasReparacion = inicio && fin ? Math.max(0, (fin - inicio) / 3600000) : 0;
-
-      return {
-        equipo: r[mapaColumnas.equipo],
-        aviso: r[mapaColumnas.aviso],
-        inicio,
-        fin,
-        horasReparacion,
-        parada: mapaColumnas.parada ? r[mapaColumnas.parada] : '',
-        clase: mapaColumnas.clase ? r[mapaColumnas.clase] : ''
-      };
-    })
-    .sort((a,b) => String(a.equipo).localeCompare(String(b.equipo),'es') || ((a.inicio || 0) - (b.inicio || 0)));
-
-  let ultimoPorEquipo = {};
-
-  return fallas.map(f => {
-    const key = String(f.equipo);
-    const anterior = ultimoPorEquipo[key] || null;
-
-    const horasEntreFallas = anterior && f.inicio && anterior.fin
-      ? Math.max(0, (f.inicio - anterior.fin) / 3600000)
-      : null;
-
-    const registro = {
-      ...f,
-      finAnterior: anterior ? anterior.fin : null,
-      horasEntreFallas
+    return {
+      fechaAviso: convertirFecha(r[mapaColumnas.fechaAviso]),
+      claseAviso: valor(r[mapaColumnas.claseAviso]),
+      aviso: valor(r[mapaColumnas.aviso]),
+      orden: valor(r[mapaColumnas.orden]),
+      descripcion: valor(r[mapaColumnas.descripcion]),
+      ubicacionTecnica: valor(r[mapaColumnas.ubicacionTecnica]),
+      denominacionUbicacionTecnica: valor(r[mapaColumnas.denominacionUbicacionTecnica]),
+      inicioAveria: inicio ? inicio.toLocaleString('es-CL') : '',
+      inicioAveriaFecha: inicio,
+      finAveria: fin ? fin.toLocaleString('es-CL') : '',
+      finAveriaFecha: fin,
+      duracionParada: numero(r[mapaColumnas.duracionParada])
     };
-
-    ultimoPorEquipo[key] = f;
-    return registro;
   });
 }
 
-function actualizarKPIs(rows, fallas){
-  const equipos = contarUnicos(rows, mapaColumnas.equipo);
-  const avisos = contarUnicos(rows, mapaColumnas.aviso);
-  const horas = fallas.reduce((acc, f) => acc + (Number(f.horasReparacion) || 0), 0);
-
-  kEquipos.textContent = equipos.toLocaleString('es-CL');
-  kAvisos.textContent = avisos.toLocaleString('es-CL');
-  kFallasBase.textContent = fallas.length.toLocaleString('es-CL');
-  kHorasRep.textContent = horas ? horas.toLocaleString('es-CL', {maximumFractionDigits:1}) : '0';
+function actualizarKPIs(base){
+  kEquipos.textContent = new Set(base.map(r => r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');
+  kAvisos.textContent = new Set(base.map(r => r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
+  kOrdenes.textContent = new Set(base.map(r => r.orden).filter(Boolean)).size.toLocaleString('es-CL');
+  const horas = base.reduce((acc,r) => acc + (Number(r.duracionParada) || 0), 0);
+  kHorasParada.textContent = horas.toLocaleString('es-CL', {maximumFractionDigits:1});
 }
 
 function detectarColumnas(columnas){
   const normalizadas = columnas.map(c => ({original:c, key:normalizar(c)}));
 
   return {
-    equipo: buscarColumna(normalizadas, ['equipo','denominacionequipo','ubicaciontecnica','objeto','denominacionubicaciontecnica','denominaciondelubicaciontecnica','denominacion']),
-    aviso: buscarColumna(normalizadas, ['aviso','avisosap','numeroaviso','nroaviso']),
-    inicio: buscarColumna(normalizadas, ['inicioaveria','iniciodeaveria','inicioaveriafecha','fecha inicio averia','inicio']),
-    fin: buscarColumna(normalizadas, ['finaveria','findeaveria','finaveriafecha','fecha fin averia','fin']),
-    parada: buscarColumna(normalizadas, ['parada','duraciondeparada','indparada','indicadorparada']),
-    clase: buscarColumna(normalizadas, ['clasedeaviso','claseaviso','tipoaviso'])
+    fechaAviso: buscarColumna(normalizadas, ['fechadeaviso','fechaaviso']),
+    claseAviso: buscarColumna(normalizadas, ['clasedeaviso','claseaviso']),
+    aviso: buscarColumnaExacta(normalizadas, ['aviso']),
+    orden: buscarColumna(normalizadas, ['orden','numeroorden','ordensap']),
+    descripcion: buscarColumna(normalizadas, ['descripcion','descripciondelaviso','textoaviso']),
+    ubicacionTecnica: buscarColumnaExacta(normalizadas, ['ubicaciontecnica']),
+    denominacionUbicacionTecnica: buscarColumna(normalizadas, ['denominaciondelaubicaciontecnica','denominacionubicaciontecnica','denominaciondelubicaciontecnica']),
+    inicioFecha: buscarColumnaExacta(normalizadas, ['iniciodeaveria','inicioaveria']),
+    inicioHora: buscarColumna(normalizadas, ['iniciodeaveriahora','inicioaveriahora','hora inicio averia']),
+    finFecha: buscarColumnaExacta(normalizadas, ['findeaveria','finaveria']),
+    finHora: buscarColumna(normalizadas, ['findelaaveriahora','findeaveriahora','finaveriahora','hora fin averia']),
+    duracionParada: buscarColumna(normalizadas, ['duraciondeparada','duracionparada'])
   };
 }
 
@@ -289,28 +256,26 @@ function buscarColumna(cols, posibles){
   return null;
 }
 
-function normalizar(texto){
-  return String(texto)
-    .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^a-z0-9]/g,'');
+function buscarColumnaExacta(cols, posibles){
+  for (const posible of posibles){
+    const p = normalizar(posible);
+    const exacta = cols.find(c => c.key === p);
+    if(exacta) return exacta.original;
+  }
+  return buscarColumna(cols, posibles);
 }
 
-function contarUnicos(rows, columna){
-  if(!columna) return 0;
-  return new Set(rows.map(r => r[columna]).filter(Boolean)).size;
-}
-
-function cargarFiltroEquipos(rows, columna){
+function cargarFiltroEquipos(rows){
   equipoFiltro.innerHTML = '<option value="">Todos</option>';
-  listaEquipos = [];
 
-  if(!columna) return;
+  const base = construirDatosBase(rows);
+  const equipos = [...new Set(
+    base.map(r => r.denominacionUbicacionTecnica || r.ubicacionTecnica).filter(Boolean)
+  )].sort((a,b) => String(a).localeCompare(String(b),'es'));
 
-  listaEquipos = [...new Set(rows.map(r => r[columna]).filter(Boolean))]
-    .sort((a,b) => String(a).localeCompare(String(b),'es'));
+  listaEquipos = equipos;
 
-  listaEquipos.forEach(eq => {
+  equipos.forEach(eq => {
     const opt = document.createElement('option');
     opt.value = eq;
     opt.textContent = eq;
@@ -327,15 +292,7 @@ function mostrarSugerencias(texto){
   }
 
   const clave = normalizar(texto);
-  let resultados = [];
-
-  if(clave.length === 0){
-    resultados = listaEquipos.slice(0, 12);
-  }else{
-    resultados = listaEquipos
-      .filter(eq => normalizar(eq).includes(clave))
-      .slice(0, 12);
-  }
+  const resultados = (clave.length === 0 ? listaEquipos : listaEquipos.filter(eq => normalizar(eq).includes(clave))).slice(0, 12);
 
   if(!resultados.length){
     sugerenciasEquipo.innerHTML = '<div class="suggestion-empty">Sin coincidencias</div>';
@@ -366,22 +323,36 @@ function ocultarSugerencias(){
 }
 
 function validarColumnas(mapa, columnas){
-  const faltantes = [];
+  const requeridas = [
+    ['Fecha aviso', mapa.fechaAviso],
+    ['Clase aviso', mapa.claseAviso],
+    ['Aviso', mapa.aviso],
+    ['Orden', mapa.orden],
+    ['Descripción', mapa.descripcion],
+    ['Ubicación técnica', mapa.ubicacionTecnica],
+    ['Denominación ubicación técnica', mapa.denominacionUbicacionTecnica],
+    ['Inicio de avería', mapa.inicioFecha],
+    ['Inicio de avería hora', mapa.inicioHora],
+    ['Fin de avería', mapa.finFecha],
+    ['Fin de avería hora', mapa.finHora],
+    ['Duración de parada', mapa.duracionParada]
+  ];
 
-  if(!mapa.equipo) faltantes.push('Equipo');
-  if(!mapa.aviso) faltantes.push('Aviso');
-  if(!mapa.inicio) faltantes.push('Inicio avería');
-  if(!mapa.fin) faltantes.push('Fin avería');
+  const faltantes = requeridas.filter(x => !x[1]).map(x => x[0]);
 
   if(faltantes.length === 0){
     setEstado('Validado', 'ok', `
       <b>Archivo SAP cargado correctamente desde GitHub.</b><br>
-      Equipo: ${mapa.equipo}<br>
+      Fecha aviso: ${mapa.fechaAviso}<br>
+      Clase aviso: ${mapa.claseAviso}<br>
       Aviso: ${mapa.aviso}<br>
-      Inicio avería: ${mapa.inicio}<br>
-      Fin avería: ${mapa.fin}<br>
-      Parada: ${mapa.parada || 'No detectada'}<br>
-      Clase de aviso: ${mapa.clase || 'No detectada'}
+      Orden: ${mapa.orden}<br>
+      Descripción: ${mapa.descripcion}<br>
+      Ubicación técnica: ${mapa.ubicacionTecnica}<br>
+      Denominación ubicación técnica: ${mapa.denominacionUbicacionTecnica}<br>
+      Inicio avería: ${mapa.inicioFecha} + ${mapa.inicioHora}<br>
+      Fin avería: ${mapa.finFecha} + ${mapa.finHora}<br>
+      Duración parada: ${mapa.duracionParada}
     `);
   }else{
     setEstado('Revisar', 'error', `
@@ -393,107 +364,140 @@ function validarColumnas(mapa, columnas){
   }
 }
 
-function renderTablaPreview(rows, columnas){
-  theadPreview.innerHTML = '';
-  tbodyPreview.innerHTML = '';
-
-  if(!rows.length){
-    tbodyPreview.innerHTML = '<tr><td>No hay datos para mostrar</td></tr>';
-    return;
-  }
-
-  const colsPreferidas = [
-    mapaColumnas.equipo,
-    mapaColumnas.aviso,
-    mapaColumnas.inicio,
-    mapaColumnas.fin,
-    mapaColumnas.parada,
-    mapaColumnas.clase
-  ].filter(Boolean);
-
-  const otras = columnas.filter(c => !colsPreferidas.includes(c)).slice(0,5);
-  const cols = [...colsPreferidas, ...otras];
-
-  theadPreview.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
-
-  tbodyPreview.innerHTML = rows.map(row => `
-    <tr>${cols.map(c => `<td>${formatearCelda(row[c])}</td>`).join('')}</tr>
-  `).join('');
-}
-
-function renderTablaFallas(fallas){
-  theadFallas.innerHTML = `
+function renderTablaBase(base){
+  theadBase.innerHTML = `
     <tr>
-      <th>Equipo</th>
+      <th>Fecha aviso</th>
+      <th>Clase aviso</th>
       <th>Aviso</th>
+      <th>Orden</th>
+      <th>Descripción</th>
+      <th>Ubicación técnica</th>
+      <th>Denominación ubicación técnica</th>
       <th>Inicio avería</th>
       <th>Fin avería</th>
-      <th>Horas reparación</th>
-      <th>Parada</th>
-      <th>Fin avería anterior</th>
-      <th>Horas entre fallas</th>
+      <th>Duración parada</th>
     </tr>
   `;
 
-  if(!fallas.length){
-    tbodyFallas.innerHTML = '<tr><td colspan="8">No hay fallas Z2 para el filtro seleccionado</td></tr>';
+  if(!base.length){
+    tbodyBase.innerHTML = '<tr><td colspan="10">No hay datos para el filtro seleccionado</td></tr>';
     return;
   }
 
-  tbodyFallas.innerHTML = fallas.map(f => `
+  tbodyBase.innerHTML = base.map(r => `
     <tr>
-      <td>${f.equipo}</td>
-      <td>${f.aviso}</td>
-      <td>${formatearFecha(f.inicio)}</td>
-      <td>${formatearFecha(f.fin)}</td>
-      <td>${formatearNumero(f.horasReparacion)}</td>
-      <td>${f.parada ?? ''}</td>
-      <td>${formatearFecha(f.finAnterior)}</td>
-      <td>${f.horasEntreFallas === null ? '-' : formatearNumero(f.horasEntreFallas)}</td>
+      <td>${formatearFechaCorta(r.fechaAviso)}</td>
+      <td>${r.claseAviso}</td>
+      <td>${r.aviso}</td>
+      <td>${r.orden}</td>
+      <td class="descripcion">${r.descripcion}</td>
+      <td>${r.ubicacionTecnica}</td>
+      <td>${r.denominacionUbicacionTecnica}</td>
+      <td>${r.inicioAveria}</td>
+      <td>${r.finAveria}</td>
+      <td>${formatearNumero(r.duracionParada)}</td>
     </tr>
   `).join('');
 }
 
-function convertirFecha(valor){
-  if(!valor) return null;
-  if(valor instanceof Date && !isNaN(valor)) return valor;
+function unirFechaHora(fechaValor, horaValor){
+  const fecha = convertirFecha(fechaValor);
+  if(!fecha) return null;
 
-  if(typeof valor === 'number'){
+  const h = convertirHora(horaValor);
+
+  return new Date(
+    fecha.getFullYear(),
+    fecha.getMonth(),
+    fecha.getDate(),
+    h.horas,
+    h.minutos,
+    h.segundos
+  );
+}
+
+function convertirFecha(valorEntrada){
+  if(!valorEntrada) return null;
+  if(valorEntrada instanceof Date && !isNaN(valorEntrada)) return valorEntrada;
+
+  if(typeof valorEntrada === 'number'){
     const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-    return new Date(excelEpoch.getTime() + valor * 86400000);
+    return new Date(excelEpoch.getTime() + valorEntrada * 86400000);
   }
 
-  const texto = String(valor).trim();
+  const texto = String(valorEntrada).trim();
 
-  const matchCL = texto.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:,\s*)?(?:(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  const matchCL = texto.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
   if(matchCL){
-    return new Date(
-      Number(matchCL[3]),
-      Number(matchCL[2]) - 1,
-      Number(matchCL[1]),
-      Number(matchCL[4] || 0),
-      Number(matchCL[5] || 0),
-      Number(matchCL[6] || 0)
-    );
+    return new Date(Number(matchCL[3]), Number(matchCL[2]) - 1, Number(matchCL[1]));
   }
 
   const f = new Date(texto);
   return isNaN(f) ? null : f;
 }
 
-function formatearCelda(valor){
-  if(valor instanceof Date) return valor.toLocaleString('es-CL');
-  return String(valor ?? '');
+function convertirHora(valorEntrada){
+  if(!valorEntrada) return {horas:0,minutos:0,segundos:0};
+
+  if(valorEntrada instanceof Date && !isNaN(valorEntrada)){
+    return {
+      horas: valorEntrada.getHours(),
+      minutos: valorEntrada.getMinutes(),
+      segundos: valorEntrada.getSeconds()
+    };
+  }
+
+  if(typeof valorEntrada === 'number'){
+    const totalSegundos = Math.round(valorEntrada * 24 * 60 * 60);
+    return {
+      horas: Math.floor(totalSegundos / 3600) % 24,
+      minutos: Math.floor((totalSegundos % 3600) / 60),
+      segundos: totalSegundos % 60
+    };
+  }
+
+  const texto = String(valorEntrada).trim();
+  const match = texto.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+
+  if(match){
+    return {
+      horas: Number(match[1]),
+      minutos: Number(match[2]),
+      segundos: Number(match[3] || 0)
+    };
+  }
+
+  return {horas:0,minutos:0,segundos:0};
 }
 
-function formatearFecha(fecha){
-  if(!fecha) return '-';
-  return fecha.toLocaleString('es-CL');
+function normalizar(texto){
+  return String(texto ?? '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]/g,'');
+}
+
+function valor(v){
+  if(v === null || v === undefined) return '';
+  return String(v);
+}
+
+function numero(v){
+  if(v === null || v === undefined || v === '') return 0;
+  if(typeof v === 'number') return v;
+  const n = Number(String(v).replace(/\./g,'').replace(',','.'));
+  return isNaN(n) ? 0 : n;
+}
+
+function formatearFechaCorta(fecha){
+  if(!fecha) return '';
+  return fecha.toLocaleDateString('es-CL');
 }
 
 function formatearNumero(n){
-  if(n === null || n === undefined || isNaN(n)) return '-';
-  return Number(n).toLocaleString('es-CL', {maximumFractionDigits:1});
+  if(n === null || n === undefined || isNaN(n)) return '';
+  return Number(n).toLocaleString('es-CL', {maximumFractionDigits:2});
 }
 
 function setEstado(texto, tipo, detalle){
@@ -508,13 +512,10 @@ function mostrarError(msg){
   txtRegistros.textContent = '0 registros leídos';
   kEquipos.textContent = '0';
   kAvisos.textContent = '0';
-  kFallasBase.textContent = '0';
-  kHorasRep.textContent = '--';
-  filasPreview.textContent = '0 filas';
-  filasFallas.textContent = '0 fallas';
-  theadPreview.innerHTML = '';
-  tbodyPreview.innerHTML = '';
-  theadFallas.innerHTML = '';
-  tbodyFallas.innerHTML = '';
+  kOrdenes.textContent = '0';
+  kHorasParada.textContent = '0';
+  filasBase.textContent = '0 filas';
+  theadBase.innerHTML = '';
+  tbodyBase.innerHTML = '';
   setEstado('Error', 'error', msg);
 }

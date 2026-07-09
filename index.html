@@ -10,8 +10,7 @@
 <body>
   <aside class="sidebar">
     <a class="menu-item active" href="#resumen">📊 Resumen</a>
-    <a class="menu-item" href="#datos">📁 Datos SAP</a>
-    <a class="menu-item" href="#fallas">🔧 Fallas</a>
+    <a class="menu-item" href="#base">📁 Datos Base</a>
     <a class="menu-item" href="#validacion">✅ Validación</a>
     <a class="menu-item" href="#proximas">🧭 Próximas versiones</a>
   </aside>
@@ -31,7 +30,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 1.5</small>
+        <small>Versión 1.6</small>
       </div>
     </header>
 
@@ -50,7 +49,7 @@
       </div>
       <div>
         <span>Versión</span>
-        <strong>v1.5</strong>
+        <strong>v1.6</strong>
       </div>
     </section>
 
@@ -98,7 +97,7 @@
         <div>
           <span>Equipos</span>
           <strong id="kEquipos">0</strong>
-          <small>Equipos únicos</small>
+          <small>Ubicaciones técnicas únicas</small>
         </div>
       </article>
 
@@ -107,25 +106,25 @@
         <div>
           <span>Avisos</span>
           <strong id="kAvisos">0</strong>
-          <small>Avisos únicos</small>
+          <small>Número de aviso único</small>
         </div>
       </article>
 
       <article class="kpi-card">
-        <div class="icon">🔩</div>
+        <div class="icon">🧾</div>
         <div>
-          <span>Fallas base</span>
-          <strong id="kFallasBase">0</strong>
-          <small>Registros Z2 filtrados</small>
+          <span>Órdenes</span>
+          <strong id="kOrdenes">0</strong>
+          <small>Órdenes únicas</small>
         </div>
       </article>
 
       <article class="kpi-card">
-        <div class="icon">🛠</div>
+        <div class="icon">⏱</div>
         <div>
-          <span>Horas reparación</span>
-          <strong id="kHorasRep">--</strong>
-          <small>Suma horas falla</small>
+          <span>Horas parada</span>
+          <strong id="kHorasParada">0</strong>
+          <small>Duración parada</small>
         </div>
       </article>
 
@@ -140,13 +139,13 @@
     </section>
 
     <section class="dashboard-grid">
-      <article id="fallas" class="panel wide">
+      <article id="base" class="panel wide">
         <div class="panel-title">
-          <h3>Tabla automática de fallas</h3>
-          <span id="filasFallas">0 fallas</span>
+          <h3>DATOS BASE PARA CÁLCULO DE KPI</h3>
+          <span id="filasBase">0 filas</span>
         </div>
-        <div class="table-wrap fallas-wrap">
-          <table id="tablaFallas">
+        <div class="table-wrap base-wrap">
+          <table id="tablaBase">
             <thead></thead>
             <tbody></tbody>
           </table>
@@ -168,24 +167,11 @@
           <h3>Próximas versiones</h3>
         </div>
         <ul class="roadmap">
-          <li><b>v1.6</b> Cálculo MTBF</li>
-          <li><b>v1.7</b> Cálculo MTTR</li>
-          <li><b>v1.8</b> Disponibilidad</li>
-          <li><b>v2.0</b> Gráficos y ranking</li>
+          <li><b>v1.7</b> Tabla de confiabilidad</li>
+          <li><b>v1.8</b> Cálculo MTBF</li>
+          <li><b>v1.9</b> Cálculo MTTR</li>
+          <li><b>v2.0</b> Disponibilidad y dashboard ejecutivo</li>
         </ul>
-      </article>
-
-      <article id="datos" class="panel full">
-        <div class="panel-title">
-          <h3>Vista previa de datos SAP</h3>
-          <span id="filasPreview">0 filas</span>
-        </div>
-        <div class="table-wrap preview-wrap">
-          <table id="tablaPreview">
-            <thead></thead>
-            <tbody></tbody>
-          </table>
-        </div>
       </article>
     </section>
   </main>
