@@ -12,6 +12,7 @@
     <a class="menu-item active" href="#resumen">📊 Resumen</a>
     <a class="menu-item" href="#base">📁 Datos Base</a>
     <a class="menu-item" href="#lyd">🧼 LYD</a>
+    <a class="menu-item" href="#unidades">🏷️ Unidades</a>
     <a class="menu-item" href="#validacion">✅ Validación</a>
   </aside>
 
@@ -26,7 +27,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 2.1</small>
+        <small>Versión 2.2</small>
       </div>
     </header>
 
@@ -34,7 +35,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v2.1</strong></div>
+      <div><span>Versión</span><strong>v2.2</strong></div>
     </section>
 
     <section class="filters">
@@ -55,7 +56,6 @@
       <strong>Gantt:</strong> <span class="pill purple" id="txtGantt">Sin archivo Gantt</span>
       <strong>Última lectura:</strong> <span class="pill green" id="txtLectura">--</span>
       <span class="pill blue" id="txtFiltro">Todos los equipos</span>
-      <button id="btnLimpiarClasificacion" class="mini-btn secondary">Limpiar clasificaciones</button>
       <p>Fuente de datos: últimos archivos <b>SAP/EXPORT</b> y <b>GANTT</b> detectados automáticamente en la carpeta <b>datos/</b>.</p>
     </section>
 
@@ -84,9 +84,20 @@
         <div class="panel-title"><h3>Módulo 2</h3></div>
         <ul class="roadmap">
           <li><b>Actual:</b> Asistente de clasificación</li>
+          <li><b>Nuevo:</b> Administración de unidades</li>
           <li><b>Siguiente:</b> Tabla de confiabilidad</li>
           <li><b>Después:</b> MTBF, MTTR y Disponibilidad</li>
         </ul>
+      </article>
+
+
+      <article id="unidades" class="panel full">
+        <div class="panel-title"><h3>UNIDADES</h3><span id="filasUnidades">0 unidades</span></div>
+        <div class="unit-toolbar">
+          <div class="field"><label>Buscar unidad</label><input type="text" id="buscarUnidad" placeholder="Ej: FF2, Hatchery, Pre Smolt..." /></div>
+          <button id="btnLimpiarClasificacion" class="btn-danger">Limpiar clasificaciones</button>
+        </div>
+        <div class="table-wrap unidades-wrap"><table id="tablaUnidades"><thead></thead><tbody></tbody></table></div>
       </article>
 
       <article id="lyd" class="panel full">
@@ -116,7 +127,7 @@
           <div><span>Cantidad registros</span><strong id="wizardCantidad">0</strong></div>
         </div>
 
-        <label>Unidad Gantt</label>
+        <label>Unidad</label>
         <select id="wizardUnidad"></select>
 
         <div id="boxNuevaUnidad" class="hidden">
