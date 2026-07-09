@@ -5,14 +5,31 @@ const CONFIG = {
   folder: 'datos'
 };
 
+const MAPEO_UNIDADES = [
+  { buscar: 'HATCHERY', unidad: 'Hat' },
+  { buscar: 'HAT', unidad: 'Hat' },
+  { buscar: 'FF2', unidad: 'FF' },
+  { buscar: 'FF', unidad: 'FF' },
+  { buscar: 'ALEVINAJE', unidad: 'Alev' },
+  { buscar: 'ALEV', unidad: 'Alev' },
+  { buscar: 'PRE-SMOLT', unidad: 'Pre' },
+  { buscar: 'PRE SMOLT', unidad: 'Pre' },
+  { buscar: 'PRESMOLT', unidad: 'Pre' },
+  { buscar: 'RILES', unidad: 'Riles' },
+  { buscar: 'FILTRADO', unidad: 'Filtrado' },
+  { buscar: 'FILTRO', unidad: 'Filtrado' },
+  { buscar: 'GEN', unidad: 'Generadores' },
+  { buscar: 'GENERADOR', unidad: 'Generadores' }
+];
+
 const btnActualizar = document.getElementById('btnActualizar');
 
 const kArchivo = document.getElementById('kArchivo');
 const kArchivoGantt = document.getElementById('kArchivoGantt');
 const kEquipos = document.getElementById('kEquipos');
 const kAvisos = document.getElementById('kAvisos');
-const kOrdenes = document.getElementById('kOrdenes');
-const kGantt = document.getElementById('kGantt');
+const kSinClasificar = document.getElementById('kSinClasificar');
+const kBloquesLYD = document.getElementById('kBloquesLYD');
 const txtRegistros = document.getElementById('txtRegistros');
 const txtArchivo = document.getElementById('txtArchivo');
 const txtGantt = document.getElementById('txtGantt');
@@ -28,19 +45,19 @@ const equipoFiltro = document.getElementById('equipoFiltro');
 const estadoValidacion = document.getElementById('estadoValidacion');
 const validacionDetalle = document.getElementById('validacionDetalle');
 const filasBase = document.getElementById('filasBase');
-const filasGantt = document.getElementById('filasGantt');
+const filasLYD = document.getElementById('filasLYD');
 
 const tablaBase = document.getElementById('tablaBase');
 const theadBase = tablaBase.querySelector('thead');
 const tbodyBase = tablaBase.querySelector('tbody');
 
-const tablaGantt = document.getElementById('tablaGantt');
-const theadGantt = tablaGantt.querySelector('thead');
-const tbodyGantt = tablaGantt.querySelector('tbody');
+const tablaLYD = document.getElementById('tablaLYD');
+const theadLYD = tablaLYD.querySelector('thead');
+const tbodyLYD = tablaLYD.querySelector('tbody');
 
 let datosOriginales = [];
 let datosBase = [];
-let ganttOriginal = [];
+let bloquesLYD = [];
 let mapaColumnas = {};
 let listaEquipos = [];
 
@@ -97,8 +114,8 @@ async function cargarDesdeGitHub(){
     }else{
       kArchivoGantt.textContent = 'No encontrado';
       txtGantt.textContent = 'Sin archivo Gantt';
-      kGantt.textContent = '0';
-      renderTablaGantt([]);
+      bloquesLYD = [];
+      renderTablaLYD([]);
     }
 
     txtLectura.textContent = new Date().toLocaleString('es-CL');
@@ -172,11 +189,11 @@ async function cargarGantt(archivo){
   txtGantt.textContent = archivo.name;
 
   const matriz = await leerExcelDesdeUrl(archivo.download_url, 'array');
-  ganttOriginal = procesarGantt(matriz);
+  bloquesLYD = extraerBloquesLYD(matriz);
 
-  kGantt.textContent = ganttOriginal.length.toLocaleString('es-CL');
-  filasGantt.textContent = `${ganttOriginal.length.toLocaleString('es-CL')} registros`;
-  renderTablaGantt(ganttOriginal.slice(0, 100));
+  renderTablaLYD(bloquesLYD);
+  kBloquesLYD.textContent = bloquesLYD.length.toLocaleString('es-CL');
+  filasLYD.textContent = `${bloquesLYD.length.toLocaleString('es-CL')} bloques`;
 }
 
 async function leerExcelDesdeUrl(url, modo){
@@ -197,56 +214,83 @@ async function leerExcelDesdeUrl(url, modo){
   return XLSX.utils.sheet_to_json(sheet, {defval:''});
 }
 
-function procesarGantt(matriz){
-  if(!matriz || matriz.length < 2) return [];
+function extraerBloquesLYD(matriz){
+  if(!matriz || !matriz.length) return [];
 
-  const registros = [];
-  const maxFilas = Math.min(matriz.length, 500);
+  const columnas = detectarColumnasGantt(matriz);
+  const bloques = [];
 
-  for(let i = 0; i < maxFilas; i++){
-    const fila = matriz[i];
-    const fecha = convertirFecha(fila[0]);
+  columnas.forEach(col => {
+    let inicio = null;
+    let fin = null;
 
-    if(!fecha) continue;
+    for(let r = col.filaInicioDatos; r < matriz.length; r++){
+      const fecha = convertirFecha(matriz[r]?.[0]);
+      if(!fecha) continue;
 
-    for(let c = 1; c < fila.length; c++){
-      const valorCelda = fila[c];
+      const valor = normalizar(matriz[r]?.[col.indice]);
+      const esLYD = valor.includes('lyd');
 
-      if(valorCelda === null || valorCelda === undefined || valorCelda === '') continue;
-
-      const area = buscarEncabezadoSuperior(matriz, i, c);
-      const equipo = buscarEncabezadoColumna(matriz, c);
-
-      registros.push({
-        fecha,
-        area,
-        equipo,
-        estado: String(valorCelda)
-      });
+      if(esLYD && !inicio){
+        inicio = fecha;
+        fin = fecha;
+      }else if(esLYD && inicio){
+        const diferenciaDias = Math.round((fecha - fin) / 86400000);
+        if(diferenciaDias <= 1){
+          fin = fecha;
+        }else{
+          bloques.push(crearBloqueLYD(col.unidad, inicio, fin));
+          inicio = fecha;
+          fin = fecha;
+        }
+      }else if(!esLYD && inicio){
+        bloques.push(crearBloqueLYD(col.unidad, inicio, fin));
+        inicio = null;
+        fin = null;
+      }
     }
-  }
 
-  return registros;
+    if(inicio){
+      bloques.push(crearBloqueLYD(col.unidad, inicio, fin));
+    }
+  });
+
+  return bloques.sort((a,b) => String(a.unidad).localeCompare(String(b.unidad),'es') || a.inicio - b.inicio);
 }
 
-function buscarEncabezadoSuperior(matriz, filaActual, col){
-  for(let r = filaActual - 1; r >= 0; r--){
-    const valor = matriz[r]?.[col];
-    if(valor !== null && valor !== undefined && valor !== '' && !convertirFecha(valor)){
-      return String(valor);
+function detectarColumnasGantt(matriz){
+  const columnas = [];
+  const maxFilasCabecera = Math.min(10, matriz.length);
+  const maxCols = Math.max(...matriz.slice(0, maxFilasCabecera).map(f => f.length));
+
+  for(let c = 1; c < maxCols; c++){
+    let unidad = '';
+
+    for(let r = 0; r < maxFilasCabecera; r++){
+      const valor = matriz[r]?.[c];
+      if(valor !== null && valor !== undefined && String(valor).trim() !== '' && !convertirFecha(valor)){
+        unidad = String(valor).trim();
+        break;
+      }
+    }
+
+    if(unidad){
+      columnas.push({ indice:c, unidad, filaInicioDatos:1 });
     }
   }
-  return '';
+
+  return columnas;
 }
 
-function buscarEncabezadoColumna(matriz, col){
-  for(let r = 0; r < Math.min(8, matriz.length); r++){
-    const valor = matriz[r]?.[col];
-    if(valor !== null && valor !== undefined && valor !== '' && !convertirFecha(valor)){
-      return String(valor);
-    }
-  }
-  return `Columna ${col + 1}`;
+function crearBloqueLYD(unidad, inicio, fin){
+  const dias = Math.round((fin - inicio) / 86400000) + 1;
+  return {
+    unidad,
+    inicio,
+    fin,
+    dias,
+    horas: dias * 24
+  };
 }
 
 function compararArchivos(a, b){
@@ -316,15 +360,22 @@ function construirDatosBase(rows){
   return rows.map(r => {
     const inicio = unirFechaHora(r[mapaColumnas.inicioFecha], r[mapaColumnas.inicioHora]);
     const fin = unirFechaHora(r[mapaColumnas.finFecha], r[mapaColumnas.finHora]);
+    const ubicacionTecnica = valor(r[mapaColumnas.ubicacionTecnica]);
+    const denominacion = valor(r[mapaColumnas.denominacionUbicacionTecnica]);
+    const descripcion = valor(r[mapaColumnas.descripcion]);
+    const unidad = obtenerUnidadGantt(`${denominacion} ${ubicacionTecnica} ${descripcion}`);
+    const estadoUnidad = unidad === 'Sin clasificar' ? 'Revisar' : 'OK';
 
     return {
       fechaAviso: convertirFecha(r[mapaColumnas.fechaAviso]),
       claseAviso: valor(r[mapaColumnas.claseAviso]),
       aviso: valor(r[mapaColumnas.aviso]),
       orden: valor(r[mapaColumnas.orden]),
-      descripcion: valor(r[mapaColumnas.descripcion]),
-      ubicacionTecnica: valor(r[mapaColumnas.ubicacionTecnica]),
-      denominacionUbicacionTecnica: valor(r[mapaColumnas.denominacionUbicacionTecnica]),
+      descripcion,
+      ubicacionTecnica,
+      denominacionUbicacionTecnica: denominacion,
+      unidadGantt: unidad,
+      estadoUnidad,
       inicioAveria: inicio ? inicio.toLocaleString('es-CL') : '',
       inicioAveriaFecha: inicio,
       finAveria: fin ? fin.toLocaleString('es-CL') : '',
@@ -334,10 +385,20 @@ function construirDatosBase(rows){
   });
 }
 
+function obtenerUnidadGantt(textoEquipo){
+  const texto = normalizar(textoEquipo);
+
+  const regla = MAPEO_UNIDADES.find(r =>
+    texto.includes(normalizar(r.buscar))
+  );
+
+  return regla ? regla.unidad : 'Sin clasificar';
+}
+
 function actualizarKPIs(base){
   kEquipos.textContent = new Set(base.map(r => r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');
   kAvisos.textContent = new Set(base.map(r => r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
-  kOrdenes.textContent = new Set(base.map(r => r.orden).filter(Boolean)).size.toLocaleString('es-CL');
+  kSinClasificar.textContent = base.filter(r => r.unidadGantt === 'Sin clasificar').length.toLocaleString('es-CL');
 }
 
 function detectarColumnas(columnas){
@@ -447,7 +508,8 @@ function generarResumenValidacion(archivoSAP, archivoGantt){
     html += `<b>Columnas SAP faltantes:</b> ${faltantes.join(', ')}`;
   }else{
     html += `Columnas SAP requeridas: OK<br>`;
-    html += `Registros Gantt detectados: ${ganttOriginal.length.toLocaleString('es-CL')}`;
+    html += `Bloques LYD detectados: ${bloquesLYD.length.toLocaleString('es-CL')}<br>`;
+    html += `Equipos sin clasificar: ${kSinClasificar.textContent}`;
   }
 
   return html;
@@ -482,6 +544,8 @@ function renderTablaBase(base){
       <th>Descripción</th>
       <th>Ubicación técnica</th>
       <th>Denominación ubicación técnica</th>
+      <th>Unidad Gantt detectada</th>
+      <th>Estado</th>
       <th>Inicio avería</th>
       <th>Fin avería</th>
       <th>Duración parada</th>
@@ -489,7 +553,7 @@ function renderTablaBase(base){
   `;
 
   if(!base.length){
-    tbodyBase.innerHTML = '<tr><td colspan="10">No hay datos para el filtro seleccionado</td></tr>';
+    tbodyBase.innerHTML = '<tr><td colspan="12">No hay datos para el filtro seleccionado</td></tr>';
     return;
   }
 
@@ -502,6 +566,8 @@ function renderTablaBase(base){
       <td class="descripcion">${r.descripcion}</td>
       <td>${r.ubicacionTecnica}</td>
       <td>${r.denominacionUbicacionTecnica}</td>
+      <td>${r.unidadGantt}</td>
+      <td>${r.estadoUnidad === 'OK' ? '<span class="badge-ok">OK</span>' : '<span class="badge-review">Revisar</span>'}</td>
       <td>${r.inicioAveria}</td>
       <td>${r.finAveria}</td>
       <td>${formatearNumero(r.duracionParada)}</td>
@@ -509,28 +575,30 @@ function renderTablaBase(base){
   `).join('');
 }
 
-function renderTablaGantt(registros){
-  theadGantt.innerHTML = `
+function renderTablaLYD(bloques){
+  theadLYD.innerHTML = `
     <tr>
-      <th>Fecha</th>
-      <th>Área / Encabezado</th>
-      <th>Columna</th>
-      <th>Estado / Código</th>
+      <th>Unidad Gantt</th>
+      <th>Inicio LYD</th>
+      <th>Fin LYD</th>
+      <th>Días LYD</th>
+      <th>Horas no operativas planificadas</th>
     </tr>
   `;
 
-  if(!registros.length){
-    tbodyGantt.innerHTML = '<tr><td colspan="4">No hay datos Gantt detectados</td></tr>';
-    filasGantt.textContent = '0 registros';
+  if(!bloques.length){
+    tbodyLYD.innerHTML = '<tr><td colspan="5">No hay períodos LYD detectados</td></tr>';
+    filasLYD.textContent = '0 bloques';
     return;
   }
 
-  tbodyGantt.innerHTML = registros.map(r => `
+  tbodyLYD.innerHTML = bloques.map(b => `
     <tr>
-      <td>${formatearFechaCorta(r.fecha)}</td>
-      <td>${r.area}</td>
-      <td>${r.equipo}</td>
-      <td>${r.estado}</td>
+      <td>${b.unidad}</td>
+      <td>${formatearFechaCorta(b.inicio)}</td>
+      <td>${formatearFechaCorta(b.fin)}</td>
+      <td>${b.dias}</td>
+      <td>${b.horas}</td>
     </tr>
   `).join('');
 }
@@ -640,13 +708,13 @@ function mostrarError(msg){
   txtRegistros.textContent = '0 registros leídos';
   kEquipos.textContent = '0';
   kAvisos.textContent = '0';
-  kOrdenes.textContent = '0';
-  kGantt.textContent = '0';
+  kSinClasificar.textContent = '0';
+  kBloquesLYD.textContent = '0';
   filasBase.textContent = '0 filas';
-  filasGantt.textContent = '0 registros';
+  filasLYD.textContent = '0 bloques';
   theadBase.innerHTML = '';
   tbodyBase.innerHTML = '';
-  theadGantt.innerHTML = '';
-  tbodyGantt.innerHTML = '';
+  theadLYD.innerHTML = '';
+  tbodyLYD.innerHTML = '';
   setEstado('Error', 'error', msg);
 }

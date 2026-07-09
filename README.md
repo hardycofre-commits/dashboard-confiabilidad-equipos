@@ -1,18 +1,30 @@
-# Dashboard Confiabilidad Equipos - v1.7
+# Dashboard Confiabilidad Equipos - v1.8
 
 ## Cambios principales
-- Mantiene una sola carpeta `datos/`.
-- Detecta automáticamente dos tipos de archivos:
-  - SAP / EXPORT
-  - GANTT
-- Carga el último archivo SAP y el último archivo Gantt desde GitHub API.
-- Mantiene la tabla DATOS BASE PARA CÁLCULO DE KPI.
-- Agrega panel GANTT PRODUCCIÓN DETECTADO.
-- El Gantt queda preparado para descontar vacíos sanitarios en versiones futuras.
+- Se mantiene una sola carpeta `datos/`.
+- Detecta último archivo SAP/EXPORT.
+- Detecta último archivo GANTT.
+- Interpreta LYD como Lavado y Desinfección.
+- Genera tabla automática de períodos LYD:
+  - Unidad Gantt
+  - Inicio LYD
+  - Fin LYD
+  - Días LYD
+  - Horas no operativas planificadas
+- Agrega tabla de equivalencias interna para detectar Unidad Gantt desde SAP.
+- Agrega columnas:
+  - Unidad Gantt detectada
+  - Estado OK / Revisar
+- Los equipos sin clasificar quedan marcados como Revisar.
 
-## Nombres recomendados en carpeta datos
-- SAP_EXPORT_2026-07-09.xlsx
-- GANTT_2026.xlsx
+## Tabla de equivalencias inicial
+- HATCHERY / HAT -> Hat
+- FF / FF2 -> FF
+- ALEV / ALEVINAJE -> Alev
+- PRE-SMOLT / PRE SMOLT -> Pre
+- RILES -> Riles
+- FILTRADO / FILTRO -> Filtrado
+- GENERADOR / GEN -> Generadores
 
 ## Próxima versión
-v1.8: Tabla de confiabilidad usando SAP + Gantt.
+v1.9: Tabla de confiabilidad cruzando SAP + LYD.

@@ -11,7 +11,7 @@
   <aside class="sidebar">
     <a class="menu-item active" href="#resumen">📊 Resumen</a>
     <a class="menu-item" href="#base">📁 Datos Base</a>
-    <a class="menu-item" href="#gantt">📅 Gantt</a>
+    <a class="menu-item" href="#lyd">🧼 LYD</a>
     <a class="menu-item" href="#validacion">✅ Validación</a>
     <a class="menu-item" href="#proximas">🧭 Próximas versiones</a>
   </aside>
@@ -31,7 +31,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 1.7</small>
+        <small>Versión 1.8</small>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       </div>
       <div>
         <span>Versión</span>
-        <strong>v1.7</strong>
+        <strong>v1.8</strong>
       </div>
     </section>
 
@@ -114,20 +114,20 @@
       </article>
 
       <article class="kpi-card">
-        <div class="icon">🧾</div>
+        <div class="icon">🧭</div>
         <div>
-          <span>Órdenes</span>
-          <strong id="kOrdenes">0</strong>
-          <small>Órdenes únicas</small>
+          <span>Sin clasificar</span>
+          <strong id="kSinClasificar">0</strong>
+          <small>Revisar mapeo unidad</small>
         </div>
       </article>
 
       <article class="kpi-card">
-        <div class="icon">📅</div>
+        <div class="icon">🧼</div>
         <div>
-          <span>Gantt</span>
-          <strong id="kGantt">--</strong>
-          <small>Registros detectados</small>
+          <span>Bloques LYD</span>
+          <strong id="kBloquesLYD">0</strong>
+          <small>Lavado y desinfección</small>
         </div>
       </article>
 
@@ -170,20 +170,20 @@
           <h3>Próximas versiones</h3>
         </div>
         <ul class="roadmap">
-          <li><b>v1.8</b> Tabla de confiabilidad</li>
-          <li><b>v1.9</b> Cálculo MTBF</li>
-          <li><b>v2.0</b> Cálculo MTTR</li>
-          <li><b>v2.1</b> Disponibilidad ejecutiva</li>
+          <li><b>v1.9</b> Tabla de confiabilidad</li>
+          <li><b>v2.0</b> Cálculo MTBF</li>
+          <li><b>v2.1</b> Cálculo MTTR</li>
+          <li><b>v2.2</b> Disponibilidad ejecutiva</li>
         </ul>
       </article>
 
-      <article id="gantt" class="panel full">
+      <article id="lyd" class="panel full">
         <div class="panel-title">
-          <h3>GANTT PRODUCCIÓN DETECTADO</h3>
-          <span id="filasGantt">0 registros</span>
+          <h3>PERÍODOS LYD DETECTADOS EN GANTT</h3>
+          <span id="filasLYD">0 bloques</span>
         </div>
-        <div class="table-wrap gantt-wrap">
-          <table id="tablaGantt">
+        <div class="table-wrap lyd-wrap">
+          <table id="tablaLYD">
             <thead></thead>
             <tbody></tbody>
           </table>
