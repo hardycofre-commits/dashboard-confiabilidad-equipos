@@ -1,8 +1,14 @@
-# Dashboard Confiabilidad Equipos - v2.2
+# Dashboard Confiabilidad Equipos - v2.3
 
-- Nuevo módulo Unidades.
-- Buscador por unidad.
-- Permite cambiar el nombre mostrado de cada unidad.
-- La columna Unidad Gantt detectada ahora se llama Unidad.
-- Tabla LYD muestra Unidad.
-- Mantiene asistente simple de clasificación.
+## Cambios principales
+- Menú lateral simplificado:
+  - Resumen
+  - Unidades
+- Toda la operación queda en Resumen.
+- Unidades queda solo para cambiar nombres visibles.
+- La columna "Unidad Gantt detectada" ahora se llama "Unidad".
+- La tabla LYD también muestra "Unidad".
+- Mantiene el asistente de clasificación simple.
+
+## Próxima versión
+v2.4: Tabla de Confiabilidad.

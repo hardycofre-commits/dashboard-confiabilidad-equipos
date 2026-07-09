@@ -9,11 +9,8 @@
 </head>
 <body>
   <aside class="sidebar">
-    <a class="menu-item active" href="#resumen">📊 Resumen</a>
-    <a class="menu-item" href="#base">📁 Datos Base</a>
-    <a class="menu-item" href="#lyd">🧼 LYD</a>
-    <a class="menu-item" href="#unidades">🏷️ Unidades</a>
-    <a class="menu-item" href="#validacion">✅ Validación</a>
+    <a class="menu-item active" href="#" data-view="resumen">📊 Resumen</a>
+    <a class="menu-item" href="#" data-view="unidades">🏷️ Unidades</a>
   </aside>
 
   <main class="content">
@@ -27,7 +24,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 2.2</small>
+        <small>Versión 2.3</small>
       </div>
     </header>
 
@@ -35,75 +32,93 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v2.2</strong></div>
+      <div><span>Versión</span><strong>v2.3</strong></div>
     </section>
 
-    <section class="filters">
-      <div class="field"><label>Fecha desde</label><input type="date" id="fechaDesde" value="2025-01-01" /></div>
-      <div class="field"><label>Fecha hasta</label><input type="date" id="fechaHasta" value="2026-12-31" /></div>
-      <div class="field search-field">
-        <label>Búsqueda rápida equipo</label>
-        <input type="text" id="busquedaEquipo" placeholder="Ej: GN, BOMBA, UV, HATCHERY..." autocomplete="off" />
-        <div id="sugerenciasEquipo" class="suggestions"></div>
-      </div>
-      <div class="field"><label>Lista de equipos</label><select id="equipoFiltro"><option value="">Todos</option></select></div>
-      <button id="btnActualizar">↻ Actualizar</button>
+    <section id="viewResumen" class="view">
+      <section class="filters">
+        <div class="field"><label>Fecha desde</label><input type="date" id="fechaDesde" value="2025-01-01" /></div>
+        <div class="field"><label>Fecha hasta</label><input type="date" id="fechaHasta" value="2026-12-31" /></div>
+        <div class="field search-field">
+          <label>Búsqueda rápida equipo</label>
+          <input type="text" id="busquedaEquipo" placeholder="Ej: GN, BOMBA, UV, HATCHERY..." autocomplete="off" />
+          <div id="sugerenciasEquipo" class="suggestions"></div>
+        </div>
+        <div class="field"><label>Lista de equipos</label><select id="equipoFiltro"><option value="">Todos</option></select></div>
+        <button id="btnActualizar">↻ Actualizar</button>
+      </section>
+
+      <section class="source-box">
+        <strong>SAP:</strong> <span id="txtRegistros">0 registros leídos</span>
+        <span class="pill" id="txtArchivo">Sin archivo SAP</span>
+        <strong>Gantt:</strong> <span class="pill purple" id="txtGantt">Sin archivo Gantt</span>
+        <strong>Última lectura:</strong> <span class="pill green" id="txtLectura">--</span>
+        <span class="pill blue" id="txtFiltro">Todos los equipos</span>
+        <p>Fuente de datos: últimos archivos <b>SAP/EXPORT</b> y <b>GANTT</b> detectados automáticamente en la carpeta <b>datos/</b>.</p>
+      </section>
+
+      <section class="kpi-grid">
+        <article class="kpi-card"><div class="icon">🔧</div><div><span>Equipos</span><strong id="kEquipos">0</strong><small>Ubicaciones técnicas únicas</small></div></article>
+        <article class="kpi-card"><div class="icon">📋</div><div><span>Avisos</span><strong id="kAvisos">0</strong><small>Número de aviso único</small></div></article>
+        <article class="kpi-card clickable" id="cardSinClasificar" title="Abrir asistente de clasificación">
+          <div class="icon">🧭</div><div><span>Sin clasificar</span><strong id="kSinClasificar">0</strong><small>Click para clasificar</small></div>
+        </article>
+        <article class="kpi-card"><div class="icon">🧼</div><div><span>Bloques LYD</span><strong id="kBloquesLYD">0</strong><small>Lavado y desinfección</small></div></article>
+        <article class="kpi-card"><div class="icon">✅</div><div><span>Disponibilidad</span><strong>--</strong><small>Próxima versión</small></div></article>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="panel wide">
+          <div class="panel-title"><h3>DATOS BASE PARA CÁLCULO DE KPI</h3><span id="filasBase">0 filas</span></div>
+          <div class="table-wrap base-wrap"><table id="tablaBase"><thead></thead><tbody></tbody></table></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-title"><h3>Validación archivos</h3><span id="estadoValidacion" class="status warning">Buscando</span></div>
+          <div id="validacionDetalle" class="validation">Buscando últimos archivos en GitHub...</div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-title"><h3>Próximas versiones</h3></div>
+          <ul class="roadmap">
+            <li><b>v2.4</b> Tabla de confiabilidad</li>
+            <li><b>v2.5</b> Cálculo MTBF</li>
+            <li><b>v2.6</b> Cálculo MTTR</li>
+            <li><b>v2.7</b> Disponibilidad</li>
+          </ul>
+        </article>
+
+        <article class="panel full">
+          <div class="panel-title"><h3>PERÍODOS LYD DETECTADOS EN GANTT</h3><span id="filasLYD">0 bloques</span></div>
+          <div class="table-wrap lyd-wrap"><table id="tablaLYD"><thead></thead><tbody></tbody></table></div>
+        </article>
+      </section>
     </section>
 
-    <section class="source-box">
-      <strong>SAP:</strong> <span id="txtRegistros">0 registros leídos</span>
-      <span class="pill" id="txtArchivo">Sin archivo SAP</span>
-      <strong>Gantt:</strong> <span class="pill purple" id="txtGantt">Sin archivo Gantt</span>
-      <strong>Última lectura:</strong> <span class="pill green" id="txtLectura">--</span>
-      <span class="pill blue" id="txtFiltro">Todos los equipos</span>
-      <p>Fuente de datos: últimos archivos <b>SAP/EXPORT</b> y <b>GANTT</b> detectados automáticamente en la carpeta <b>datos/</b>.</p>
-    </section>
+    <section id="viewUnidades" class="view hidden">
+      <section class="panel unidades-panel">
+        <div class="panel-title">
+          <h3>🏷️ UNIDADES</h3>
+          <span id="filasUnidades">0 unidades</span>
+        </div>
 
-    <section id="resumen" class="kpi-grid">
-      <article class="kpi-card"><div class="icon">🔧</div><div><span>Equipos</span><strong id="kEquipos">0</strong><small>Ubicaciones técnicas únicas</small></div></article>
-      <article class="kpi-card"><div class="icon">📋</div><div><span>Avisos</span><strong id="kAvisos">0</strong><small>Número de aviso único</small></div></article>
-      <article class="kpi-card clickable" id="cardSinClasificar" title="Abrir asistente de clasificación">
-        <div class="icon">🧭</div><div><span>Sin clasificar</span><strong id="kSinClasificar">0</strong><small>Click para clasificar</small></div>
-      </article>
-      <article class="kpi-card"><div class="icon">🧼</div><div><span>Bloques LYD</span><strong id="kBloquesLYD">0</strong><small>Lavado y desinfección</small></div></article>
-      <article class="kpi-card"><div class="icon">✅</div><div><span>Disponibilidad</span><strong>--</strong><small>Próxima versión</small></div></article>
-    </section>
-
-    <section class="dashboard-grid">
-      <article id="base" class="panel wide">
-        <div class="panel-title"><h3>DATOS BASE PARA CÁLCULO DE KPI</h3><span id="filasBase">0 filas</span></div>
-        <div class="table-wrap base-wrap"><table id="tablaBase"><thead></thead><tbody></tbody></table></div>
-      </article>
-
-      <article id="validacion" class="panel">
-        <div class="panel-title"><h3>Validación archivos</h3><span id="estadoValidacion" class="status warning">Buscando</span></div>
-        <div id="validacionDetalle" class="validation">Buscando últimos archivos en GitHub...</div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-title"><h3>Módulo 2</h3></div>
-        <ul class="roadmap">
-          <li><b>Actual:</b> Asistente de clasificación</li>
-          <li><b>Nuevo:</b> Administración de unidades</li>
-          <li><b>Siguiente:</b> Tabla de confiabilidad</li>
-          <li><b>Después:</b> MTBF, MTTR y Disponibilidad</li>
-        </ul>
-      </article>
-
-
-      <article id="unidades" class="panel full">
-        <div class="panel-title"><h3>UNIDADES</h3><span id="filasUnidades">0 unidades</span></div>
         <div class="unit-toolbar">
-          <div class="field"><label>Buscar unidad</label><input type="text" id="buscarUnidad" placeholder="Ej: FF2, Hatchery, Pre Smolt..." /></div>
+          <div class="field">
+            <label>Buscar unidad</label>
+            <input type="text" id="buscarUnidad" placeholder="Ej: FF2, Hatchery, Pre Smolt..." />
+          </div>
           <button id="btnLimpiarClasificacion" class="btn-danger">Limpiar clasificaciones</button>
         </div>
-        <div class="table-wrap unidades-wrap"><table id="tablaUnidades"><thead></thead><tbody></tbody></table></div>
-      </article>
 
-      <article id="lyd" class="panel full">
-        <div class="panel-title"><h3>PERÍODOS LYD DETECTADOS EN GANTT</h3><span id="filasLYD">0 bloques</span></div>
-        <div class="table-wrap lyd-wrap"><table id="tablaLYD"><thead></thead><tbody></tbody></table></div>
-      </article>
+        <div class="table-wrap unidades-wrap">
+          <table id="tablaUnidades">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <p class="hint">Aquí solo se cambia el nombre visible de las unidades. El SAP y el Gantt no se modifican.</p>
+      </section>
     </section>
   </main>
 
