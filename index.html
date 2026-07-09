@@ -9,79 +9,166 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand">
-      <div class="logo">I</div>
-      <div>
-        <strong>INVERMAR</strong>
-        <span>Confiabilidad Equipos</span>
-      </div>
-    </div>
-
-    <nav>
-      <a href="#resumen" class="active">Resumen</a>
-      <a href="#datos">Datos SAP</a>
-      <a href="#validacion">Validación</a>
-      <a href="#proximas">Próximas versiones</a>
-    </nav>
-
-    <div class="version">Versión 1.1</div>
+    <a class="menu-item active" href="#resumen">📊 Resumen</a>
+    <a class="menu-item" href="#datos">📁 Datos SAP</a>
+    <a class="menu-item" href="#validacion">✅ Validación</a>
+    <a class="menu-item" href="#proximas">🧭 Próximas versiones</a>
   </aside>
 
-  <main class="main">
-    <section class="hero">
+  <main class="content">
+    <header class="top-header">
+      <div class="logo-box">
+        <img src="logo.png" alt="Invermar">
+      </div>
+
+      <div class="title-box">
+        <h1>DASHBOARD CONFIABILIDAD EQUIPOS</h1>
+        <h2>Piscicultura Lago Verde</h2>
+        <p>⏱ Período analizado: según archivo SAP cargado</p>
+      </div>
+
+      <div class="score-box">
+        <span>DISPONIBILIDAD</span>
+        <strong>--</strong>
+        <small>Versión 1.2</small>
+      </div>
+    </header>
+
+    <section class="info-bar">
       <div>
-        <p class="eyebrow">KPI DE CONFIABILIDAD</p>
-        <h1>Dashboard Confiabilidad Equipos</h1>
-        <p>Base profesional para lectura de Excel SAP, vista previa y validación de datos.</p>
+        <span>Unidad</span>
+        <strong>Piscicultura Lago Verde</strong>
       </div>
+      <div>
+        <span>Archivo</span>
+        <strong id="kArchivo">Sin cargar</strong>
+      </div>
+      <div>
+        <span>Última actualización</span>
+        <strong id="kActualizacion">--</strong>
+      </div>
+      <div>
+        <span>Versión</span>
+        <strong>v1.2 look</strong>
+      </div>
+    </section>
 
-      <div class="upload-card">
-        <label for="fileInput">Seleccionar Excel SAP</label>
+    <section class="filters">
+      <div class="field">
+        <label>Seleccionar Excel SAP</label>
         <input type="file" id="fileInput" accept=".xlsx,.xls" />
-        <button id="btnDemo">Cargar archivo manual</button>
-        <small>En GitHub Pages se usará la carpeta <b>/datos</b> en próximas versiones.</small>
       </div>
+
+      <div class="field">
+        <label>Fecha desde</label>
+        <input type="date" id="fechaDesde" />
+      </div>
+
+      <div class="field">
+        <label>Fecha hasta</label>
+        <input type="date" id="fechaHasta" />
+      </div>
+
+      <div class="field">
+        <label>Equipo</label>
+        <select id="equipoFiltro">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <button id="btnActualizar">↻ Actualizar</button>
     </section>
 
-    <section id="resumen" class="cards">
-      <div class="card"><span>Archivo</span><strong id="kArchivo">Sin cargar</strong></div>
-      <div class="card"><span>Registros</span><strong id="kRegistros">0</strong></div>
-      <div class="card"><span>Equipos</span><strong id="kEquipos">0</strong></div>
-      <div class="card"><span>Avisos</span><strong id="kAvisos">0</strong></div>
-      <div class="card"><span>Período</span><strong id="kPeriodo">-</strong></div>
+    <section class="source-box">
+      <strong>SAP:</strong> <span id="txtRegistros">0 registros leídos</span>
+      <span class="pill" id="txtArchivo">Sin archivo</span>
+      <strong>Última lectura:</strong>
+      <span class="pill green" id="txtLectura">--</span>
+      <p>Fuente de datos: archivo Excel SAP cargado manualmente. En próximas versiones se usará la carpeta <b>datos/</b>.</p>
     </section>
 
-    <section id="validacion" class="panel">
-      <div class="panel-header">
-        <h2>Validación del archivo SAP</h2>
-        <span id="estadoValidacion" class="badge warning">Pendiente</span>
-      </div>
-      <div id="validacionDetalle" class="validation">
-        Carga un archivo para validar columnas requeridas.
-      </div>
+    <section id="resumen" class="kpi-grid">
+      <article class="kpi-card">
+        <div class="icon">🔧</div>
+        <div>
+          <span>Equipos</span>
+          <strong id="kEquipos">0</strong>
+          <small>Equipos únicos</small>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <div class="icon">📋</div>
+        <div>
+          <span>Avisos</span>
+          <strong id="kAvisos">0</strong>
+          <small>Avisos únicos</small>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <div class="icon">⏱</div>
+        <div>
+          <span>MTBF</span>
+          <strong>--</strong>
+          <small>Próxima versión</small>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <div class="icon">🛠</div>
+        <div>
+          <span>MTTR</span>
+          <strong>--</strong>
+          <small>Próxima versión</small>
+        </div>
+      </article>
+
+      <article class="kpi-card">
+        <div class="icon">✅</div>
+        <div>
+          <span>Disponibilidad</span>
+          <strong>--</strong>
+          <small>Próxima versión</small>
+        </div>
+      </article>
     </section>
 
-    <section id="datos" class="panel">
-      <div class="panel-header">
-        <h2>Vista previa de datos</h2>
-        <span id="filasPreview" class="badge">0 filas</span>
-      </div>
-      <div class="table-wrap">
-        <table id="tablaPreview">
-          <thead></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
+    <section class="dashboard-grid">
+      <article id="datos" class="panel wide">
+        <div class="panel-title">
+          <h3>Vista previa de datos SAP</h3>
+          <span id="filasPreview">0 filas</span>
+        </div>
+        <div class="table-wrap">
+          <table id="tablaPreview">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
 
-    <section id="proximas" class="panel roadmap">
-      <h2>Próximas versiones</h2>
-      <div class="roadmap-grid">
-        <div><b>v1.2</b><span>Tabla automática de fallas</span></div>
-        <div><b>v1.3</b><span>Cálculo MTBF</span></div>
-        <div><b>v1.4</b><span>Cálculo MTTR</span></div>
-        <div><b>v1.5</b><span>Disponibilidad</span></div>
-      </div>
+      <article id="validacion" class="panel">
+        <div class="panel-title">
+          <h3>Validación archivo SAP</h3>
+          <span id="estadoValidacion" class="status warning">Pendiente</span>
+        </div>
+        <div id="validacionDetalle" class="validation">
+          Carga un archivo para validar columnas requeridas.
+        </div>
+      </article>
+
+      <article id="proximas" class="panel">
+        <div class="panel-title">
+          <h3>Próximas versiones</h3>
+        </div>
+        <ul class="roadmap">
+          <li><b>v1.3</b> Tabla automática de fallas</li>
+          <li><b>v1.4</b> Cálculo MTBF</li>
+          <li><b>v1.5</b> Cálculo MTTR</li>
+          <li><b>v1.6</b> Disponibilidad</li>
+        </ul>
+      </article>
     </section>
   </main>
 

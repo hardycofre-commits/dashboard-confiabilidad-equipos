@@ -1,3 +1,5 @@
-# Dashboard Confiabilidad Equipos v1.1
+# Dashboard Confiabilidad Equipos
 
-Estructura simple: index.html, styles.css, app.js y carpeta datos.
+Versión visual basada en Dashboard HH Mantención SAP.
+
+Archivos principales: index.html, styles.css, app.js, logo.png y carpeta datos.
