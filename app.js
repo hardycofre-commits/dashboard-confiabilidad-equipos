@@ -11,6 +11,8 @@ const kArchivo = document.getElementById('kArchivo');
 const kActualizacion = document.getElementById('kActualizacion');
 const kEquipos = document.getElementById('kEquipos');
 const kAvisos = document.getElementById('kAvisos');
+const kFallasBase = document.getElementById('kFallasBase');
+const kHorasRep = document.getElementById('kHorasRep');
 const txtRegistros = document.getElementById('txtRegistros');
 const txtArchivo = document.getElementById('txtArchivo');
 const txtLectura = document.getElementById('txtLectura');
@@ -25,38 +27,42 @@ const equipoFiltro = document.getElementById('equipoFiltro');
 const estadoValidacion = document.getElementById('estadoValidacion');
 const validacionDetalle = document.getElementById('validacionDetalle');
 const filasPreview = document.getElementById('filasPreview');
+const filasFallas = document.getElementById('filasFallas');
 
-const tabla = document.getElementById('tablaPreview');
-const thead = tabla.querySelector('thead');
-const tbody = tabla.querySelector('tbody');
+const tablaPreview = document.getElementById('tablaPreview');
+const theadPreview = tablaPreview.querySelector('thead');
+const tbodyPreview = tablaPreview.querySelector('tbody');
+
+const tablaFallas = document.getElementById('tablaFallas');
+const theadFallas = tablaFallas.querySelector('thead');
+const tbodyFallas = tablaFallas.querySelector('tbody');
 
 let datosOriginales = [];
 let datosFiltrados = [];
+let tablaBaseFallas = [];
 let mapaColumnas = {};
 let listaEquipos = [];
-let equipoSeleccionado = '';
 
-document.addEventListener('DOMContentLoaded', cargarDesdeGitHub);
+document.addEventListener('DOMContentLoaded', () => {
+  configurarFechasFijas();
+  cargarDesdeGitHub();
+});
+
 btnActualizar.addEventListener('click', cargarDesdeGitHub);
 
 equipoFiltro.addEventListener('change', () => {
-  equipoSeleccionado = equipoFiltro.value;
-  busquedaEquipo.value = equipoSeleccionado;
+  busquedaEquipo.value = equipoFiltro.value;
   ocultarSugerencias();
   aplicarFiltros();
 });
 
 busquedaEquipo.addEventListener('input', () => {
-  const texto = busquedaEquipo.value.trim();
-  equipoSeleccionado = '';
   equipoFiltro.value = '';
-  mostrarSugerencias(texto);
+  mostrarSugerencias(busquedaEquipo.value.trim());
   aplicarFiltros();
 });
 
-busquedaEquipo.addEventListener('focus', () => {
-  mostrarSugerencias(busquedaEquipo.value.trim());
-});
+busquedaEquipo.addEventListener('focus', () => mostrarSugerencias(busquedaEquipo.value.trim()));
 
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.search-field')) ocultarSugerencias();
@@ -64,6 +70,11 @@ document.addEventListener('click', (e) => {
 
 fechaDesde.addEventListener('change', aplicarFiltros);
 fechaHasta.addEventListener('change', aplicarFiltros);
+
+function configurarFechasFijas(){
+  fechaDesde.value = '2025-01-01';
+  fechaHasta.value = '2026-12-31';
+}
 
 async function cargarDesdeGitHub(){
   try{
@@ -127,14 +138,14 @@ function extraerFechaNombre(nombre){
 
   if(!iso) return null;
 
-  const y = Number(iso[1]);
-  const m = Number(iso[2]) - 1;
-  const d = Number(iso[3]);
-  const hh = Number(iso[4] || 0);
-  const mm = Number(iso[5] || 0);
-  const ss = Number(iso[6] || 0);
-
-  return new Date(y, m, d, hh, mm, ss);
+  return new Date(
+    Number(iso[1]),
+    Number(iso[2]) - 1,
+    Number(iso[3]),
+    Number(iso[4] || 0),
+    Number(iso[5] || 0),
+    Number(iso[6] || 0)
+  );
 }
 
 function procesarDatos(rows, fileName){
@@ -149,26 +160,9 @@ function procesarDatos(rows, fileName){
   kActualizacion.textContent = ahora;
   txtLectura.textContent = ahora;
 
-  configurarFechas(rows);
   cargarFiltroEquipos(rows, mapaColumnas.equipo);
   validarColumnas(mapaColumnas, columnas);
   aplicarFiltros();
-}
-
-function configurarFechas(rows){
-  if(!mapaColumnas.inicio) return;
-
-  const fechas = rows
-    .map(r => convertirFecha(r[mapaColumnas.inicio]))
-    .filter(Boolean);
-
-  if(!fechas.length) return;
-
-  const min = new Date(Math.min(...fechas));
-  const max = new Date(Math.max(...fechas));
-
-  fechaDesde.value = formatoInputDate(min);
-  fechaHasta.value = formatoInputDate(max);
 }
 
 function aplicarFiltros(){
@@ -203,28 +197,86 @@ function aplicarFiltros(){
   }
 
   datosFiltrados = rows;
-  actualizarKPIs(rows);
-  renderTabla(rows.slice(0, 25), datosOriginales.length ? Object.keys(datosOriginales[0]) : []);
+  tablaBaseFallas = construirTablaBaseFallas(rows);
+
+  actualizarKPIs(rows, tablaBaseFallas);
+  renderTablaPreview(rows.slice(0, 25), datosOriginales.length ? Object.keys(datosOriginales[0]) : []);
+  renderTablaFallas(tablaBaseFallas.slice(0, 100));
+
   filasPreview.textContent = `${Math.min(rows.length,25)} de ${rows.length} filas`;
+  filasFallas.textContent = `${tablaBaseFallas.length} fallas`;
 }
 
-function actualizarKPIs(rows){
+function construirTablaBaseFallas(rows){
+  if(!mapaColumnas.equipo || !mapaColumnas.aviso || !mapaColumnas.inicio || !mapaColumnas.fin){
+    return [];
+  }
+
+  const fallas = rows
+    .filter(r => {
+      const clase = mapaColumnas.clase ? String(r[mapaColumnas.clase]).trim().toUpperCase() : '';
+      if(clase && clase !== 'Z2') return false;
+      return r[mapaColumnas.equipo] && r[mapaColumnas.aviso];
+    })
+    .map(r => {
+      const inicio = convertirFecha(r[mapaColumnas.inicio]);
+      const fin = convertirFecha(r[mapaColumnas.fin]);
+      const horasReparacion = inicio && fin ? Math.max(0, (fin - inicio) / 3600000) : 0;
+
+      return {
+        equipo: r[mapaColumnas.equipo],
+        aviso: r[mapaColumnas.aviso],
+        inicio,
+        fin,
+        horasReparacion,
+        parada: mapaColumnas.parada ? r[mapaColumnas.parada] : '',
+        clase: mapaColumnas.clase ? r[mapaColumnas.clase] : ''
+      };
+    })
+    .sort((a,b) => String(a.equipo).localeCompare(String(b.equipo),'es') || ((a.inicio || 0) - (b.inicio || 0)));
+
+  let ultimoPorEquipo = {};
+
+  return fallas.map(f => {
+    const key = String(f.equipo);
+    const anterior = ultimoPorEquipo[key] || null;
+
+    const horasEntreFallas = anterior && f.inicio && anterior.fin
+      ? Math.max(0, (f.inicio - anterior.fin) / 3600000)
+      : null;
+
+    const registro = {
+      ...f,
+      finAnterior: anterior ? anterior.fin : null,
+      horasEntreFallas
+    };
+
+    ultimoPorEquipo[key] = f;
+    return registro;
+  });
+}
+
+function actualizarKPIs(rows, fallas){
   const equipos = contarUnicos(rows, mapaColumnas.equipo);
   const avisos = contarUnicos(rows, mapaColumnas.aviso);
+  const horas = fallas.reduce((acc, f) => acc + (Number(f.horasReparacion) || 0), 0);
 
   kEquipos.textContent = equipos.toLocaleString('es-CL');
   kAvisos.textContent = avisos.toLocaleString('es-CL');
+  kFallasBase.textContent = fallas.length.toLocaleString('es-CL');
+  kHorasRep.textContent = horas ? horas.toLocaleString('es-CL', {maximumFractionDigits:1}) : '0';
 }
 
 function detectarColumnas(columnas){
   const normalizadas = columnas.map(c => ({original:c, key:normalizar(c)}));
 
   return {
-    equipo: buscarColumna(normalizadas, ['equipo','denominacionequipo','ubicaciontecnica','objeto','denominacionubicaciontecnica','denominacion']),
-    aviso: buscarColumna(normalizadas, ['aviso','avisosap','numeroaviso','nroaviso','fechaaviso']),
+    equipo: buscarColumna(normalizadas, ['equipo','denominacionequipo','ubicaciontecnica','objeto','denominacionubicaciontecnica','denominaciondelubicaciontecnica','denominacion']),
+    aviso: buscarColumna(normalizadas, ['aviso','avisosap','numeroaviso','nroaviso']),
     inicio: buscarColumna(normalizadas, ['inicioaveria','iniciodeaveria','inicioaveriafecha','fecha inicio averia','inicio']),
     fin: buscarColumna(normalizadas, ['finaveria','findeaveria','finaveriafecha','fecha fin averia','fin']),
-    parada: buscarColumna(normalizadas, ['parada','duraciondeparada','indparada','indicadorparada'])
+    parada: buscarColumna(normalizadas, ['parada','duraciondeparada','indparada','indicadorparada']),
+    clase: buscarColumna(normalizadas, ['clasedeaviso','claseaviso','tipoaviso'])
   };
 }
 
@@ -303,7 +355,6 @@ function mostrarSugerencias(texto){
 }
 
 function seleccionarEquipo(equipo){
-  equipoSeleccionado = equipo;
   busquedaEquipo.value = equipo;
   equipoFiltro.value = equipo;
   ocultarSugerencias();
@@ -329,7 +380,8 @@ function validarColumnas(mapa, columnas){
       Aviso: ${mapa.aviso}<br>
       Inicio avería: ${mapa.inicio}<br>
       Fin avería: ${mapa.fin}<br>
-      Parada: ${mapa.parada || 'No detectada'}
+      Parada: ${mapa.parada || 'No detectada'}<br>
+      Clase de aviso: ${mapa.clase || 'No detectada'}
     `);
   }else{
     setEstado('Revisar', 'error', `
@@ -341,12 +393,12 @@ function validarColumnas(mapa, columnas){
   }
 }
 
-function renderTabla(rows, columnas){
-  thead.innerHTML = '';
-  tbody.innerHTML = '';
+function renderTablaPreview(rows, columnas){
+  theadPreview.innerHTML = '';
+  tbodyPreview.innerHTML = '';
 
   if(!rows.length){
-    tbody.innerHTML = '<tr><td>No hay datos para mostrar</td></tr>';
+    tbodyPreview.innerHTML = '<tr><td>No hay datos para mostrar</td></tr>';
     return;
   }
 
@@ -355,16 +407,50 @@ function renderTabla(rows, columnas){
     mapaColumnas.aviso,
     mapaColumnas.inicio,
     mapaColumnas.fin,
-    mapaColumnas.parada
+    mapaColumnas.parada,
+    mapaColumnas.clase
   ].filter(Boolean);
 
-  const otras = columnas.filter(c => !colsPreferidas.includes(c)).slice(0,6);
+  const otras = columnas.filter(c => !colsPreferidas.includes(c)).slice(0,5);
   const cols = [...colsPreferidas, ...otras];
 
-  thead.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+  theadPreview.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
 
-  tbody.innerHTML = rows.map(row => `
+  tbodyPreview.innerHTML = rows.map(row => `
     <tr>${cols.map(c => `<td>${formatearCelda(row[c])}</td>`).join('')}</tr>
+  `).join('');
+}
+
+function renderTablaFallas(fallas){
+  theadFallas.innerHTML = `
+    <tr>
+      <th>Equipo</th>
+      <th>Aviso</th>
+      <th>Inicio avería</th>
+      <th>Fin avería</th>
+      <th>Horas reparación</th>
+      <th>Parada</th>
+      <th>Fin avería anterior</th>
+      <th>Horas entre fallas</th>
+    </tr>
+  `;
+
+  if(!fallas.length){
+    tbodyFallas.innerHTML = '<tr><td colspan="8">No hay fallas Z2 para el filtro seleccionado</td></tr>';
+    return;
+  }
+
+  tbodyFallas.innerHTML = fallas.map(f => `
+    <tr>
+      <td>${f.equipo}</td>
+      <td>${f.aviso}</td>
+      <td>${formatearFecha(f.inicio)}</td>
+      <td>${formatearFecha(f.fin)}</td>
+      <td>${formatearNumero(f.horasReparacion)}</td>
+      <td>${f.parada ?? ''}</td>
+      <td>${formatearFecha(f.finAnterior)}</td>
+      <td>${f.horasEntreFallas === null ? '-' : formatearNumero(f.horasEntreFallas)}</td>
+    </tr>
   `).join('');
 }
 
@@ -381,29 +467,33 @@ function convertirFecha(valor){
 
   const matchCL = texto.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:,\s*)?(?:(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if(matchCL){
-    const d = Number(matchCL[1]);
-    const m = Number(matchCL[2]) - 1;
-    const y = Number(matchCL[3]);
-    const hh = Number(matchCL[4] || 0);
-    const mm = Number(matchCL[5] || 0);
-    const ss = Number(matchCL[6] || 0);
-    return new Date(y, m, d, hh, mm, ss);
+    return new Date(
+      Number(matchCL[3]),
+      Number(matchCL[2]) - 1,
+      Number(matchCL[1]),
+      Number(matchCL[4] || 0),
+      Number(matchCL[5] || 0),
+      Number(matchCL[6] || 0)
+    );
   }
 
   const f = new Date(texto);
   return isNaN(f) ? null : f;
 }
 
-function formatoInputDate(fecha){
-  const y = fecha.getFullYear();
-  const m = String(fecha.getMonth()+1).padStart(2,'0');
-  const d = String(fecha.getDate()).padStart(2,'0');
-  return `${y}-${m}-${d}`;
-}
-
 function formatearCelda(valor){
   if(valor instanceof Date) return valor.toLocaleString('es-CL');
   return String(valor ?? '');
+}
+
+function formatearFecha(fecha){
+  if(!fecha) return '-';
+  return fecha.toLocaleString('es-CL');
+}
+
+function formatearNumero(n){
+  if(n === null || n === undefined || isNaN(n)) return '-';
+  return Number(n).toLocaleString('es-CL', {maximumFractionDigits:1});
 }
 
 function setEstado(texto, tipo, detalle){
@@ -418,8 +508,13 @@ function mostrarError(msg){
   txtRegistros.textContent = '0 registros leídos';
   kEquipos.textContent = '0';
   kAvisos.textContent = '0';
+  kFallasBase.textContent = '0';
+  kHorasRep.textContent = '--';
   filasPreview.textContent = '0 filas';
-  thead.innerHTML = '';
-  tbody.innerHTML = '';
+  filasFallas.textContent = '0 fallas';
+  theadPreview.innerHTML = '';
+  tbodyPreview.innerHTML = '';
+  theadFallas.innerHTML = '';
+  tbodyFallas.innerHTML = '';
   setEstado('Error', 'error', msg);
 }

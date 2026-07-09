@@ -11,6 +11,7 @@
   <aside class="sidebar">
     <a class="menu-item active" href="#resumen">📊 Resumen</a>
     <a class="menu-item" href="#datos">📁 Datos SAP</a>
+    <a class="menu-item" href="#fallas">🔧 Fallas</a>
     <a class="menu-item" href="#validacion">✅ Validación</a>
     <a class="menu-item" href="#proximas">🧭 Próximas versiones</a>
   </aside>
@@ -24,13 +25,13 @@
       <div class="title-box">
         <h1>DASHBOARD CONFIABILIDAD EQUIPOS</h1>
         <h2>Piscicultura Lago Verde</h2>
-        <p>⏱ Período analizado: según último archivo SAP en carpeta datos</p>
+        <p>⏱ Período por defecto: 01-01-2025 al 31-12-2026</p>
       </div>
 
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 1.4</small>
+        <small>Versión 1.5</small>
       </div>
     </header>
 
@@ -49,19 +50,19 @@
       </div>
       <div>
         <span>Versión</span>
-        <strong>v1.4</strong>
+        <strong>v1.5</strong>
       </div>
     </section>
 
     <section class="filters">
       <div class="field">
         <label>Fecha desde</label>
-        <input type="date" id="fechaDesde" />
+        <input type="date" id="fechaDesde" value="2025-01-01" />
       </div>
 
       <div class="field">
         <label>Fecha hasta</label>
-        <input type="date" id="fechaHasta" />
+        <input type="date" id="fechaHasta" value="2026-12-31" />
       </div>
 
       <div class="field search-field">
@@ -111,20 +112,20 @@
       </article>
 
       <article class="kpi-card">
-        <div class="icon">⏱</div>
+        <div class="icon">🔩</div>
         <div>
-          <span>MTBF</span>
-          <strong>--</strong>
-          <small>Próxima versión</small>
+          <span>Fallas base</span>
+          <strong id="kFallasBase">0</strong>
+          <small>Registros Z2 filtrados</small>
         </div>
       </article>
 
       <article class="kpi-card">
         <div class="icon">🛠</div>
         <div>
-          <span>MTTR</span>
-          <strong>--</strong>
-          <small>Próxima versión</small>
+          <span>Horas reparación</span>
+          <strong id="kHorasRep">--</strong>
+          <small>Suma horas falla</small>
         </div>
       </article>
 
@@ -139,13 +140,13 @@
     </section>
 
     <section class="dashboard-grid">
-      <article id="datos" class="panel wide">
+      <article id="fallas" class="panel wide">
         <div class="panel-title">
-          <h3>Vista previa de datos SAP</h3>
-          <span id="filasPreview">0 filas</span>
+          <h3>Tabla automática de fallas</h3>
+          <span id="filasFallas">0 fallas</span>
         </div>
-        <div class="table-wrap">
-          <table id="tablaPreview">
+        <div class="table-wrap fallas-wrap">
+          <table id="tablaFallas">
             <thead></thead>
             <tbody></tbody>
           </table>
@@ -167,11 +168,24 @@
           <h3>Próximas versiones</h3>
         </div>
         <ul class="roadmap">
-          <li><b>v1.5</b> Tabla automática de fallas</li>
           <li><b>v1.6</b> Cálculo MTBF</li>
           <li><b>v1.7</b> Cálculo MTTR</li>
           <li><b>v1.8</b> Disponibilidad</li>
+          <li><b>v2.0</b> Gráficos y ranking</li>
         </ul>
+      </article>
+
+      <article id="datos" class="panel full">
+        <div class="panel-title">
+          <h3>Vista previa de datos SAP</h3>
+          <span id="filasPreview">0 filas</span>
+        </div>
+        <div class="table-wrap preview-wrap">
+          <table id="tablaPreview">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </article>
     </section>
   </main>

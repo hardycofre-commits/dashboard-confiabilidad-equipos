@@ -1,13 +1,18 @@
-# Dashboard Confiabilidad Equipos - v1.4
+# Dashboard Confiabilidad Equipos - v1.5
 
 ## Cambios principales
-- Se agrega búsqueda rápida de equipos con sugerencias.
-- Se mantiene lista desplegable de equipos.
-- Al seleccionar una sugerencia, la tabla y KPI se filtran automáticamente.
-- El botón Actualizar queda solo para volver a leer el último Excel desde GitHub.
-- Se mantienen fecha desde y fecha hasta.
+- Fechas por defecto fijas:
+  - Desde: 01-01-2025
+  - Hasta: 31-12-2026
+- Se mantiene búsqueda rápida con sugerencias.
+- Se agrega tabla automática de fallas.
+- Se calcula:
+  - Horas de reparación por falla.
+  - Fin de avería anterior.
+  - Horas entre fallas.
+- Se prepara la base para MTBF y MTTR.
 
-## Estructura
+## Archivos principales
 - index.html
 - styles.css
 - app.js
@@ -15,4 +20,4 @@
 - datos/
 
 ## Próxima versión
-v1.5: tabla automática de fallas.
+v1.6: cálculo MTBF.
