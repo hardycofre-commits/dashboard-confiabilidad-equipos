@@ -5,7 +5,7 @@ const CONFIG = {
   folder: 'datos'
 };
 
-const MAPEO_UNIDADES = [
+const MAPEO_UNIDADES_BASE = [
   { buscar: 'HATCHERY', unidad: 'Hat' },
   { buscar: 'HAT', unidad: 'Hat' },
   { buscar: 'FF2', unidad: 'FF' },
@@ -22,7 +22,18 @@ const MAPEO_UNIDADES = [
   { buscar: 'GENERADOR', unidad: 'Generadores' }
 ];
 
+const STORAGE_KEY = 'dashboardConfiabilidad_mapeoUnidades_v1';
+let MAPEO_USUARIO = cargarMapeoUsuario();
+
 const btnActualizar = document.getElementById('btnActualizar');
+const btnVolverNormal = document.getElementById('btnVolverNormal');
+const cardSinClasificar = document.getElementById('cardSinClasificar');
+
+const modalAsignacion = document.getElementById('modalAsignacion');
+const modalEquipo = document.getElementById('modalEquipo');
+const modalUnidad = document.getElementById('modalUnidad');
+const btnCancelarAsignacion = document.getElementById('btnCancelarAsignacion');
+const btnGuardarAsignacion = document.getElementById('btnGuardarAsignacion');
 
 const kArchivo = document.getElementById('kArchivo');
 const kArchivoGantt = document.getElementById('kArchivoGantt');
@@ -60,6 +71,8 @@ let datosBase = [];
 let bloquesLYD = [];
 let mapaColumnas = {};
 let listaEquipos = [];
+let filtroSoloSinClasificar = false;
+let textoParaAsignar = '';
 
 document.addEventListener('DOMContentLoaded', () => {
   configurarFechasFijas();
@@ -68,13 +81,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
 btnActualizar.addEventListener('click', cargarDesdeGitHub);
 
+cardSinClasificar.addEventListener('click', () => {
+  filtroSoloSinClasificar = true;
+  busquedaEquipo.value = '';
+  equipoFiltro.value = '';
+  btnVolverNormal.classList.remove('hidden');
+  aplicarFiltros();
+});
+
+btnVolverNormal.addEventListener('click', () => {
+  filtroSoloSinClasificar = false;
+  btnVolverNormal.classList.add('hidden');
+  aplicarFiltros();
+});
+
 equipoFiltro.addEventListener('change', () => {
+  filtroSoloSinClasificar = false;
+  btnVolverNormal.classList.add('hidden');
   busquedaEquipo.value = equipoFiltro.value;
   ocultarSugerencias();
   aplicarFiltros();
 });
 
 busquedaEquipo.addEventListener('input', () => {
+  filtroSoloSinClasificar = false;
+  btnVolverNormal.classList.add('hidden');
   equipoFiltro.value = '';
   mostrarSugerencias(busquedaEquipo.value.trim());
   aplicarFiltros();
@@ -88,6 +119,9 @@ document.addEventListener('click', (e) => {
 
 fechaDesde.addEventListener('change', aplicarFiltros);
 fechaHasta.addEventListener('change', aplicarFiltros);
+
+btnCancelarAsignacion.addEventListener('click', cerrarModalAsignacion);
+btnGuardarAsignacion.addEventListener('click', guardarAsignacionUnidad);
 
 function configurarFechasFijas(){
   fechaDesde.value = '2025-01-01';
@@ -336,7 +370,10 @@ function aplicarFiltros(){
   const textoBusqueda = normalizar(busquedaEquipo.value);
   const equipoLista = equipoFiltro.value;
 
-  if(equipoLista){
+  if(filtroSoloSinClasificar){
+    base = base.filter(r => r.unidadGantt === 'Sin clasificar');
+    txtFiltro.textContent = 'Solo sin clasificar';
+  }else if(equipoLista){
     base = base.filter(r => String(r.denominacionUbicacionTecnica) === equipoLista || String(r.ubicacionTecnica) === equipoLista);
     txtFiltro.textContent = equipoLista;
   }else if(textoBusqueda){
@@ -363,7 +400,8 @@ function construirDatosBase(rows){
     const ubicacionTecnica = valor(r[mapaColumnas.ubicacionTecnica]);
     const denominacion = valor(r[mapaColumnas.denominacionUbicacionTecnica]);
     const descripcion = valor(r[mapaColumnas.descripcion]);
-    const unidad = obtenerUnidadGantt(`${denominacion} ${ubicacionTecnica} ${descripcion}`);
+    const textoClasificacion = `${denominacion} ${ubicacionTecnica} ${descripcion}`;
+    const unidad = obtenerUnidadGantt(textoClasificacion);
     const estadoUnidad = unidad === 'Sin clasificar' ? 'Revisar' : 'OK';
 
     return {
@@ -374,6 +412,7 @@ function construirDatosBase(rows){
       descripcion,
       ubicacionTecnica,
       denominacionUbicacionTecnica: denominacion,
+      textoClasificacion,
       unidadGantt: unidad,
       estadoUnidad,
       inicioAveria: inicio ? inicio.toLocaleString('es-CL') : '',
@@ -387,8 +426,9 @@ function construirDatosBase(rows){
 
 function obtenerUnidadGantt(textoEquipo){
   const texto = normalizar(textoEquipo);
+  const reglas = [...MAPEO_USUARIO, ...MAPEO_UNIDADES_BASE];
 
-  const regla = MAPEO_UNIDADES.find(r =>
+  const regla = reglas.find(r =>
     texto.includes(normalizar(r.buscar))
   );
 
@@ -398,7 +438,8 @@ function obtenerUnidadGantt(textoEquipo){
 function actualizarKPIs(base){
   kEquipos.textContent = new Set(base.map(r => r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');
   kAvisos.textContent = new Set(base.map(r => r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
-  kSinClasificar.textContent = base.filter(r => r.unidadGantt === 'Sin clasificar').length.toLocaleString('es-CL');
+  const totalSin = construirDatosBase(datosOriginales).filter(r => r.unidadGantt === 'Sin clasificar').length;
+  kSinClasificar.textContent = totalSin.toLocaleString('es-CL');
 }
 
 function detectarColumnas(columnas){
@@ -485,6 +526,8 @@ function mostrarSugerencias(texto){
 }
 
 function seleccionarEquipo(equipo){
+  filtroSoloSinClasificar = false;
+  btnVolverNormal.classList.add('hidden');
   busquedaEquipo.value = equipo;
   equipoFiltro.value = equipo;
   ocultarSugerencias();
@@ -493,6 +536,58 @@ function seleccionarEquipo(equipo){
 
 function ocultarSugerencias(){
   sugerenciasEquipo.style.display = 'none';
+}
+
+
+function abrirModalAsignacion(texto){
+  textoParaAsignar = texto;
+  modalEquipo.textContent = texto;
+  modalUnidad.value = '';
+  modalAsignacion.classList.remove('hidden');
+}
+
+function cerrarModalAsignacion(){
+  textoParaAsignar = '';
+  modalAsignacion.classList.add('hidden');
+}
+
+function guardarAsignacionUnidad(){
+  const unidad = modalUnidad.value;
+  if(!unidad || !textoParaAsignar) return;
+
+  const regla = generarReglaBusqueda(textoParaAsignar);
+  const existente = MAPEO_USUARIO.find(r => normalizar(r.buscar) === normalizar(regla));
+
+  if(existente){
+    existente.unidad = unidad;
+  }else{
+    MAPEO_USUARIO.unshift({ buscar: regla, unidad });
+  }
+
+  guardarMapeoUsuario(MAPEO_USUARIO);
+  cerrarModalAsignacion();
+  aplicarFiltros();
+  setEstado('Validado', 'ok', `Regla agregada correctamente:<br><b>${regla}</b> → <b>${unidad}</b><br><br>La regla quedó guardada en este navegador.`);
+}
+
+function generarReglaBusqueda(texto){
+  const partes = String(texto)
+    .split(' ')
+    .map(x => x.trim())
+    .filter(Boolean);
+  return partes.slice(0, 6).join(' ');
+}
+
+function cargarMapeoUsuario(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  }catch{
+    return [];
+  }
+}
+
+function guardarMapeoUsuario(reglas){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(reglas));
 }
 
 function generarResumenValidacion(archivoSAP, archivoGantt){
@@ -509,6 +604,7 @@ function generarResumenValidacion(archivoSAP, archivoGantt){
   }else{
     html += `Columnas SAP requeridas: OK<br>`;
     html += `Bloques LYD detectados: ${bloquesLYD.length.toLocaleString('es-CL')}<br>`;
+    html += `Reglas manuales guardadas: ${MAPEO_USUARIO.length.toLocaleString('es-CL')}<br>`;
     html += `Equipos sin clasificar: ${kSinClasificar.textContent}`;
   }
 
@@ -546,6 +642,7 @@ function renderTablaBase(base){
       <th>Denominación ubicación técnica</th>
       <th>Unidad Gantt detectada</th>
       <th>Estado</th>
+      <th>Acción</th>
       <th>Inicio avería</th>
       <th>Fin avería</th>
       <th>Duración parada</th>
@@ -553,7 +650,7 @@ function renderTablaBase(base){
   `;
 
   if(!base.length){
-    tbodyBase.innerHTML = '<tr><td colspan="12">No hay datos para el filtro seleccionado</td></tr>';
+    tbodyBase.innerHTML = '<tr><td colspan="13">No hay datos para el filtro seleccionado</td></tr>';
     return;
   }
 
@@ -568,11 +665,21 @@ function renderTablaBase(base){
       <td>${r.denominacionUbicacionTecnica}</td>
       <td>${r.unidadGantt}</td>
       <td>${r.estadoUnidad === 'OK' ? '<span class="badge-ok">OK</span>' : '<span class="badge-review">Revisar</span>'}</td>
+      <td>${r.estadoUnidad === 'OK' ? '' : `<button class="assign-btn" onclick="abrirModalAsignacion('${escapeAttr(r.textoClasificacion)}')">Asignar</button>`}</td>
       <td>${r.inicioAveria}</td>
       <td>${r.finAveria}</td>
       <td>${formatearNumero(r.duracionParada)}</td>
     </tr>
   `).join('');
+}
+
+
+function escapeAttr(texto){
+  return String(texto ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, ' ');
 }
 
 function renderTablaLYD(bloques){

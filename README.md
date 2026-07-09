@@ -1,30 +1,15 @@
-# Dashboard Confiabilidad Equipos - v1.8
+# Dashboard Confiabilidad Equipos - v1.9
 
 ## Cambios principales
-- Se mantiene una sola carpeta `datos/`.
-- Detecta último archivo SAP/EXPORT.
-- Detecta último archivo GANTT.
-- Interpreta LYD como Lavado y Desinfección.
-- Genera tabla automática de períodos LYD:
-  - Unidad Gantt
-  - Inicio LYD
-  - Fin LYD
-  - Días LYD
-  - Horas no operativas planificadas
-- Agrega tabla de equivalencias interna para detectar Unidad Gantt desde SAP.
-- Agrega columnas:
-  - Unidad Gantt detectada
-  - Estado OK / Revisar
-- Los equipos sin clasificar quedan marcados como Revisar.
+- La tarjeta **Sin clasificar** ahora funciona como botón/filtro.
+- Al hacer clic filtra todos los registros con Unidad Gantt = Sin clasificar.
+- Se agrega botón **Volver a normalidad**.
+- Cada registro sin clasificar incluye botón **Asignar**.
+- Al asignar una unidad, el dashboard guarda una regla automática en el navegador.
+- Las reglas se guardan en localStorage y se aplican en futuras cargas.
 
-## Tabla de equivalencias inicial
-- HATCHERY / HAT -> Hat
-- FF / FF2 -> FF
-- ALEV / ALEVINAJE -> Alev
-- PRE-SMOLT / PRE SMOLT -> Pre
-- RILES -> Riles
-- FILTRADO / FILTRO -> Filtrado
-- GENERADOR / GEN -> Generadores
+## Nota importante
+Las reglas manuales quedan guardadas en el navegador del usuario. Si se usa otro PC/navegador, se deberán volver a crear o exportar en una versión futura.
 
 ## Próxima versión
-v1.9: Tabla de confiabilidad cruzando SAP + LYD.
+v2.0: Tabla de confiabilidad cruzando SAP + LYD.

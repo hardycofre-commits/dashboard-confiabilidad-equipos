@@ -31,7 +31,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 1.8</small>
+        <small>Versión 1.9</small>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       </div>
       <div>
         <span>Versión</span>
-        <strong>v1.8</strong>
+        <strong>v1.9</strong>
       </div>
     </section>
 
@@ -89,6 +89,7 @@
       <strong>Última lectura:</strong>
       <span class="pill green" id="txtLectura">--</span>
       <span class="pill blue" id="txtFiltro">Todos los equipos</span>
+      <button id="btnVolverNormal" class="mini-btn hidden">Volver a normalidad</button>
       <p>
         Fuente de datos: últimos archivos <b>SAP/EXPORT</b> y <b>GANTT</b> detectados automáticamente en la carpeta <b>datos/</b>.
       </p>
@@ -113,12 +114,12 @@
         </div>
       </article>
 
-      <article class="kpi-card">
+      <article class="kpi-card clickable" id="cardSinClasificar" title="Filtrar equipos sin clasificar">
         <div class="icon">🧭</div>
         <div>
           <span>Sin clasificar</span>
           <strong id="kSinClasificar">0</strong>
-          <small>Revisar mapeo unidad</small>
+          <small>Click para revisar</small>
         </div>
       </article>
 
@@ -170,10 +171,10 @@
           <h3>Próximas versiones</h3>
         </div>
         <ul class="roadmap">
-          <li><b>v1.9</b> Tabla de confiabilidad</li>
-          <li><b>v2.0</b> Cálculo MTBF</li>
-          <li><b>v2.1</b> Cálculo MTTR</li>
-          <li><b>v2.2</b> Disponibilidad ejecutiva</li>
+          <li><b>v2.0</b> Tabla de confiabilidad</li>
+          <li><b>v2.1</b> Cálculo MTBF</li>
+          <li><b>v2.2</b> Cálculo MTTR</li>
+          <li><b>v2.3</b> Disponibilidad ejecutiva</li>
         </ul>
       </article>
 
@@ -191,6 +192,36 @@
       </article>
     </section>
   </main>
+
+
+  <div id="modalAsignacion" class="modal hidden">
+    <div class="modal-card">
+      <h3>Asignar unidad Gantt</h3>
+      <p class="modal-label">Equipo / texto SAP</p>
+      <div id="modalEquipo" class="modal-equipo"></div>
+
+      <label>Unidad Gantt</label>
+      <select id="modalUnidad">
+        <option value="">Seleccionar unidad</option>
+        <option value="Hat">Hat</option>
+        <option value="FF">FF</option>
+        <option value="Alev">Alev</option>
+        <option value="Pre">Pre</option>
+        <option value="Filtrado">Filtrado</option>
+        <option value="Riles">Riles</option>
+        <option value="Generadores">Generadores</option>
+        <option value="Otros">Otros</option>
+      </select>
+
+      <div class="modal-actions">
+        <button id="btnCancelarAsignacion" class="btn-secondary">Cancelar</button>
+        <button id="btnGuardarAsignacion">Guardar regla</button>
+      </div>
+
+      <small>La regla queda guardada en este navegador para futuras cargas del dashboard.</small>
+    </div>
+  </div>
+
 
   <script src="app.js"></script>
 </body>
