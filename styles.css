@@ -155,7 +155,7 @@ body{
   border-radius:7px;
   padding:12px;
   display:grid;
-  grid-template-columns:.9fr .9fr 1.4fr 130px;
+  grid-template-columns:.8fr .8fr 1.35fr 1.35fr 120px;
   gap:12px;
   align-items:end;
   margin-bottom:10px;
@@ -192,6 +192,45 @@ button{
 
 button:hover{background:#082f66}
 
+.search-field{
+  position:relative;
+}
+
+.suggestions{
+  display:none;
+  position:absolute;
+  top:58px;
+  left:0;
+  right:0;
+  z-index:50;
+  background:white;
+  border:1px solid #b6c9e6;
+  border-radius:6px;
+  box-shadow:0 10px 24px rgba(8,47,102,.18);
+  max-height:240px;
+  overflow:auto;
+}
+
+.suggestion-item{
+  padding:9px 10px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:800;
+  color:#002b66;
+  border-bottom:1px solid #edf3fb;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active{
+  background:#e8f0fb;
+}
+
+.suggestion-empty{
+  padding:9px 10px;
+  font-size:12px;
+  color:#6b7280;
+}
+
 .source-box{
   background:white;
   border:1px solid var(--line);
@@ -223,6 +262,11 @@ button:hover{background:#082f66}
 .pill.green{
   background:#dcfce7;
   color:#166534;
+}
+
+.pill.blue{
+  background:#dbeafe;
+  color:#1e40af;
 }
 
 .kpi-grid{
@@ -372,4 +416,5 @@ tbody tr:hover{
   .content{margin-left:0;width:100%;padding:10px}
   .sidebar{position:static;width:100%;display:flex;gap:6px;overflow:auto}
   body{display:block}
+  .suggestions{top:58px}
 }

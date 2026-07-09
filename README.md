@@ -1,11 +1,11 @@
-# Dashboard Confiabilidad Equipos - v1.3
+# Dashboard Confiabilidad Equipos - v1.4
 
 ## Cambios principales
-- Se elimina el selector manual de archivo.
-- El dashboard consulta automáticamente la carpeta `datos/` del repositorio mediante GitHub API.
-- Detecta el último archivo Excel `.xlsx` o `.xls`.
-- Descarga y procesa el archivo automáticamente.
-- Mantiene el botón Actualizar para volver a consultar GitHub.
+- Se agrega búsqueda rápida de equipos con sugerencias.
+- Se mantiene lista desplegable de equipos.
+- Al seleccionar una sugerencia, la tabla y KPI se filtran automáticamente.
+- El botón Actualizar queda solo para volver a leer el último Excel desde GitHub.
+- Se mantienen fecha desde y fecha hasta.
 
 ## Estructura
 - index.html
@@ -14,6 +14,5 @@
 - logo.png
 - datos/
 
-## Importante
-Para que funcione, sube al menos un archivo Excel SAP dentro de la carpeta `datos/`.
-El repositorio debe estar público para que GitHub Pages pueda leer la carpeta mediante API.
+## Próxima versión
+v1.5: tabla automática de fallas.

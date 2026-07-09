@@ -30,7 +30,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 1.3</small>
+        <small>Versión 1.4</small>
       </div>
     </header>
 
@@ -49,7 +49,7 @@
       </div>
       <div>
         <span>Versión</span>
-        <strong>v1.3</strong>
+        <strong>v1.4</strong>
       </div>
     </section>
 
@@ -64,8 +64,14 @@
         <input type="date" id="fechaHasta" />
       </div>
 
+      <div class="field search-field">
+        <label>Búsqueda rápida equipo</label>
+        <input type="text" id="busquedaEquipo" placeholder="Ej: GN, BOMBA, UV, HATCHERY..." autocomplete="off" />
+        <div id="sugerenciasEquipo" class="suggestions"></div>
+      </div>
+
       <div class="field">
-        <label>Equipo</label>
+        <label>Lista de equipos</label>
         <select id="equipoFiltro">
           <option value="">Todos</option>
         </select>
@@ -79,6 +85,7 @@
       <span class="pill" id="txtArchivo">Sin archivo</span>
       <strong>Última lectura:</strong>
       <span class="pill green" id="txtLectura">--</span>
+      <span class="pill blue" id="txtFiltro">Todos los equipos</span>
       <p>
         Fuente de datos: último archivo Excel detectado automáticamente en la carpeta <b>datos/</b> del repositorio GitHub.
       </p>
@@ -160,10 +167,10 @@
           <h3>Próximas versiones</h3>
         </div>
         <ul class="roadmap">
-          <li><b>v1.4</b> Tabla automática de fallas</li>
-          <li><b>v1.5</b> Cálculo MTBF</li>
-          <li><b>v1.6</b> Cálculo MTTR</li>
-          <li><b>v1.7</b> Disponibilidad</li>
+          <li><b>v1.5</b> Tabla automática de fallas</li>
+          <li><b>v1.6</b> Cálculo MTBF</li>
+          <li><b>v1.7</b> Cálculo MTTR</li>
+          <li><b>v1.8</b> Disponibilidad</li>
         </ul>
       </article>
     </section>

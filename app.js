@@ -14,8 +14,14 @@ const kAvisos = document.getElementById('kAvisos');
 const txtRegistros = document.getElementById('txtRegistros');
 const txtArchivo = document.getElementById('txtArchivo');
 const txtLectura = document.getElementById('txtLectura');
+const txtFiltro = document.getElementById('txtFiltro');
 
+const fechaDesde = document.getElementById('fechaDesde');
+const fechaHasta = document.getElementById('fechaHasta');
+const busquedaEquipo = document.getElementById('busquedaEquipo');
+const sugerenciasEquipo = document.getElementById('sugerenciasEquipo');
 const equipoFiltro = document.getElementById('equipoFiltro');
+
 const estadoValidacion = document.getElementById('estadoValidacion');
 const validacionDetalle = document.getElementById('validacionDetalle');
 const filasPreview = document.getElementById('filasPreview');
@@ -25,10 +31,39 @@ const thead = tabla.querySelector('thead');
 const tbody = tabla.querySelector('tbody');
 
 let datosOriginales = [];
+let datosFiltrados = [];
 let mapaColumnas = {};
+let listaEquipos = [];
+let equipoSeleccionado = '';
 
 document.addEventListener('DOMContentLoaded', cargarDesdeGitHub);
 btnActualizar.addEventListener('click', cargarDesdeGitHub);
+
+equipoFiltro.addEventListener('change', () => {
+  equipoSeleccionado = equipoFiltro.value;
+  busquedaEquipo.value = equipoSeleccionado;
+  ocultarSugerencias();
+  aplicarFiltros();
+});
+
+busquedaEquipo.addEventListener('input', () => {
+  const texto = busquedaEquipo.value.trim();
+  equipoSeleccionado = '';
+  equipoFiltro.value = '';
+  mostrarSugerencias(texto);
+  aplicarFiltros();
+});
+
+busquedaEquipo.addEventListener('focus', () => {
+  mostrarSugerencias(busquedaEquipo.value.trim());
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-field')) ocultarSugerencias();
+});
+
+fechaDesde.addEventListener('change', aplicarFiltros);
+fechaHasta.addEventListener('change', aplicarFiltros);
 
 async function cargarDesdeGitHub(){
   try{
@@ -114,27 +149,82 @@ function procesarDatos(rows, fileName){
   kActualizacion.textContent = ahora;
   txtLectura.textContent = ahora;
 
+  configurarFechas(rows);
+  cargarFiltroEquipos(rows, mapaColumnas.equipo);
+  validarColumnas(mapaColumnas, columnas);
+  aplicarFiltros();
+}
+
+function configurarFechas(rows){
+  if(!mapaColumnas.inicio) return;
+
+  const fechas = rows
+    .map(r => convertirFecha(r[mapaColumnas.inicio]))
+    .filter(Boolean);
+
+  if(!fechas.length) return;
+
+  const min = new Date(Math.min(...fechas));
+  const max = new Date(Math.max(...fechas));
+
+  fechaDesde.value = formatoInputDate(min);
+  fechaHasta.value = formatoInputDate(max);
+}
+
+function aplicarFiltros(){
+  let rows = [...datosOriginales];
+
+  const desde = fechaDesde.value ? new Date(fechaDesde.value + 'T00:00:00') : null;
+  const hasta = fechaHasta.value ? new Date(fechaHasta.value + 'T23:59:59') : null;
+
+  if(mapaColumnas.inicio && (desde || hasta)){
+    rows = rows.filter(r => {
+      const f = convertirFecha(r[mapaColumnas.inicio]);
+      if(!f) return true;
+      if(desde && f < desde) return false;
+      if(hasta && f > hasta) return false;
+      return true;
+    });
+  }
+
+  const textoBusqueda = normalizar(busquedaEquipo.value);
+  const equipoLista = equipoFiltro.value;
+
+  if(mapaColumnas.equipo){
+    if(equipoLista){
+      rows = rows.filter(r => String(r[mapaColumnas.equipo]) === equipoLista);
+      txtFiltro.textContent = equipoLista;
+    }else if(textoBusqueda){
+      rows = rows.filter(r => normalizar(r[mapaColumnas.equipo]).includes(textoBusqueda));
+      txtFiltro.textContent = `Búsqueda: ${busquedaEquipo.value}`;
+    }else{
+      txtFiltro.textContent = 'Todos los equipos';
+    }
+  }
+
+  datosFiltrados = rows;
+  actualizarKPIs(rows);
+  renderTabla(rows.slice(0, 25), datosOriginales.length ? Object.keys(datosOriginales[0]) : []);
+  filasPreview.textContent = `${Math.min(rows.length,25)} de ${rows.length} filas`;
+}
+
+function actualizarKPIs(rows){
   const equipos = contarUnicos(rows, mapaColumnas.equipo);
   const avisos = contarUnicos(rows, mapaColumnas.aviso);
 
   kEquipos.textContent = equipos.toLocaleString('es-CL');
   kAvisos.textContent = avisos.toLocaleString('es-CL');
-
-  cargarFiltroEquipos(rows, mapaColumnas.equipo);
-  validarColumnas(mapaColumnas, columnas);
-  renderTabla(rows.slice(0, 25), columnas);
-  filasPreview.textContent = `${Math.min(rows.length,25)} de ${rows.length} filas`;
 }
 
 function detectarColumnas(columnas){
   const normalizadas = columnas.map(c => ({original:c, key:normalizar(c)}));
 
   return {
-    equipo: buscarColumna(normalizadas, ['equipo','denominacionequipo','ubicaciontecnica','objeto','denominacion']),
-    aviso: buscarColumna(normalizadas, ['aviso','avisosap','numeroaviso','nroaviso']),
+    equipo: buscarColumna(normalizadas, ['equipo','denominacionequipo','ubicaciontecnica','objeto','denominacionubicaciontecnica','denominacion']),
+    aviso: buscarColumna(normalizadas, ['aviso','avisosap','numeroaviso','nroaviso','fechaaviso']),
     inicio: buscarColumna(normalizadas, ['inicioaveria','iniciodeaveria','inicioaveriafecha','fecha inicio averia','inicio']),
     fin: buscarColumna(normalizadas, ['finaveria','findeaveria','finaveriafecha','fecha fin averia','fin']),
-    parada: buscarColumna(normalizadas, ['parada','indparada','indicadorparada'])
+    parada: buscarColumna(normalizadas, ['parada','duraciondeparada','indparada','indicadorparada'])
   };
 }
 
@@ -161,17 +251,67 @@ function contarUnicos(rows, columna){
 
 function cargarFiltroEquipos(rows, columna){
   equipoFiltro.innerHTML = '<option value="">Todos</option>';
+  listaEquipos = [];
+
   if(!columna) return;
 
-  const equipos = [...new Set(rows.map(r => r[columna]).filter(Boolean))]
+  listaEquipos = [...new Set(rows.map(r => r[columna]).filter(Boolean))]
     .sort((a,b) => String(a).localeCompare(String(b),'es'));
 
-  equipos.slice(0,500).forEach(eq => {
+  listaEquipos.forEach(eq => {
     const opt = document.createElement('option');
     opt.value = eq;
     opt.textContent = eq;
     equipoFiltro.appendChild(opt);
   });
+}
+
+function mostrarSugerencias(texto){
+  sugerenciasEquipo.innerHTML = '';
+
+  if(!listaEquipos.length){
+    ocultarSugerencias();
+    return;
+  }
+
+  const clave = normalizar(texto);
+  let resultados = [];
+
+  if(clave.length === 0){
+    resultados = listaEquipos.slice(0, 12);
+  }else{
+    resultados = listaEquipos
+      .filter(eq => normalizar(eq).includes(clave))
+      .slice(0, 12);
+  }
+
+  if(!resultados.length){
+    sugerenciasEquipo.innerHTML = '<div class="suggestion-empty">Sin coincidencias</div>';
+    sugerenciasEquipo.style.display = 'block';
+    return;
+  }
+
+  resultados.forEach(eq => {
+    const div = document.createElement('div');
+    div.className = 'suggestion-item';
+    div.textContent = eq;
+    div.addEventListener('click', () => seleccionarEquipo(eq));
+    sugerenciasEquipo.appendChild(div);
+  });
+
+  sugerenciasEquipo.style.display = 'block';
+}
+
+function seleccionarEquipo(equipo){
+  equipoSeleccionado = equipo;
+  busquedaEquipo.value = equipo;
+  equipoFiltro.value = equipo;
+  ocultarSugerencias();
+  aplicarFiltros();
+}
+
+function ocultarSugerencias(){
+  sugerenciasEquipo.style.display = 'none';
 }
 
 function validarColumnas(mapa, columnas){
@@ -226,6 +366,39 @@ function renderTabla(rows, columnas){
   tbody.innerHTML = rows.map(row => `
     <tr>${cols.map(c => `<td>${formatearCelda(row[c])}</td>`).join('')}</tr>
   `).join('');
+}
+
+function convertirFecha(valor){
+  if(!valor) return null;
+  if(valor instanceof Date && !isNaN(valor)) return valor;
+
+  if(typeof valor === 'number'){
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    return new Date(excelEpoch.getTime() + valor * 86400000);
+  }
+
+  const texto = String(valor).trim();
+
+  const matchCL = texto.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:,\s*)?(?:(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(matchCL){
+    const d = Number(matchCL[1]);
+    const m = Number(matchCL[2]) - 1;
+    const y = Number(matchCL[3]);
+    const hh = Number(matchCL[4] || 0);
+    const mm = Number(matchCL[5] || 0);
+    const ss = Number(matchCL[6] || 0);
+    return new Date(y, m, d, hh, mm, ss);
+  }
+
+  const f = new Date(texto);
+  return isNaN(f) ? null : f;
+}
+
+function formatoInputDate(fecha){
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth()+1).padStart(2,'0');
+  const d = String(fecha.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
 }
 
 function formatearCelda(valor){
