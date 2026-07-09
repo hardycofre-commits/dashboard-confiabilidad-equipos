@@ -343,3 +343,5 @@ tbody tr:hover{background:#f6faff}
 .modal-actions button{flex:1}
 .btn-secondary{background:#64748b}
 .modal-card small{display:block;margin-top:12px;color:#64748b}
+.new-unit-box{margin-top:12px}
+.new-unit-box input{width:100%}

@@ -1,15 +1,22 @@
-# Dashboard Confiabilidad Equipos - v1.9
+# Dashboard Confiabilidad Equipos - v2.0
 
 ## Cambios principales
-- La tarjeta **Sin clasificar** ahora funciona como botón/filtro.
-- Al hacer clic filtra todos los registros con Unidad Gantt = Sin clasificar.
-- Se agrega botón **Volver a normalidad**.
-- Cada registro sin clasificar incluye botón **Asignar**.
-- Al asignar una unidad, el dashboard guarda una regla automática en el navegador.
-- Las reglas se guardan en localStorage y se aplican en futuras cargas.
+- Mantiene botón/filtro **Sin clasificar**.
+- Mantiene botón **Volver a normalidad**.
+- Mantiene botón **Asignar** por registro sin clasificar.
+- Ahora permite agregar una **nueva unidad Gantt** desde el mismo modal.
+- Las unidades nuevas quedan guardadas en el navegador.
+- Las reglas de clasificación también quedan guardadas en el navegador.
 
-## Nota importante
-Las reglas manuales quedan guardadas en el navegador del usuario. Si se usa otro PC/navegador, se deberán volver a crear o exportar en una versión futura.
+## Flujo
+1. Click en **Sin clasificar**.
+2. Click en **Asignar**.
+3. Seleccionar una unidad existente o **+ Agregar nueva unidad**.
+4. Guardar regla.
+5. El dashboard recalcula la clasificación automáticamente.
+
+## Nota
+Las reglas y unidades nuevas se guardan en el navegador mediante localStorage.
 
 ## Próxima versión
-v2.0: Tabla de confiabilidad cruzando SAP + LYD.
+v2.1: Tabla de confiabilidad cruzando SAP + LYD.

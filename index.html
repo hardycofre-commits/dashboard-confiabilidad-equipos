@@ -31,7 +31,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 1.9</small>
+        <small>Versión 2.0</small>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       </div>
       <div>
         <span>Versión</span>
-        <strong>v1.9</strong>
+        <strong>v2.0</strong>
       </div>
     </section>
 
@@ -211,7 +211,13 @@
         <option value="Riles">Riles</option>
         <option value="Generadores">Generadores</option>
         <option value="Otros">Otros</option>
+        <option value="__nueva__">+ Agregar nueva unidad</option>
       </select>
+
+      <div id="nuevaUnidadBox" class="new-unit-box hidden">
+        <label>Nueva unidad Gantt</label>
+        <input type="text" id="nuevaUnidadInput" placeholder="Ej: Efluentes, Agua Potable, Biofiltro..." />
+      </div>
 
       <div class="modal-actions">
         <button id="btnCancelarAsignacion" class="btn-secondary">Cancelar</button>

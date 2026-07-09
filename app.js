@@ -23,7 +23,9 @@ const MAPEO_UNIDADES_BASE = [
 ];
 
 const STORAGE_KEY = 'dashboardConfiabilidad_mapeoUnidades_v1';
+const STORAGE_UNIDADES_KEY = 'dashboardConfiabilidad_unidadesPersonalizadas_v1';
 let MAPEO_USUARIO = cargarMapeoUsuario();
+let UNIDADES_USUARIO = cargarUnidadesUsuario();
 
 const btnActualizar = document.getElementById('btnActualizar');
 const btnVolverNormal = document.getElementById('btnVolverNormal');
@@ -32,6 +34,8 @@ const cardSinClasificar = document.getElementById('cardSinClasificar');
 const modalAsignacion = document.getElementById('modalAsignacion');
 const modalEquipo = document.getElementById('modalEquipo');
 const modalUnidad = document.getElementById('modalUnidad');
+const nuevaUnidadBox = document.getElementById('nuevaUnidadBox');
+const nuevaUnidadInput = document.getElementById('nuevaUnidadInput');
 const btnCancelarAsignacion = document.getElementById('btnCancelarAsignacion');
 const btnGuardarAsignacion = document.getElementById('btnGuardarAsignacion');
 
@@ -122,6 +126,7 @@ fechaHasta.addEventListener('change', aplicarFiltros);
 
 btnCancelarAsignacion.addEventListener('click', cerrarModalAsignacion);
 btnGuardarAsignacion.addEventListener('click', guardarAsignacionUnidad);
+modalUnidad.addEventListener('change', controlarNuevaUnidad);
 
 function configurarFechasFijas(){
   fechaDesde.value = '2025-01-01';
@@ -542,17 +547,37 @@ function ocultarSugerencias(){
 function abrirModalAsignacion(texto){
   textoParaAsignar = texto;
   modalEquipo.textContent = texto;
+  cargarOpcionesUnidad();
   modalUnidad.value = '';
+  nuevaUnidadInput.value = '';
+  nuevaUnidadBox.classList.add('hidden');
   modalAsignacion.classList.remove('hidden');
 }
 
 function cerrarModalAsignacion(){
   textoParaAsignar = '';
+  nuevaUnidadInput.value = '';
+  nuevaUnidadBox.classList.add('hidden');
   modalAsignacion.classList.add('hidden');
 }
 
 function guardarAsignacionUnidad(){
-  const unidad = modalUnidad.value;
+  let unidad = modalUnidad.value;
+
+  if(unidad === '__nueva__'){
+    unidad = nuevaUnidadInput.value.trim();
+
+    if(!unidad){
+      nuevaUnidadInput.focus();
+      return;
+    }
+
+    if(!UNIDADES_USUARIO.some(u => normalizar(u) === normalizar(unidad))){
+      UNIDADES_USUARIO.push(unidad);
+      guardarUnidadesUsuario(UNIDADES_USUARIO);
+    }
+  }
+
   if(!unidad || !textoParaAsignar) return;
 
   const regla = generarReglaBusqueda(textoParaAsignar);
@@ -567,7 +592,28 @@ function guardarAsignacionUnidad(){
   guardarMapeoUsuario(MAPEO_USUARIO);
   cerrarModalAsignacion();
   aplicarFiltros();
-  setEstado('Validado', 'ok', `Regla agregada correctamente:<br><b>${regla}</b> → <b>${unidad}</b><br><br>La regla quedó guardada en este navegador.`);
+  setEstado('Validado', 'ok', `Regla agregada correctamente:<br><b>${regla}</b> → <b>${unidad}</b><br><br>La unidad/regla quedó guardada en este navegador.`);
+}
+
+function controlarNuevaUnidad(){
+  if(modalUnidad.value === '__nueva__'){
+    nuevaUnidadBox.classList.remove('hidden');
+    nuevaUnidadInput.focus();
+  }else{
+    nuevaUnidadBox.classList.add('hidden');
+    nuevaUnidadInput.value = '';
+  }
+}
+
+function cargarOpcionesUnidad(){
+  const base = ['Hat','FF','Alev','Pre','Filtrado','Riles','Generadores','Otros'];
+  const todas = [...base, ...UNIDADES_USUARIO]
+    .filter(Boolean)
+    .filter((u, idx, arr) => arr.findIndex(x => normalizar(x) === normalizar(u)) === idx);
+
+  modalUnidad.innerHTML = '<option value="">Seleccionar unidad</option>' +
+    todas.map(u => `<option value="${escapeHTML(u)}">${escapeHTML(u)}</option>`).join('') +
+    '<option value="__nueva__">+ Agregar nueva unidad</option>';
 }
 
 function generarReglaBusqueda(texto){
@@ -590,6 +636,18 @@ function guardarMapeoUsuario(reglas){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(reglas));
 }
 
+function cargarUnidadesUsuario(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_UNIDADES_KEY) || '[]');
+  }catch{
+    return [];
+  }
+}
+
+function guardarUnidadesUsuario(unidades){
+  localStorage.setItem(STORAGE_UNIDADES_KEY, JSON.stringify(unidades));
+}
+
 function generarResumenValidacion(archivoSAP, archivoGantt){
   const faltantes = validarColumnasRequeridas();
 
@@ -605,6 +663,7 @@ function generarResumenValidacion(archivoSAP, archivoGantt){
     html += `Columnas SAP requeridas: OK<br>`;
     html += `Bloques LYD detectados: ${bloquesLYD.length.toLocaleString('es-CL')}<br>`;
     html += `Reglas manuales guardadas: ${MAPEO_USUARIO.length.toLocaleString('es-CL')}<br>`;
+    html += `Unidades personalizadas: ${UNIDADES_USUARIO.length.toLocaleString('es-CL')}<br>`;
     html += `Equipos sin clasificar: ${kSinClasificar.textContent}`;
   }
 
@@ -799,6 +858,15 @@ function formatearFechaCorta(fecha){
 function formatearNumero(n){
   if(n === null || n === undefined || isNaN(n)) return '';
   return Number(n).toLocaleString('es-CL', {maximumFractionDigits:2});
+}
+
+function escapeHTML(texto){
+  return String(texto ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function setEstado(texto, tipo, detalle){
