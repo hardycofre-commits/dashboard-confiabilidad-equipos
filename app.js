@@ -1,10 +1,9 @@
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main',folder:'datos'};
-const UNIDADES_BASE=['HATCHERY','FF2','ALEVINAJE','PRE SMOLT','RILES','FILTRADO','GENERADORES','OTROS'];
-const MAPEO_BASE=[['HATCHERY','HATCHERY'],['HAT','HATCHERY'],['FF2','FF2'],['FF','FF2'],['ALEVINAJE','ALEVINAJE'],['ALEV','ALEVINAJE'],['PRE-SMOLT','PRE SMOLT'],['PRE SMOLT','PRE SMOLT'],['PRESMOLT','PRE SMOLT'],['RILES','RILES'],['FILTRADO','FILTRADO'],['FILTRO','FILTRADO'],['GEN','GENERADORES'],['GENERADOR','GENERADORES']];
+const UNIDADES_BASE=['Hatchery','FF2','Alevinaje','Pre Smolt','Riles','Filtrado','Generadores','Otros'];
+const MAPEO_BASE=[['HATCHERY','Hatchery'],['HAT','Hatchery'],['FF2','FF2'],['FF','FF2'],['ALEVINAJE','Alevinaje'],['ALEV','Alevinaje'],['PRE-SMOLT','Pre Smolt'],['PRE SMOLT','Pre Smolt'],['PRESMOLT','Pre Smolt'],['RILES','Riles'],['FILTRADO','Filtrado'],['FILTRO','Filtrado'],['GEN','Generadores'],['GENERADOR','Generadores']];
 const KEY_REGLAS='confEq_reglas_v21', KEY_UNIDADES='confEq_unidades_v21', KEY_NOMBRES='confEq_nombresUnidades_v23';
 let reglasUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS)||'[]');
 let unidadesUsuario=JSON.parse(localStorage.getItem(KEY_UNIDADES)||'[]');
-let nombresUnidades=JSON.parse(localStorage.getItem(KEY_NOMBRES)||'{"HAT":"HATCHERY","HATCHERY":"HATCHERY","FF":"FF2","FF2":"FF2","PRE":"PRE SMOLT","PRE SMOLT":"PRE SMOLT","ALEV":"ALEVINAJE","ALEVINAJE":"ALEVINAJE"}');
 let nombresUnidades=JSON.parse(localStorage.getItem(KEY_NOMBRES)||'{"Hat":"Hatchery","Hatchery":"Hatchery","FF":"FF2","FF2":"FF2","Pre":"Pre Smolt","Pre Smolt":"Pre Smolt","Alev":"Alevinaje","Alevinaje":"Alevinaje"}');
 let datosOriginales=[], datosBase=[], bloquesLYD=[], mapaColumnas={}, listaEquipos=[], pendientes=[], pendienteIndex=0;
 const $=id=>document.getElementById(id);
@@ -13,21 +12,18 @@ document.addEventListener('DOMContentLoaded',()=>{configurarFechas();setupEvento
 function setupEventos(){
   document.querySelectorAll('.menu-item').forEach(a=>a.onclick=e=>{e.preventDefault();cambiarVista(a.dataset.view);});
   $('btnActualizar').onclick=cargarDesdeGitHub;
-  $('btnLimpiarClasificacion').onclick=()=>{if(confirm('¿Eliminar clasificaciones guardadas en este navegador?')){localStorage.removeItem(KEY_REGLAS);localStorage.removeItem(KEY_UNIDADES);reglasUsuario=[];unidadesUsuario=[];aplicarFiltros();}};
   $('cardSinClasificar').onclick=abrirWizard;
   $('btnCerrarWizard').onclick=cerrarWizard;
   $('btnFinalizarWizard').onclick=cerrarWizard;
   $('btnAnterior').onclick=()=>{if(pendienteIndex>0){pendienteIndex--;renderWizard();}};
   $('btnGuardarSiguiente').onclick=guardarWizard;
   $('wizardUnidad').onchange=()=>{$('boxNuevaUnidad').classList.toggle('hidden',$('wizardUnidad').value!=='__NUEVA__');};
-    $('busquedaEquipo').oninput=()=>{mostrarSugerencias($('busquedaEquipo').value.trim());aplicarFiltros();};
+  $('equipoFiltro','unidadFiltro','btnGuardarUnidades').onchange=()=>{$('busquedaEquipo').value=$('equipoFiltro','unidadFiltro','btnGuardarUnidades').value;ocultarSugerencias();aplicarFiltros();};
+  $('busquedaEquipo').oninput=()=>{$('equipoFiltro','unidadFiltro','btnGuardarUnidades').value='';mostrarSugerencias($('busquedaEquipo').value.trim());aplicarFiltros();};
   $('busquedaEquipo').onfocus=()=>mostrarSugerencias($('busquedaEquipo').value.trim());
   $('btnAbrirEquipos').onclick=()=>mostrarSugerencias('');
-  $('unidadFiltro').onchange=aplicarFiltros;
-  $('btnGuardarUnidades').onclick=guardarTodosNombresUnidades;
   document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarSugerencias();});
   $('fechaDesde').onchange=aplicarFiltros;$('fechaHasta').onchange=aplicarFiltros;
-  $('buscarUnidad').oninput=renderTablaUnidades;
 }
 function cambiarVista(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));
@@ -57,6 +53,7 @@ async function leerExcel(url,modo){const r=await fetch(url+'?v='+Date.now());if(
 
 function aplicarFiltros(){
   let base=construirDatosBase(datosOriginales);
+
   const d=$('fechaDesde').value?new Date($('fechaDesde').value+'T00:00:00'):null;
   const h=$('fechaHasta').value?new Date($('fechaHasta').value+'T23:59:59'):null;
 
@@ -80,10 +77,10 @@ function aplicarFiltros(){
     $('txtFiltro').textContent='Todos los equipos';
   }
 
-  const unidad=$('unidadFiltro').value;
-  if(unidad){
-    base=base.filter(r=>r.unidad===unidad);
-    $('txtFiltro').textContent=`Unidad: ${unidad}`;
+  const unidadSeleccionada=$('unidadFiltro').value;
+  if(unidadSeleccionada){
+    base=base.filter(r=>r.unidad===unidadSeleccionada);
+    $('txtFiltro').textContent=`Unidad: ${unidadSeleccionada}`;
   }
 
   datosBase=base;
@@ -102,86 +99,83 @@ function abrirWizard(){pendientes=getPendientes();pendienteIndex=0;$('wizardClas
 function cerrarWizard(){$('wizardClasificacion').classList.add('hidden');aplicarFiltros();}
 function renderWizard(){pendientes=getPendientes();if(!pendientes.length){$('wizardContenido').classList.add('hidden');$('wizardFinalizado').classList.remove('hidden');$('wizardProgreso').textContent='Finalizado';return;}$('wizardContenido').classList.remove('hidden');$('wizardFinalizado').classList.add('hidden');if(pendienteIndex>=pendientes.length)pendienteIndex=pendientes.length-1;const p=pendientes[pendienteIndex];$('wizardProgreso').textContent=`${pendienteIndex+1} de ${pendientes.length}`;$('wizardEquipo').textContent=p.equipo;$('wizardUbicacion').textContent=p.ubicacion||'-';$('wizardDescripcion').textContent=p.descripcion||'-';$('wizardCantidad').textContent=p.cantidad;llenarUnidades();$('boxNuevaUnidad').classList.add('hidden');$('wizardNuevaUnidad').value='';}
 function llenarUnidades(){const select=$('wizardUnidad');const unidades=[...new Set([...UNIDADES_BASE,...unidadesUsuario])];select.innerHTML='<option value="">Seleccionar unidad</option>'+unidades.map(u=>`<option value="${u}">${nombreUnidad(u)}</option>`).join('')+'<option value="__NUEVA__">➕ Nueva unidad...</option>';}
-function guardarWizard(){const p=pendientes[pendienteIndex];let unidad=$('wizardUnidad').value;if(unidad==='__NUEVA__'){unidad=$('wizardNuevaUnidad').value.trim().toUpperCase();if(!unidad)return alert('Escribe el nombre de la nueva unidad.');if(!unidadesUsuario.includes(unidad)){unidadesUsuario.push(unidad);nombresUnidades[unidad]=unidad;localStorage.setItem(KEY_UNIDADES,JSON.stringify(unidadesUsuario));localStorage.setItem(KEY_NOMBRES,JSON.stringify(nombresUnidades));}}if(!unidad)return alert('Selecciona una unidad.');const regla=generarRegla(p.equipo);reglasUsuario.unshift({buscar:regla,unidad});localStorage.setItem(KEY_REGLAS,JSON.stringify(reglasUsuario));aplicarFiltros();pendientes=getPendientes();if(pendienteIndex>=pendientes.length)pendienteIndex=pendientes.length-1;if(!pendientes.length){renderWizard();return;}renderWizard();}
+function guardarWizard(){const p=pendientes[pendienteIndex];let unidad=$('wizardUnidad').value;if(unidad==='__NUEVA__'){unidad=$('wizardNuevaUnidad').value.trim();if(!unidad)return alert('Escribe el nombre de la nueva unidad.');if(!unidadesUsuario.includes(unidad)){unidadesUsuario.push(unidad);nombresUnidades[unidad]=unidad;localStorage.setItem(KEY_UNIDADES,JSON.stringify(unidadesUsuario));localStorage.setItem(KEY_NOMBRES,JSON.stringify(nombresUnidades));}}if(!unidad)return alert('Selecciona una unidad.');const regla=generarRegla(p.equipo);reglasUsuario.unshift({buscar:regla,unidad});localStorage.setItem(KEY_REGLAS,JSON.stringify(reglasUsuario));aplicarFiltros();pendientes=getPendientes();if(pendienteIndex>=pendientes.length)pendienteIndex=pendientes.length-1;if(!pendientes.length){renderWizard();return;}renderWizard();}
 function generarRegla(t){return String(t).split(' ').filter(Boolean).slice(0,6).join(' ');}
 
-function obtenerResumenUnidades(){const base=construirDatosBase(datosOriginales).filter(r=>r.unidad&&r.unidad!=='Sin clasificar');const mapa=new Map();for(const r of base){const u=r.unidad;if(!mapa.has(u))mapa.set(u,{unidad:u,nombre:nombreUnidad(u),equipos:new Set(),avisos:0,lyd:0});const x=mapa.get(u);x.equipos.add(r.ubicacionTecnica||r.denominacionUbicacionTecnica);x.avisos++;}for(const b of bloquesLYD){const u=nombreUnidad(b.unidad);if(!mapa.has(u))mapa.set(u,{unidad:u,nombre:nombreUnidad(u),equipos:new Set(),avisos:0,lyd:0});mapa.get(u).lyd++;}return [...mapa.values()].map(x=>({unidad:x.unidad,nombre:x.nombre,equipos:x.equipos.size,avisos:x.avisos,lyd:x.lyd})).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));}
-function renderTablaUnidades(){if(!$('tablaUnidades'))return;const q=normalizar($('buscarUnidad')?.value||'');let rows=obtenerResumenUnidades();if(q)rows=rows.filter(r=>normalizar(r.unidad).includes(q)||normalizar(r.nombre).includes(q));$('filasUnidades').textContent=`${rows.length} unidades`;$('tablaUnidades').querySelector('thead').innerHTML='<tr><th>Unidad interna</th><th>Nombre mostrado</th><th>Equipos</th><th>Avisos</th><th>Bloques LYD</th><th>Acción</th></tr>';$('tablaUnidades').querySelector('tbody').innerHTML=rows.length?rows.map(r=>`<tr><td>${r.unidad}</td><td><input class="unit-name-input" id="unit_${normalizar(r.unidad)}" value="${r.nombre}"></td><td>${r.equipos}</td><td>${r.avisos}</td><td>${r.lyd}</td><td><button class="edit-unit-btn" onclick="guardarNombreUnidad('${r.unidad.replace(/'/g,"\\'")}')">Guardar</button></td></tr>`).join(''):'<tr><td colspan="6">No hay unidades para mostrar</td></tr>';}
-function guardarNombreUnidad(unidad){const input=$('unit_'+normalizar(unidad));if(!input)return;const nuevo=input.value.trim();if(!nuevo)return alert('El nombre mostrado no puede quedar vacío.');nombresUnidades[unidad]=nuevo;localStorage.setItem(KEY_NOMBRES,JSON.stringify(nombresUnidades));aplicarFiltros();setEstado('Validado','ok',`Nombre de unidad actualizado:<br><b>${unidad}</b> → <b>${nuevo}</b>`);}
-
-
 function obtenerListaUnidades(){
-  const set=new Set();
+  const unidades = new Set();
 
   construirDatosBase(datosOriginales).forEach(r=>{
-    if(r.unidad && r.unidad!=='Sin clasificar') set.add(nombreUnidad(r.unidad));
+    if(r.unidad && r.unidad !== 'Sin clasificar') unidades.add(r.unidad);
   });
 
-  bloquesLYD.forEach(b=>set.add(nombreUnidad(normalizarUnidadGantt(b.unidad))));
-  unidadesUsuario.forEach(u=>set.add(nombreUnidad(u)));
+  bloquesLYD.forEach(b=>unidades.add(nombreUnidad(b.unidad)));
+  unidadesUsuario.forEach(u=>unidades.add(nombreUnidad(u)));
 
-  return [...set].sort((a,b)=>a.localeCompare(b,'es'));
+  return [...unidades].sort((a,b)=>a.localeCompare(b,'es'));
 }
 
 function cargarFiltroUnidades(){
-  if(!$('unidadFiltro'))return;
-  const actual=$('unidadFiltro').value;
-  const unidades=obtenerListaUnidades();
-  $('unidadFiltro').innerHTML='<option value="">Todas</option>'+
+  const actual = $('unidadFiltro')?.value || '';
+  const unidades = obtenerListaUnidades();
+  $('unidadFiltro').innerHTML = '<option value="">Todas</option>' +
     unidades.map(u=>`<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
-  if(unidades.includes(actual))$('unidadFiltro').value=actual;
+
+  if(unidades.includes(actual)) $('unidadFiltro').value = actual;
 }
 
-let edicionUnidades={};
+let edicionUnidades = {};
 
 function renderTablaUnidades(){
-  if(!$('tablaUnidades'))return;
-  const unidades=obtenerListaUnidades();
+  if(!$('tablaUnidades')) return;
 
-  $('tablaUnidades').querySelector('thead').innerHTML=`
+  const unidades = obtenerListaUnidades();
+
+  $('tablaUnidades').querySelector('thead').innerHTML = `
     <tr>
       <th>Unidad</th>
       <th>Editar</th>
     </tr>
   `;
 
-  $('tablaUnidades').querySelector('tbody').innerHTML=unidades.length
-    ? unidades.map((u,i)=>`
+  $('tablaUnidades').querySelector('tbody').innerHTML = unidades.length
+    ? unidades.map((unidad, i)=>`
       <tr>
         <td>
-          <div id="unidad_texto_${i}" class="unidad-display">${escapeHtml(u)}</div>
+          <div id="unidad_texto_${i}" class="unidad-display">${escapeHtml(unidad)}</div>
           <input id="unidad_input_${i}" class="unidad-edit-input hidden"
-                 value="${escapeHtml(u)}" data-original="${escapeHtml(u)}">
+                 value="${escapeHtml(unidad)}"
+                 data-original="${escapeHtml(unidad)}">
         </td>
         <td>
-          <button class="edit-pencil" onclick="editarUnidad(${i})" title="Editar">✏️</button>
+          <button class="edit-pencil" onclick="editarUnidad(${i})" title="Editar nombre">✏️</button>
         </td>
       </tr>
     `).join('')
     : '<tr><td colspan="2">No hay unidades para mostrar</td></tr>';
 
-  $('btnGuardarUnidades').disabled=true;
+  $('btnGuardarUnidades').disabled = true;
 }
 
-function editarUnidad(i){
-  const texto=$('unidad_texto_'+i);
-  const input=$('unidad_input_'+i);
-  if(!texto||!input)return;
+function editarUnidad(indice){
+  const texto = $('unidad_texto_' + indice);
+  const input = $('unidad_input_' + indice);
+  if(!texto || !input) return;
 
   texto.classList.add('hidden');
   input.classList.remove('hidden');
   input.focus();
   input.select();
 
-  input.oninput=()=>{
-    edicionUnidades[input.dataset.original]=input.value.trim().toUpperCase();
-    $('btnGuardarUnidades').disabled=false;
+  input.oninput = ()=>{
+    edicionUnidades[input.dataset.original] = input.value.trim();
+    $('btnGuardarUnidades').disabled = false;
   };
 }
 
 function guardarTodosNombresUnidades(){
-  const cambios=Object.entries(edicionUnidades)
-    .filter(([original,nuevo])=>nuevo&&nuevo!==original);
+  const cambios = Object.entries(edicionUnidades)
+    .filter(([original,nuevo])=>nuevo && nuevo !== original);
 
   if(!cambios.length){
     alert('No hay cambios pendientes.');
@@ -189,36 +183,42 @@ function guardarTodosNombresUnidades(){
   }
 
   cambios.forEach(([original,nuevo])=>{
+    // Actualiza cualquier clave que actualmente muestre el nombre original
     Object.keys(nombresUnidades).forEach(clave=>{
-      if(nombreUnidad(clave)===original||clave===original){
-        nombresUnidades[clave]=nuevo;
+      if(nombreUnidad(clave) === original || clave === original){
+        nombresUnidades[clave] = nuevo;
       }
     });
 
-    nombresUnidades[original]=nuevo;
+    // Si no existía una clave propia, crea una equivalencia directa
+    if(!Object.keys(nombresUnidades).some(clave=>clave===original || nombresUnidades[clave]===nuevo)){
+      nombresUnidades[original] = nuevo;
+    }
 
+    // Actualiza reglas creadas por el usuario que guarden ese nombre
     reglasUsuario.forEach(regla=>{
-      if(nombreUnidad(regla.unidad)===original||regla.unidad===original){
-        regla.unidad=nuevo;
+      if(nombreUnidad(regla.unidad) === original || regla.unidad === original){
+        regla.unidad = nuevo;
       }
     });
 
-    unidadesUsuario=unidadesUsuario.map(u=>nombreUnidad(u)===original?nuevo:u);
+    const idx = unidadesUsuario.indexOf(original);
+    if(idx >= 0) unidadesUsuario[idx] = nuevo;
   });
 
-  localStorage.setItem(KEY_NOMBRES,JSON.stringify(nombresUnidades));
-  localStorage.setItem(KEY_REGLAS,JSON.stringify(reglasUsuario));
-  localStorage.setItem(KEY_UNIDADES,JSON.stringify([...new Set(unidadesUsuario)]));
+  localStorage.setItem(KEY_NOMBRES, JSON.stringify(nombresUnidades));
+  localStorage.setItem(KEY_REGLAS, JSON.stringify(reglasUsuario));
+  localStorage.setItem(KEY_UNIDADES, JSON.stringify([...new Set(unidadesUsuario)]));
 
-  edicionUnidades={};
+  edicionUnidades = {};
   cargarFiltroUnidades();
   aplicarFiltros();
   renderTablaUnidades();
-  setEstado('Validado','ok',`Se guardaron ${cambios.length} cambio(s) de unidad.`);
+  setEstado('Validado','ok',`Se guardaron ${cambios.length} cambio(s) de unidad correctamente.`);
 }
 
-function escapeHtml(t){
-  return String(t??'')
+function escapeHtml(texto){
+  return String(texto ?? '')
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
@@ -236,28 +236,11 @@ function cargarListaEquipos(rows){
       .filter(Boolean)
   )].sort((a,b)=>a.localeCompare(b,'es'));
 }
-function mostrarSugerencias(t){$('sugerenciasEquipo').innerHTML='';const clave=normalizar(t);const res=(clave?listaEquipos.filter(e=>normalizar(e).includes(clave)):listaEquipos).slice(0,12);if(!res.length){$('sugerenciasEquipo').innerHTML='<div class="suggestion-empty">Sin coincidencias</div>';$('sugerenciasEquipo').style.display='block';return;}res.forEach(eq=>{$('sugerenciasEquipo').insertAdjacentHTML('beforeend',`<div class="suggestion-item">${eq}</div>`)});[...$('sugerenciasEquipo').children].forEach((d,i)=>d.onclick=()=>{$('busquedaEquipo').value=res[i];ocultarSugerencias();aplicarFiltros();});$('sugerenciasEquipo').style.display='block';}
+function mostrarSugerencias(t){$('sugerenciasEquipo').innerHTML='';const clave=normalizar(t);const res=(clave?listaEquipos.filter(e=>normalizar(e).includes(clave)):listaEquipos).slice(0,12);if(!res.length){$('sugerenciasEquipo').innerHTML='<div class="suggestion-empty">Sin coincidencias</div>';$('sugerenciasEquipo').style.display='block';return;}res.forEach(eq=>{$('sugerenciasEquipo').insertAdjacentHTML('beforeend',`<div class="suggestion-item">${eq}</div>`)});[...$('sugerenciasEquipo').children].forEach((d,i)=>d.onclick=()=>{$('busquedaEquipo').value=res[i];$('equipoFiltro','unidadFiltro','btnGuardarUnidades').value=res[i];ocultarSugerencias();aplicarFiltros();});$('sugerenciasEquipo').style.display='block';}
 function ocultarSugerencias(){$('sugerenciasEquipo').style.display='none';}
 function renderTablaBase(base){$('tablaBase').querySelector('thead').innerHTML='<tr><th>Fecha aviso</th><th>Clase aviso</th><th>Aviso</th><th>Orden</th><th>Descripción</th><th>Ubicación técnica</th><th>Denominación ubicación técnica</th><th>Unidad</th><th>Estado</th><th>Inicio avería</th><th>Fin avería</th><th>Duración parada</th></tr>';$('tablaBase').querySelector('tbody').innerHTML=base.length?base.map(r=>`<tr><td>${fmtF(r.fechaAviso)}</td><td>${r.claseAviso}</td><td>${r.aviso}</td><td>${r.orden}</td><td class="descripcion">${r.descripcion}</td><td>${r.ubicacionTecnica}</td><td>${r.denominacionUbicacionTecnica}</td><td>${r.unidad}</td><td>${r.estadoUnidad==='OK'?'<span class="badge-ok">OK</span>':'<span class="badge-review">Revisar</span>'}</td><td>${r.inicioAveria}</td><td>${r.finAveria}</td><td>${fmtN(r.duracionParada)}</td></tr>`).join(''):'<tr><td colspan="12">No hay datos</td></tr>';}
 function extraerBloquesLYD(m){const out=[];if(!m.length)return out;const maxCols=Math.max(...m.slice(0,10).map(f=>f.length));for(let c=1;c<maxCols;c++){let unidad='';for(let r=0;r<Math.min(10,m.length);r++){const v=m[r]?.[c];if(v&& !convertirFecha(v)){unidad=String(v);break;}}if(!unidad)continue;let ini=null,fin=null;for(let r=1;r<m.length;r++){const f=convertirFecha(m[r]?.[0]);if(!f)continue;const is=normalizar(m[r]?.[c]).includes('lyd');if(is&&!ini){ini=f;fin=f}else if(is){fin=f}else if(ini){out.push(crearBloque(unidad,ini,fin));ini=null;fin=null}}if(ini)out.push(crearBloque(unidad,ini,fin));}return out;}
-function normalizarUnidadGantt(unidad){
-  const n=normalizar(unidad);
-  const equivalencias=[
-    ['alev','ALEVINAJE'],
-    ['ff','FF2'],
-    ['hat','HATCHERY'],
-    ['pre','PRE SMOLT'],
-    ['filtrado','FILTRADO'],
-    ['riles','RILES'],
-    ['ap','AGUA POTABLE']
-  ];
-  const eq=equivalencias.find(([codigo])=>n===normalizar(codigo));
-  return eq ? eq[1] : String(unidad||'').toUpperCase();
-}
-function crearBloque(unidad,inicio,fin){
-  const dias=Math.round((fin-inicio)/86400000)+1;
-  return{unidad:normalizarUnidadGantt(unidad),inicio,fin,dias,horas:dias*24};
-}
+function crearBloque(unidad,inicio,fin){const dias=Math.round((fin-inicio)/86400000)+1;return{unidad,inicio,fin,dias,horas:dias*24};}
 function renderTablaLYD(b){$('tablaLYD').querySelector('thead').innerHTML='<tr><th>Unidad</th><th>Inicio LYD</th><th>Fin LYD</th><th>Días LYD</th><th>Horas no operativas planificadas</th></tr>';$('tablaLYD').querySelector('tbody').innerHTML=b.length?b.map(x=>`<tr><td>${nombreUnidad(x.unidad)}</td><td>${fmtF(x.inicio)}</td><td>${fmtF(x.fin)}</td><td>${x.dias}</td><td>${x.horas}</td></tr>`).join(''):'<tr><td colspan="5">No hay períodos LYD detectados</td></tr>';$('filasLYD').textContent=`${b.length} bloques`;}
 function unirFechaHora(fv,hv){const f=convertirFecha(fv);if(!f)return null;const h=convertirHora(hv);return new Date(f.getFullYear(),f.getMonth(),f.getDate(),h.horas,h.minutos,h.segundos);}
 function convertirFecha(v){if(!v)return null;if(v instanceof Date&&!isNaN(v))return v;if(typeof v==='number')return new Date(Date.UTC(1899,11,30)+v*86400000);const s=String(v).trim(),m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);const f=new Date(s);return isNaN(f)?null:f;}

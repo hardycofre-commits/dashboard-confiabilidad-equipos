@@ -1,18 +1,9 @@
-# Dashboard Confiabilidad Equipos - v2.5
+# Dashboard Confiabilidad Equipos - v2.5 estable
 
-## Cambios principales
-- Búsqueda rápida y lista de equipos se unifican en un solo control.
-- El campo Equipo permite escribir o desplegar el listado completo.
-- Se mantiene el filtro Unidad al lado derecho.
-- Las unidades quedan siempre en MAYÚSCULAS.
-- Se unifican equivalencias SAP/Gantt para evitar duplicados:
-  - Alev → ALEVINAJE
-  - FF → FF2
-  - Hat → HATCHERY
-  - Pre → PRE SMOLT
-- Pantalla Unidades compacta.
-- Edición mediante lápiz.
-- Un único botón Guardar cambios para todas las modificaciones.
+## Cambio único
+- Se unificó Búsqueda rápida y Lista de equipos en un solo control.
+- El campo Equipo permite escribir o abrir el listado completo con la flecha.
+- Se mantuvo intacta la lectura automática del último SAP y Gantt.
+- Se mantiene el filtro Unidad de la v2.4.
 
-## Próxima versión
-Tabla de confiabilidad para preparar MTBF, MTTR y Disponibilidad.
+Esta versión se construyó sobre la v2.4 estable, aplicando solo un cambio.
