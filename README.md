@@ -1,9 +1,7 @@
-# Dashboard Confiabilidad Equipos - v2.5 estable
+# Dashboard Confiabilidad Equipos - v2.5.1 corregida
 
-## Cambio único
-- Se unificó Búsqueda rápida y Lista de equipos en un solo control.
-- El campo Equipo permite escribir o abrir el listado completo con la flecha.
-- Se mantuvo intacta la lectura automática del último SAP y Gantt.
-- Se mantiene el filtro Unidad de la v2.4.
-
-Esta versión se construyó sobre la v2.4 estable, aplicando solo un cambio.
+Corrección puntual:
+- Se reparó el error de JavaScript que detenía la carga automática.
+- Vuelve a leer el último archivo SAP y el último Gantt.
+- Se mantiene el buscador/listado de equipos unificado.
+- Se mantiene el filtro Unidad.
