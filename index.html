@@ -24,7 +24,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 2.3</small>
+        <small>Versión 2.4</small>
       </div>
     </header>
 
@@ -32,7 +32,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v2.3</strong></div>
+      <div><span>Versión</span><strong>v2.4</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -45,6 +45,7 @@
           <div id="sugerenciasEquipo" class="suggestions"></div>
         </div>
         <div class="field"><label>Lista de equipos</label><select id="equipoFiltro"><option value="">Todos</option></select></div>
+        <div class="field"><label>Unidad</label><select id="unidadFiltro"><option value="">Todas</option></select></div>
         <button id="btnActualizar">↻ Actualizar</button>
       </section>
 
@@ -99,15 +100,6 @@
       <section class="panel unidades-panel">
         <div class="panel-title">
           <h3>🏷️ UNIDADES</h3>
-          <span id="filasUnidades">0 unidades</span>
-        </div>
-
-        <div class="unit-toolbar">
-          <div class="field">
-            <label>Buscar unidad</label>
-            <input type="text" id="buscarUnidad" placeholder="Ej: FF2, Hatchery, Pre Smolt..." />
-          </div>
-          <button id="btnLimpiarClasificacion" class="btn-danger">Limpiar clasificaciones</button>
         </div>
 
         <div class="table-wrap unidades-wrap">
@@ -117,7 +109,11 @@
           </table>
         </div>
 
-        <p class="hint">Aquí solo se cambia el nombre visible de las unidades. El SAP y el Gantt no se modifican.</p>
+        <div class="unidades-actions">
+          <button id="btnGuardarUnidades">💾 Guardar cambios</button>
+        </div>
+
+        <p class="hint">Presiona el lápiz para modificar el nombre visible. Los cambios se aplicarán al guardar y no modificarán el SAP ni el Gantt.</p>
       </section>
     </section>
   </main>
