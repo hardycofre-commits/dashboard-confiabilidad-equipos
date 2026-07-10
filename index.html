@@ -24,7 +24,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 2.4</small>
+        <small>Versión 2.5</small>
       </div>
     </header>
 
@@ -32,19 +32,21 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v2.4</strong></div>
+      <div><span>Versión</span><strong>v2.5</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
       <section class="filters">
         <div class="field"><label>Fecha desde</label><input type="date" id="fechaDesde" value="2025-01-01" /></div>
         <div class="field"><label>Fecha hasta</label><input type="date" id="fechaHasta" value="2026-12-31" /></div>
-        <div class="field search-field">
-          <label>Búsqueda rápida equipo</label>
-          <input type="text" id="busquedaEquipo" placeholder="Ej: GN, BOMBA, UV, HATCHERY..." autocomplete="off" />
+        <div class="field search-field equipo-combo">
+          <label>Equipo</label>
+          <div class="combo-wrapper">
+            <input type="text" id="busquedaEquipo" placeholder="Escriba GN, BOMBA, UV, HATCHERY..." autocomplete="off" />
+            <button type="button" id="btnAbrirEquipos" class="combo-arrow" aria-label="Mostrar lista de equipos">▼</button>
+          </div>
           <div id="sugerenciasEquipo" class="suggestions"></div>
         </div>
-        <div class="field"><label>Lista de equipos</label><select id="equipoFiltro"><option value="">Todos</option></select></div>
         <div class="field"><label>Unidad</label><select id="unidadFiltro"><option value="">Todas</option></select></div>
         <button id="btnActualizar">↻ Actualizar</button>
       </section>
@@ -113,7 +115,7 @@
           <button id="btnGuardarUnidades">💾 Guardar cambios</button>
         </div>
 
-        <p class="hint">Presiona el lápiz para modificar el nombre visible. Los cambios se aplicarán al guardar y no modificarán el SAP ni el Gantt.</p>
+        <p class="hint">Presiona el lápiz para modificar un nombre. Las unidades se muestran en mayúsculas y los cambios no modifican el SAP ni el Gantt.</p>
       </section>
     </section>
   </main>

@@ -1,16 +1,18 @@
-# Dashboard Confiabilidad Equipos - v2.4
+# Dashboard Confiabilidad Equipos - v2.5
 
-## Ajustes antes de los cálculos
-- Filtro **Unidad** agregado junto a la Lista de equipos.
-- Pantalla **Unidades** simplificada.
-- Se elimina el buscador de unidades.
-- Se muestra solamente:
-  - Unidad
-  - Botón lápiz para editar
-- Un único botón **Guardar cambios** aplica todas las modificaciones juntas.
-- Se mantiene el menú lateral con:
-  - Resumen
-  - Unidades
+## Cambios principales
+- Búsqueda rápida y lista de equipos se unifican en un solo control.
+- El campo Equipo permite escribir o desplegar el listado completo.
+- Se mantiene el filtro Unidad al lado derecho.
+- Las unidades quedan siempre en MAYÚSCULAS.
+- Se unifican equivalencias SAP/Gantt para evitar duplicados:
+  - Alev → ALEVINAJE
+  - FF → FF2
+  - Hat → HATCHERY
+  - Pre → PRE SMOLT
+- Pantalla Unidades compacta.
+- Edición mediante lápiz.
+- Un único botón Guardar cambios para todas las modificaciones.
 
 ## Próxima versión
-Tabla de Confiabilidad y preparación de MTBF, MTTR y Disponibilidad.
+Tabla de confiabilidad para preparar MTBF, MTTR y Disponibilidad.
