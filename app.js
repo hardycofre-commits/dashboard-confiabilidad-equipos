@@ -239,7 +239,42 @@ function cargarListaEquipos(rows){
 }
 function mostrarSugerencias(t){$('sugerenciasEquipo').innerHTML='';const clave=normalizar(t);const res=(clave?listaEquipos.filter(e=>normalizar(e).includes(clave)):listaEquipos).slice(0,12);if(!res.length){$('sugerenciasEquipo').innerHTML='<div class="suggestion-empty">Sin coincidencias</div>';$('sugerenciasEquipo').style.display='block';return;}res.forEach(eq=>{$('sugerenciasEquipo').insertAdjacentHTML('beforeend',`<div class="suggestion-item">${eq}</div>`)});[...$('sugerenciasEquipo').children].forEach((d,i)=>d.onclick=()=>{$('busquedaEquipo').value=res[i];ocultarSugerencias();aplicarFiltros();});$('sugerenciasEquipo').style.display='block';}
 function ocultarSugerencias(){$('sugerenciasEquipo').style.display='none';}
-function renderTablaBase(base){$('tablaBase').querySelector('thead').innerHTML='<tr><th>Fecha aviso</th><th>Clase aviso</th><th>Aviso</th><th>Orden</th><th>Descripción</th><th>Ubicación técnica</th><th>Denominación ubicación técnica</th><th>Unidad</th><th>Estado</th><th>Inicio avería</th><th>Fin avería</th><th>Duración parada</th></tr>';$('tablaBase').querySelector('tbody').innerHTML=base.length?base.map(r=>`<tr><td>${fmtF(r.fechaAviso)}</td><td>${r.claseAviso}</td><td>${r.aviso}</td><td>${r.orden}</td><td class="descripcion">${r.descripcion}</td><td>${r.ubicacionTecnica}</td><td>${r.denominacionUbicacionTecnica}</td><td>${r.unidad}</td><td>${r.estadoUnidad==='OK'?'<span class="badge-ok">OK</span>':'<span class="badge-review">Revisar</span>'}</td><td>${r.inicioAveria}</td><td>${r.finAveria}</td><td>${fmtN(r.duracionParada)}</td></tr>`).join(''):'<tr><td colspan="12">No hay datos</td></tr>';}
+function renderTablaBase(base){
+  $('tablaBase').querySelector('thead').innerHTML=`
+    <tr>
+      <th>Fecha aviso</th>
+      <th>Clase aviso</th>
+      <th>Aviso</th>
+      <th>Orden</th>
+      <th>Descripción</th>
+      <th>Ubicación técnica</th>
+      <th>Denominación ubicación técnica</th>
+      <th>Unidad</th>
+      <th>Inicio avería</th>
+      <th>Fin avería</th>
+      <th>Duración parada</th>
+    </tr>
+  `;
+
+  $('tablaBase').querySelector('tbody').innerHTML=base.length
+    ? base.map(r=>`
+      <tr class="${r.unidad==='Sin clasificar'?'fila-sin-clasificar':''}">
+        <td>${fmtF(r.fechaAviso)}</td>
+        <td>${r.claseAviso}</td>
+        <td>${r.aviso}</td>
+        <td>${r.orden}</td>
+        <td class="descripcion">${r.descripcion}</td>
+        <td>${r.ubicacionTecnica}</td>
+        <td>${r.denominacionUbicacionTecnica}</td>
+        <td>${r.unidad}</td>
+        <td>${r.inicioAveria}</td>
+        <td>${r.finAveria}</td>
+        <td>${fmtN(r.duracionParada)}</td>
+      </tr>
+    `).join('')
+    : '<tr><td colspan="11">No hay datos</td></tr>';
+}
+
 function extraerBloquesLYD(m){const out=[];if(!m.length)return out;const maxCols=Math.max(...m.slice(0,10).map(f=>f.length));for(let c=1;c<maxCols;c++){let unidad='';for(let r=0;r<Math.min(10,m.length);r++){const v=m[r]?.[c];if(v&& !convertirFecha(v)){unidad=String(v);break;}}if(!unidad)continue;let ini=null,fin=null;for(let r=1;r<m.length;r++){const f=convertirFecha(m[r]?.[0]);if(!f)continue;const is=normalizar(m[r]?.[c]).includes('lyd');if(is&&!ini){ini=f;fin=f}else if(is){fin=f}else if(ini){out.push(crearBloque(unidad,ini,fin));ini=null;fin=null}}if(ini)out.push(crearBloque(unidad,ini,fin));}return out;}
 function normalizarUnidadGantt(unidad){
   const n=normalizar(unidad);

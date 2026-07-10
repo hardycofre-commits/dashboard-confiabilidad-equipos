@@ -83,3 +83,14 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 }
 .combo-arrow:hover{background:#082f66}
 .equipo-combo .suggestions{top:58px}
+
+.fila-sin-clasificar{
+  background:#fff8db;
+}
+.fila-sin-clasificar:hover{
+  background:#fff1b8;
+}
+.fila-sin-clasificar td:nth-child(8){
+  font-weight:900;
+  color:#92400e;
+}
