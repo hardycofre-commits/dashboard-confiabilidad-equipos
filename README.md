@@ -1,7 +1,19 @@
-# Dashboard Confiabilidad Equipos - v2.5.1 corregida
+# Dashboard Confiabilidad Equipos - v2.6
 
-Corrección puntual:
-- Se reparó el error de JavaScript que detenía la carga automática.
-- Vuelve a leer el último archivo SAP y el último Gantt.
-- Se mantiene el buscador/listado de equipos unificado.
-- Se mantiene el filtro Unidad.
+## Cambio único de esta versión
+Normalización de unidades.
+
+### Equivalencias automáticas
+- Alev / Alevinaje → ALEVINAJE
+- FF / FF2 → FF2
+- Hat / Hatchery → HATCHERY
+- Pre / Pre Smolt → PRE SMOLT
+- Filtrado → FILTRADO
+- Riles → RILES
+- AP / Agua Potable → AGUA POTABLE
+
+### Resultado
+- Todas las unidades se muestran en MAYÚSCULAS.
+- SAP y Gantt usan una única unidad estándar.
+- Se evitan duplicados como Alevinaje/Alev y FF/FF2.
+- Se mantiene intacta la lectura automática de SAP y Gantt.

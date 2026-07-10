@@ -1,6 +1,6 @@
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main',folder:'datos'};
-const UNIDADES_BASE=['Hatchery','FF2','Alevinaje','Pre Smolt','Riles','Filtrado','Generadores','Otros'];
-const MAPEO_BASE=[['HATCHERY','Hatchery'],['HAT','Hatchery'],['FF2','FF2'],['FF','FF2'],['ALEVINAJE','Alevinaje'],['ALEV','Alevinaje'],['PRE-SMOLT','Pre Smolt'],['PRE SMOLT','Pre Smolt'],['PRESMOLT','Pre Smolt'],['RILES','Riles'],['FILTRADO','Filtrado'],['FILTRO','Filtrado'],['GEN','Generadores'],['GENERADOR','Generadores']];
+const UNIDADES_BASE=['HATCHERY','FF2','ALEVINAJE','PRE SMOLT','RILES','FILTRADO','GENERADORES','OTROS'];
+const MAPEO_BASE=[['HATCHERY','HATCHERY'],['HAT','HATCHERY'],['FF2','FF2'],['FF','FF2'],['ALEVINAJE','ALEVINAJE'],['ALEV','ALEVINAJE'],['PRE-SMOLT','PRE SMOLT'],['PRE SMOLT','PRE SMOLT'],['PRESMOLT','PRE SMOLT'],['RILES','RILES'],['FILTRADO','FILTRADO'],['FILTRO','FILTRADO'],['GEN','GENERADORES'],['GENERADOR','GENERADORES']];
 const KEY_REGLAS='confEq_reglas_v21', KEY_UNIDADES='confEq_unidades_v21', KEY_NOMBRES='confEq_nombresUnidades_v23';
 let reglasUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS)||'[]');
 let unidadesUsuario=JSON.parse(localStorage.getItem(KEY_UNIDADES)||'[]');
@@ -92,7 +92,7 @@ function aplicarFiltros(){
 }
 function construirDatosBase(rows){return rows.map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]);const texto=`${den} ${ubi} ${des}`;const unidad=obtenerUnidad(texto);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:valor(r[mapaColumnas.aviso]),orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,duracionParada:numero(r[mapaColumnas.duracionParada])};});}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
-function nombreUnidad(u){return nombresUnidades[u]||u;}
+function nombreUnidad(u){return normalizarUnidadGantt(u);}
 function actualizarKPIs(){const all=construirDatosBase(datosOriginales);$('kEquipos').textContent=new Set(datosBase.map(r=>r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');$('kAvisos').textContent=new Set(datosBase.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');$('kSinClasificar').textContent=getPendientes().length.toLocaleString('es-CL');}
 
 function getPendientes(){const all=construirDatosBase(datosOriginales).filter(r=>r.unidad==='Sin clasificar');const m=new Map();for(const r of all){const key=r.denominacionUbicacionTecnica||r.ubicacionTecnica||r.descripcion;if(!m.has(key))m.set(key,{equipo:key,ubicacion:r.ubicacionTecnica,descripcion:r.descripcion,texto:r.textoClasificacion,cantidad:0});m.get(key).cantidad++;}return [...m.values()].sort((a,b)=>b.cantidad-a.cantidad);}
@@ -100,7 +100,7 @@ function abrirWizard(){pendientes=getPendientes();pendienteIndex=0;$('wizardClas
 function cerrarWizard(){$('wizardClasificacion').classList.add('hidden');aplicarFiltros();}
 function renderWizard(){pendientes=getPendientes();if(!pendientes.length){$('wizardContenido').classList.add('hidden');$('wizardFinalizado').classList.remove('hidden');$('wizardProgreso').textContent='Finalizado';return;}$('wizardContenido').classList.remove('hidden');$('wizardFinalizado').classList.add('hidden');if(pendienteIndex>=pendientes.length)pendienteIndex=pendientes.length-1;const p=pendientes[pendienteIndex];$('wizardProgreso').textContent=`${pendienteIndex+1} de ${pendientes.length}`;$('wizardEquipo').textContent=p.equipo;$('wizardUbicacion').textContent=p.ubicacion||'-';$('wizardDescripcion').textContent=p.descripcion||'-';$('wizardCantidad').textContent=p.cantidad;llenarUnidades();$('boxNuevaUnidad').classList.add('hidden');$('wizardNuevaUnidad').value='';}
 function llenarUnidades(){const select=$('wizardUnidad');const unidades=[...new Set([...UNIDADES_BASE,...unidadesUsuario])];select.innerHTML='<option value="">Seleccionar unidad</option>'+unidades.map(u=>`<option value="${u}">${nombreUnidad(u)}</option>`).join('')+'<option value="__NUEVA__">➕ Nueva unidad...</option>';}
-function guardarWizard(){const p=pendientes[pendienteIndex];let unidad=$('wizardUnidad').value;if(unidad==='__NUEVA__'){unidad=$('wizardNuevaUnidad').value.trim();if(!unidad)return alert('Escribe el nombre de la nueva unidad.');if(!unidadesUsuario.includes(unidad)){unidadesUsuario.push(unidad);nombresUnidades[unidad]=unidad;localStorage.setItem(KEY_UNIDADES,JSON.stringify(unidadesUsuario));localStorage.setItem(KEY_NOMBRES,JSON.stringify(nombresUnidades));}}if(!unidad)return alert('Selecciona una unidad.');const regla=generarRegla(p.equipo);reglasUsuario.unshift({buscar:regla,unidad});localStorage.setItem(KEY_REGLAS,JSON.stringify(reglasUsuario));aplicarFiltros();pendientes=getPendientes();if(pendienteIndex>=pendientes.length)pendienteIndex=pendientes.length-1;if(!pendientes.length){renderWizard();return;}renderWizard();}
+function guardarWizard(){const p=pendientes[pendienteIndex];let unidad=$('wizardUnidad').value;if(unidad==='__NUEVA__'){unidad=$('wizardNuevaUnidad').value.trim().toUpperCase();if(!unidad)return alert('Escribe el nombre de la nueva unidad.');if(!unidadesUsuario.includes(unidad)){unidadesUsuario.push(unidad);nombresUnidades[unidad]=unidad;localStorage.setItem(KEY_UNIDADES,JSON.stringify(unidadesUsuario));localStorage.setItem(KEY_NOMBRES,JSON.stringify(nombresUnidades));}}if(!unidad)return alert('Selecciona una unidad.');const regla=generarRegla(p.equipo);reglasUsuario.unshift({buscar:regla,unidad});localStorage.setItem(KEY_REGLAS,JSON.stringify(reglasUsuario));aplicarFiltros();pendientes=getPendientes();if(pendienteIndex>=pendientes.length)pendienteIndex=pendientes.length-1;if(!pendientes.length){renderWizard();return;}renderWizard();}
 function generarRegla(t){return String(t).split(' ').filter(Boolean).slice(0,6).join(' ');}
 
 function obtenerListaUnidades(){
@@ -241,7 +241,41 @@ function mostrarSugerencias(t){$('sugerenciasEquipo').innerHTML='';const clave=n
 function ocultarSugerencias(){$('sugerenciasEquipo').style.display='none';}
 function renderTablaBase(base){$('tablaBase').querySelector('thead').innerHTML='<tr><th>Fecha aviso</th><th>Clase aviso</th><th>Aviso</th><th>Orden</th><th>Descripción</th><th>Ubicación técnica</th><th>Denominación ubicación técnica</th><th>Unidad</th><th>Estado</th><th>Inicio avería</th><th>Fin avería</th><th>Duración parada</th></tr>';$('tablaBase').querySelector('tbody').innerHTML=base.length?base.map(r=>`<tr><td>${fmtF(r.fechaAviso)}</td><td>${r.claseAviso}</td><td>${r.aviso}</td><td>${r.orden}</td><td class="descripcion">${r.descripcion}</td><td>${r.ubicacionTecnica}</td><td>${r.denominacionUbicacionTecnica}</td><td>${r.unidad}</td><td>${r.estadoUnidad==='OK'?'<span class="badge-ok">OK</span>':'<span class="badge-review">Revisar</span>'}</td><td>${r.inicioAveria}</td><td>${r.finAveria}</td><td>${fmtN(r.duracionParada)}</td></tr>`).join(''):'<tr><td colspan="12">No hay datos</td></tr>';}
 function extraerBloquesLYD(m){const out=[];if(!m.length)return out;const maxCols=Math.max(...m.slice(0,10).map(f=>f.length));for(let c=1;c<maxCols;c++){let unidad='';for(let r=0;r<Math.min(10,m.length);r++){const v=m[r]?.[c];if(v&& !convertirFecha(v)){unidad=String(v);break;}}if(!unidad)continue;let ini=null,fin=null;for(let r=1;r<m.length;r++){const f=convertirFecha(m[r]?.[0]);if(!f)continue;const is=normalizar(m[r]?.[c]).includes('lyd');if(is&&!ini){ini=f;fin=f}else if(is){fin=f}else if(ini){out.push(crearBloque(unidad,ini,fin));ini=null;fin=null}}if(ini)out.push(crearBloque(unidad,ini,fin));}return out;}
-function crearBloque(unidad,inicio,fin){const dias=Math.round((fin-inicio)/86400000)+1;return{unidad,inicio,fin,dias,horas:dias*24};}
+function normalizarUnidadGantt(unidad){
+  const n=normalizar(unidad);
+
+  const equivalencias=[
+    ['alev','ALEVINAJE'],
+    ['alevinaje','ALEVINAJE'],
+    ['ff','FF2'],
+    ['ff2','FF2'],
+    ['hat','HATCHERY'],
+    ['hatchery','HATCHERY'],
+    ['pre','PRE SMOLT'],
+    ['presmolt','PRE SMOLT'],
+    ['pre smolt','PRE SMOLT'],
+    ['filtrado','FILTRADO'],
+    ['riles','RILES'],
+    ['ap','AGUA POTABLE'],
+    ['agua potable','AGUA POTABLE'],
+    ['generadores','GENERADORES'],
+    ['generador','GENERADORES']
+  ];
+
+  const encontrada=equivalencias.find(([codigo])=>n===normalizar(codigo));
+  return encontrada ? encontrada[1] : String(unidad||'').toUpperCase();
+}
+
+function crearBloque(unidad,inicio,fin){
+  const dias=Math.round((fin-inicio)/86400000)+1;
+  return{
+    unidad:normalizarUnidadGantt(unidad),
+    inicio,
+    fin,
+    dias,
+    horas:dias*24
+  };
+}
 function renderTablaLYD(b){$('tablaLYD').querySelector('thead').innerHTML='<tr><th>Unidad</th><th>Inicio LYD</th><th>Fin LYD</th><th>Días LYD</th><th>Horas no operativas planificadas</th></tr>';$('tablaLYD').querySelector('tbody').innerHTML=b.length?b.map(x=>`<tr><td>${nombreUnidad(x.unidad)}</td><td>${fmtF(x.inicio)}</td><td>${fmtF(x.fin)}</td><td>${x.dias}</td><td>${x.horas}</td></tr>`).join(''):'<tr><td colspan="5">No hay períodos LYD detectados</td></tr>';$('filasLYD').textContent=`${b.length} bloques`;}
 function unirFechaHora(fv,hv){const f=convertirFecha(fv);if(!f)return null;const h=convertirHora(hv);return new Date(f.getFullYear(),f.getMonth(),f.getDate(),h.horas,h.minutos,h.segundos);}
 function convertirFecha(v){if(!v)return null;if(v instanceof Date&&!isNaN(v))return v;if(typeof v==='number')return new Date(Date.UTC(1899,11,30)+v*86400000);const s=String(v).trim(),m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);const f=new Date(s);return isNaN(f)?null:f;}
