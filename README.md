@@ -1,9 +1,6 @@
-# Dashboard Confiabilidad Equipos - v2.6.1
+# Dashboard Confiabilidad Equipos - v2.6.2
 
-## Ajuste visual
-- Se elimina la columna **Estado** de la tabla base.
-- La columna **Unidad** se mantiene como referencia principal.
-- Los registros sin clasificar se resaltan suavemente en amarillo.
-- El KPI **Sin clasificar** continúa mostrando la cantidad pendiente.
-
-Se mantiene intacta la lectura automática de SAP y Gantt.
+Cambio único:
+- Se habilita la selección de texto en la tabla de datos.
+- Los números de Aviso y Orden pueden seleccionarse y copiarse con Ctrl+C.
+- Sin cambios visuales ni botones adicionales.

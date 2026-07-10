@@ -94,3 +94,22 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
   font-weight:900;
   color:#92400e;
 }
+
+
+/* v2.6.2 - Permitir copiar texto de la tabla */
+#tablaBase,
+#tablaBase *{
+  -webkit-user-select:text !important;
+  -moz-user-select:text !important;
+  -ms-user-select:text !important;
+  user-select:text !important;
+}
+
+#tablaBase td{
+  cursor:text;
+}
+
+#tablaBase td:nth-child(3),
+#tablaBase td:nth-child(4){
+  font-family:Consolas, monospace;
+}
