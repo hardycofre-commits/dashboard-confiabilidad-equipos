@@ -6,6 +6,7 @@ let reglasUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS)||'[]');
 let unidadesUsuario=JSON.parse(localStorage.getItem(KEY_UNIDADES)||'[]');
 let nombresUnidades=JSON.parse(localStorage.getItem(KEY_NOMBRES)||'{"Hat":"Hatchery","Hatchery":"Hatchery","FF":"FF2","FF2":"FF2","Pre":"Pre Smolt","Pre Smolt":"Pre Smolt","Alev":"Alevinaje","Alevinaje":"Alevinaje"}');
 let datosOriginales=[], datosBase=[], bloquesLYD=[], mapaColumnas={}, listaEquipos=[], pendientes=[], pendienteIndex=0;
+let ordenFecha='asc';
 const $=id=>document.getElementById(id);
 
 document.addEventListener('DOMContentLoaded',()=>{configurarFechas();setupEventos();cargarDesdeGitHub();});
@@ -23,6 +24,8 @@ function setupEventos(){
   $('btnAbrirEquipos').onclick=()=>mostrarSugerencias('');
   document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarSugerencias();});
   $('fechaDesde').onchange=aplicarFiltros;$('fechaHasta').onchange=aplicarFiltros;
+  $('btnOrdenAsc').onclick=()=>cambiarOrdenFecha('asc');
+  $('btnOrdenDesc').onclick=()=>cambiarOrdenFecha('desc');
   $('unidadFiltro').onchange=aplicarFiltros;
   $('btnGuardarUnidades').onclick=guardarTodosNombresUnidades;
 }
@@ -51,6 +54,30 @@ function selUlt(arr,f){const x=arr.filter(f).sort((a,b)=>a.name.localeCompare(b.
 async function cargarSAP(a){$('kArchivo').textContent=a.name;$('txtArchivo').textContent=a.name;const rows=await leerExcel(a.download_url,'json');datosOriginales=rows;mapaColumnas=detectarColumnas(Object.keys(rows[0]||{}));$('txtRegistros').textContent=`${rows.length.toLocaleString('es-CL')} registros SAP leídos`;cargarListaEquipos(rows);cargarFiltroUnidades();aplicarFiltros();}
 async function cargarGantt(a){$('kArchivoGantt').textContent=a.name;$('txtGantt').textContent=a.name;const m=await leerExcel(a.download_url,'array');bloquesLYD=extraerBloquesLYD(m);$('kBloquesLYD').textContent=bloquesLYD.length.toLocaleString('es-CL');renderTablaLYD(bloquesLYD);renderTablaUnidades();}
 async function leerExcel(url,modo){const r=await fetch(url+'?v='+Date.now());if(!r.ok)throw new Error('No fue posible descargar archivo.');const b=await r.arrayBuffer(), wb=XLSX.read(b,{type:'array',cellDates:true}), sh=wb.Sheets[wb.SheetNames[0]];return modo==='array'?XLSX.utils.sheet_to_json(sh,{header:1,defval:''}):XLSX.utils.sheet_to_json(sh,{defval:''});}
+
+function cambiarOrdenFecha(tipo){
+  ordenFecha=tipo;
+  $('btnOrdenAsc').classList.toggle('active',tipo==='asc');
+  $('btnOrdenDesc').classList.toggle('active',tipo==='desc');
+  aplicarFiltros();
+}
+
+function fechaOrdenRegistro(registro){
+  return registro.inicioAveriaFecha || registro.fechaAviso || null;
+}
+
+function ordenarRegistrosPorFecha(registros){
+  return registros.sort((a,b)=>{
+    const fa=fechaOrdenRegistro(a);
+    const fb=fechaOrdenRegistro(b);
+
+    if(!fa && !fb) return 0;
+    if(!fa) return 1;
+    if(!fb) return -1;
+
+    return ordenFecha==='asc' ? fa-fb : fb-fa;
+  });
+}
 
 function aplicarFiltros(){
   let base=construirDatosBase(datosOriginales);
@@ -84,13 +111,14 @@ function aplicarFiltros(){
     $('txtFiltro').textContent=`Unidad: ${unidadSeleccionada}`;
   }
 
+  base=ordenarRegistrosPorFecha(base);
   datosBase=base;
   actualizarKPIs();
   renderTablaBase(base.slice(0,300));
   renderTablaUnidades();
   $('filasBase').textContent=`${base.length.toLocaleString('es-CL')} filas`;
 }
-function construirDatosBase(rows){return rows.map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]);const texto=`${den} ${ubi} ${des}`;const unidad=obtenerUnidad(texto);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:valor(r[mapaColumnas.aviso]),orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,duracionParada:numero(r[mapaColumnas.duracionParada])};});}
+function construirDatosBase(rows){return rows.map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]);const texto=`${den} ${ubi} ${des}`;const unidad=obtenerUnidad(texto);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:valor(r[mapaColumnas.aviso]),orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||convertirFecha(r[mapaColumnas.fechaAviso]),duracionParada:numero(r[mapaColumnas.duracionParada])};});}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
 function nombreUnidad(u){return normalizarUnidadGantt(u);}
 function actualizarKPIs(){const all=construirDatosBase(datosOriginales);$('kEquipos').textContent=new Set(datosBase.map(r=>r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');$('kAvisos').textContent=new Set(datosBase.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');$('kSinClasificar').textContent=getPendientes().length.toLocaleString('es-CL');}

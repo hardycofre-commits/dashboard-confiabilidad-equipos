@@ -113,3 +113,36 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 #tablaBase td:nth-child(4){
   font-family:Consolas, monospace;
 }
+
+.table-title-actions{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.sort-btn{
+  width:30px;
+  height:28px;
+  padding:0;
+  border:1px solid #2d73bf;
+  border-radius:4px;
+  background:#fff;
+  color:#0b5cab;
+  display:grid;
+  place-items:center;
+  font-size:18px;
+}
+.sort-btn:hover{
+  background:#edf5ff;
+}
+.sort-btn.active{
+  background:#dbeafe;
+  box-shadow:0 0 0 1px #0b5cab inset;
+}
+.sort-lines{
+  display:inline-block;
+  line-height:1;
+  transform:rotate(0deg);
+}
+.sort-lines.desc{
+  transform:rotate(180deg);
+}

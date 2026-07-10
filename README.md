@@ -1,6 +1,16 @@
-# Dashboard Confiabilidad Equipos - v2.6.2
+# Dashboard Confiabilidad Equipos - v2.6.3
 
-Cambio único:
-- Se habilita la selección de texto en la tabla de datos.
-- Los números de Aviso y Orden pueden seleccionarse y copiarse con Ctrl+C.
-- Sin cambios visuales ni botones adicionales.
+## Cambio único
+Se agregan botones de orden ascendente y descendente, similares a SAP.
+
+### Regla de orden
+1. Usa Inicio de avería cuando existe.
+2. Si no existe, usa Fecha de aviso.
+3. Intercala todos los registros cronológicamente.
+4. Los registros sin fecha quedan al final.
+
+### Botones
+- Ascendente: más antiguo a más reciente.
+- Descendente: más reciente a más antiguo.
+
+La lectura automática de SAP y Gantt se mantiene intacta.
