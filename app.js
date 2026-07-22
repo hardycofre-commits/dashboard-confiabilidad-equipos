@@ -365,26 +365,22 @@ function fmtF(f){return f?f.toLocaleDateString('es-CL'):''}function fmtN(n){retu
 function setEstado(t,cls,d){$('estadoValidacion').textContent=t;$('estadoValidacion').className='status '+cls;$('validacionDetalle').innerHTML=d;}
 function mostrarError(msg){setEstado('Error','error',msg);}
 
+function mostrarPanelConfiabilidad(){
+ const base=document.querySelector('#datosBaseContainer')||document.querySelector('.datos-base')||document.querySelector('section');
+ const p=document.getElementById('panel-confiabilidad');
+ if(base) base.style.display='none';
+ if(p) p.style.display='block';
+}
+function mostrarResumen(){
+ const base=document.querySelector('#datosBaseContainer')||document.querySelector('.datos-base')||document.querySelector('section');
+ const p=document.getElementById('panel-confiabilidad');
+ if(base) base.style.display='';
+ if(p) p.style.display='none';
+}
 document.addEventListener('DOMContentLoaded',()=>{
- document.querySelectorAll('.menu-item').forEach(a=>{
-   a.addEventListener('click',e=>{
-     const v=a.dataset.view;
-     if(v==='confiabilidad'){
-       document.querySelectorAll('.view').forEach(x=>x.style.display='none');
-       const c=document.getElementById('view-confiabilidad');
-       if(c) c.style.display='block';
-     }
-   });
+ const c=[...document.querySelectorAll('a,button')];
+ c.forEach(el=>{
+   if(el.textContent.includes('Confiabilidad')) el.onclick=(e)=>{e.preventDefault();mostrarPanelConfiabilidad();};
+   if(el.textContent.includes('Resumen')) el.onclick=(e)=>{e.preventDefault();mostrarResumen();};
  });
-});
-
-document.addEventListener('DOMContentLoaded',()=>{
- const b=document.getElementById('menuConfiabilidad');
- if(b){
- b.onclick=(e)=>{
- e.preventDefault();
- const v=document.getElementById('vistaConfiabilidad');
- if(v){v.style.display='block';}
- };
- }
 });

@@ -11,7 +11,6 @@
   <aside class="sidebar">
     <a class="menu-item active" href="#" data-view="resumen">📊 Resumen</a>
     <a class="menu-item" href="#" data-view="unidades">🏷️ Unidades</a>
-      <a class="menu-item" href="#" data-view="confiabilidad">📈 Confiabilidad</a>
   </aside>
 
   <main class="content">
@@ -25,7 +24,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 3.1</small>
+        <small>Versión 2.6.4</small>
       </div>
     </header>
 
@@ -33,7 +32,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v3.1.1</strong></div>
+      <div><span>Versión</span><strong>v3.0.1</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -96,9 +95,9 @@
         <article class="panel">
           <div class="panel-title"><h3>Próximas versiones</h3></div>
           <ul class="roadmap">
-            <li><b>v3.1</b> Tabla de confiabilidad</li>
-            <li><b>v3.1</b> Cálculo MTBF</li>
-            <li><b>v3.1</b> Cálculo MTTR</li>
+            <li><b>v3.0</b> Tabla de confiabilidad</li>
+            <li><b>v3.0</b> Cálculo MTBF</li>
+            <li><b>v3.0</b> Cálculo MTTR</li>
             <li><b>v2.7</b> Disponibilidad</li>
           </ul>
         </article>
@@ -130,18 +129,7 @@
         <p class="hint">Presiona el lápiz para modificar el nombre visible. Los cambios se aplicarán al guardar y no modificarán el SAP ni el Gantt.</p>
       </section>
     </section>
-  <section id="view-confiabilidad" class="view" style="display:none">
-<div class="panel">
-<h2>ANÁLISIS DE CONFIABILIDAD</h2>
-<p><strong>Equipo seleccionado:</strong> <span id="conf-equipo">Seleccione un equipo desde Resumen.</span></p>
-<p>Esta sección será la base para el cálculo de MTBF, MTTR y Disponibilidad.</p>
-<table class="table">
-<thead><tr><th>Equipo</th><th>Aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>Horas LYD</th><th>Horas operativas</th></tr></thead>
-<tbody id="tabla-confiabilidad"></tbody>
-</table>
-</div>
-</section>
-</main>
+  </main>
 
   <div id="wizardClasificacion" class="modal hidden">
     <div class="wizard-card">
@@ -189,15 +177,10 @@
 
   <script src="app.js"></script>
 
-<div id="vistaConfiabilidad" style="display:none;padding:20px">
-<h2>ANÁLISIS DE CONFIABILIDAD</h2>
-<div style="background:#fff;border:1px solid #cfd8e3;padding:12px;border-radius:6px;margin-bottom:12px">
-<b>Equipo seleccionado:</b> <span id="confEquipo">Seleccione un equipo desde Resumen</span><br>
-<b>Unidad:</b> <span id="confUnidad">-</span><br>
-<b>Fallas detectadas:</b> <span id="confFallas">-</span>
-</div>
-<table style="width:100%;border-collapse:collapse">
-<thead><tr><th>Aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>Horas LYD</th><th>Horas operativas</th></tr></thead>
-<tbody><tr><td colspan="7" style="text-align:center;padding:20px">La tabla MTBF se implementará en la siguiente etapa.</td></tr></tbody>
-</table></div></body>
+<div id="panel-confiabilidad" style="display:none;margin-top:16px">
+<div style="padding:14px;border:1px solid #d8e3f2;border-radius:8px;background:#fff">
+<h3>ANÁLISIS DE CONFIABILIDAD</h3>
+<p>Seleccione un equipo en Resumen. Esta vista utilizará automáticamente el equipo y los filtros actuales.</p>
+</div></div>
+</body>
 </html>
