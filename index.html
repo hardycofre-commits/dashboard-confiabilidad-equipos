@@ -10,7 +10,7 @@
 <body>
   <aside class="sidebar">
     <a class="menu-item active" href="#" data-view="resumen">📊 Resumen</a>
-    <a class="menu-item" href="#" data-view="unidades">🏷️ Unidades</a>
+    <a class="menu-item" href="#" data-view="unidades">🏷️ Unidades</span></a><a href="#" id="menuConfiabilidad" class="menu-item"><span>📈 Confiabilidad</a>
   </aside>
 
   <main class="content">
@@ -109,21 +109,21 @@
       </section>
     </section>
 
-    <section id="viewUnidades" class="view hidden">
+    <section id="viewUnidades</span></a><a href="#" id="menuConfiabilidad" class="menu-item"><span>📈 Confiabilidad" class="view hidden">
       <section class="panel unidades-panel">
         <div class="panel-title">
           <h3>🏷️ UNIDADES</h3>
         </div>
 
         <div class="table-wrap unidades-wrap">
-          <table id="tablaUnidades">
+          <table id="tablaUnidades</span></a><a href="#" id="menuConfiabilidad" class="menu-item"><span>📈 Confiabilidad">
             <thead></thead>
             <tbody></tbody>
           </table>
         </div>
 
         <div class="unidades-actions">
-          <button id="btnGuardarUnidades">💾 Guardar cambios</button>
+          <button id="btnGuardarUnidades</span></a><a href="#" id="menuConfiabilidad" class="menu-item"><span>📈 Confiabilidad">💾 Guardar cambios</button>
         </div>
 
         <p class="hint">Presiona el lápiz para modificar el nombre visible. Los cambios se aplicarán al guardar y no modificarán el SAP ni el Gantt.</p>
@@ -176,5 +176,14 @@
   </div>
 
   <script src="app.js"></script>
+
+<div id="panelConfiabilidad" style="display:none;padding:20px">
+<h2>ANÁLISIS DE CONFIABILIDAD</h2>
+<p id="confMsg">Seleccione un equipo desde Resumen para comenzar el análisis.</p>
+<table border="1" width="100%" style="border-collapse:collapse">
+<thead><tr><th>Equipo</th><th>Aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>Horas LYD</th><th>Horas operativas</th></tr></thead>
+<tbody id="tablaConfiabilidad"></tbody>
+</table>
+</div>
 </body>
 </html>
