@@ -147,4 +147,6 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
   transform:rotate(180deg);
 }
 
-.copyable{cursor:pointer;user-select:none}.copyable:hover{color:#0b5cab;text-decoration:underline;font-weight:600}
+.copyable{cursor:pointer;user-select:text}.copyable:hover{color:#0b5cab;text-decoration:underline;font-weight:600}
+
+.copyable{cursor:pointer;user-select:text}.copyable:hover{color:#0b5cab;text-decoration:underline;font-weight:600}

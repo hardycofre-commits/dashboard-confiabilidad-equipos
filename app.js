@@ -1,4 +1,18 @@
-function copiarTexto(el,valor){navigator.clipboard.writeText(String(valor));const o=el.textContent;el.textContent='✔ Copiado';setTimeout(()=>el.textContent=o,900);}
+function copiarTexto(el,valor){
+if(navigator.clipboard){navigator.clipboard.writeText(String(valor));}
+const original=el.textContent;el.textContent='✔ Copiado';
+setTimeout(()=>{el.textContent=original;},900);
+}
+
+
+function copiarTexto(el,valor){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(String(valor));
+  }
+  const original=el.textContent;
+  el.textContent='✔ Copiado';
+  setTimeout(()=>{el.textContent=original;},900);
+}
 
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main',folder:'datos'};
 const UNIDADES_BASE=['HATCHERY','FF2','ALEVINAJE','PRE SMOLT','RILES','FILTRADO','GENERADORES','OTROS'];
