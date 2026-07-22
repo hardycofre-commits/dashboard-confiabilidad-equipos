@@ -146,3 +146,5 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 .sort-lines.desc{
   transform:rotate(180deg);
 }
+
+.copyable{cursor:pointer;user-select:none}.copyable:hover{color:#0b5cab;text-decoration:underline;font-weight:600}

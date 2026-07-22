@@ -1,3 +1,5 @@
+function copiarTexto(el,valor){navigator.clipboard.writeText(String(valor));const o=el.textContent;el.textContent='✔ Copiado';setTimeout(()=>el.textContent=o,900);}
+
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main',folder:'datos'};
 const UNIDADES_BASE=['HATCHERY','FF2','ALEVINAJE','PRE SMOLT','RILES','FILTRADO','GENERADORES','OTROS'];
 const MAPEO_BASE=[['HATCHERY','HATCHERY'],['HAT','HATCHERY'],['FF2','FF2'],['FF','FF2'],['ALEVINAJE','ALEVINAJE'],['ALEV','ALEVINAJE'],['PRE-SMOLT','PRE SMOLT'],['PRE SMOLT','PRE SMOLT'],['PRESMOLT','PRE SMOLT'],['RILES','RILES'],['FILTRADO','FILTRADO'],['FILTRO','FILTRADO'],['GEN','GENERADORES'],['GENERADOR','GENERADORES']];
@@ -289,8 +291,8 @@ function renderTablaBase(base){
       <tr class="${r.unidad==='Sin clasificar'?'fila-sin-clasificar':''}">
         <td>${fmtF(r.fechaAviso)}</td>
         <td>${r.claseAviso}</td>
-        <td>${r.aviso}</td>
-        <td>${r.orden}</td>
+        <td><span class="copyable" onclick="copiarTexto(this,'${r.aviso}')">${r.aviso}</span></td>
+        <td><span class="copyable" onclick="copiarTexto(this,'${r.orden}')">${r.orden}</span></td>
         <td class="descripcion">${r.descripcion}</td>
         <td>${r.ubicacionTecnica}</td>
         <td>${r.denominacionUbicacionTecnica}</td>
