@@ -366,13 +366,14 @@ function setEstado(t,cls,d){$('estadoValidacion').textContent=t;$('estadoValidac
 function mostrarError(msg){setEstado('Error','error',msg);}
 
 document.addEventListener('DOMContentLoaded',()=>{
- const m=document.getElementById('menuConfiabilidad');
- if(m){
-  m.addEventListener('click',e=>{
-    e.preventDefault();
-    const p=document.getElementById('panelConfiabilidad');
-    if(p) p.style.display='block';
-    window.scrollTo({top:0,behavior:'smooth'});
-  });
- }
+ document.querySelectorAll('.menu-item').forEach(a=>{
+   a.addEventListener('click',e=>{
+     const v=a.dataset.view;
+     if(v==='confiabilidad'){
+       document.querySelectorAll('.view').forEach(x=>x.style.display='none');
+       const c=document.getElementById('view-confiabilidad');
+       if(c) c.style.display='block';
+     }
+   });
+ });
 });
