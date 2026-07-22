@@ -25,7 +25,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 2.6.4</small>
+        <small>Versión 3.1</small>
       </div>
     </header>
 
@@ -33,7 +33,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v2.6.4.1</strong></div>
+      <div><span>Versión</span><strong>v3.1.1</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -96,9 +96,9 @@
         <article class="panel">
           <div class="panel-title"><h3>Próximas versiones</h3></div>
           <ul class="roadmap">
-            <li><b>v2.6.4</b> Tabla de confiabilidad</li>
-            <li><b>v2.6.4</b> Cálculo MTBF</li>
-            <li><b>v2.6.4</b> Cálculo MTTR</li>
+            <li><b>v3.1</b> Tabla de confiabilidad</li>
+            <li><b>v3.1</b> Cálculo MTBF</li>
+            <li><b>v3.1</b> Cálculo MTTR</li>
             <li><b>v2.7</b> Disponibilidad</li>
           </ul>
         </article>
@@ -188,5 +188,16 @@
   </div>
 
   <script src="app.js"></script>
-</body>
+
+<div id="vistaConfiabilidad" style="display:none;padding:20px">
+<h2>ANÁLISIS DE CONFIABILIDAD</h2>
+<div style="background:#fff;border:1px solid #cfd8e3;padding:12px;border-radius:6px;margin-bottom:12px">
+<b>Equipo seleccionado:</b> <span id="confEquipo">Seleccione un equipo desde Resumen</span><br>
+<b>Unidad:</b> <span id="confUnidad">-</span><br>
+<b>Fallas detectadas:</b> <span id="confFallas">-</span>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr><th>Aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>Horas LYD</th><th>Horas operativas</th></tr></thead>
+<tbody><tr><td colspan="7" style="text-align:center;padding:20px">La tabla MTBF se implementará en la siguiente etapa.</td></tr></tbody>
+</table></div></body>
 </html>

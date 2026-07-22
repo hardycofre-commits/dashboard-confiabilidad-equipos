@@ -377,3 +377,14 @@ document.addEventListener('DOMContentLoaded',()=>{
    });
  });
 });
+
+document.addEventListener('DOMContentLoaded',()=>{
+ const b=document.getElementById('menuConfiabilidad');
+ if(b){
+ b.onclick=(e)=>{
+ e.preventDefault();
+ const v=document.getElementById('vistaConfiabilidad');
+ if(v){v.style.display='block';}
+ };
+ }
+});
