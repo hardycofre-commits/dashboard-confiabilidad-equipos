@@ -53,7 +53,20 @@ function cambiarVista(v){
     $('viewConfiabilidad').classList.remove('hidden');
     const eq=$('busquedaEquipo')?$('busquedaEquipo').value:'';
     if($('confEquipo')) $('confEquipo').textContent=eq||'Seleccione un equipo';
-    if($('confFallas')) $('confFallas').textContent=(window.datosFiltrados?window.datosFiltrados.length:0);
+    const datos=(window.datosFiltrados&&window.datosFiltrados.length)?window.datosFiltrados:(window.datosSAP||[]);
+    if($('confFallas')) $('confFallas').textContent=datos.length;
+    if($('confUnidad') && datos.length){
+      $('confUnidad').textContent=datos[0].unidad||datos[0].Unidad||'-';
+    }
+    const tb=$('confTablaBody');
+    if(tb){
+      tb.innerHTML='';
+      datos.forEach(r=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${r.aviso||r.Aviso||''}</td><td>${r.orden||r.Orden||''}</td><td>${r.inicioAveria||r['Inicio avería']||''}</td><td>${r.finAveria||r['Fin avería']||''}</td><td></td><td></td><td></td><td></td>`;
+        tb.appendChild(tr);
+      });
+    }
   } else {$('viewResumen').classList.remove('hidden');}
   document.querySelector(`.menu-item[data-view="${v}"]`).classList.add('active');
 }
