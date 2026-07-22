@@ -38,7 +38,13 @@ function setupEventos(){
       $('busquedaEquipo').oninput=()=>{mostrarSugerencias($('busquedaEquipo').value.trim());aplicarFiltros();};
   $('busquedaEquipo').onfocus=()=>mostrarSugerencias($('busquedaEquipo').value.trim());
   $('btnAbrirEquipos').onclick=()=>mostrarSugerencias('');
-  document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarSugerencias();});
+  document.addEventListener('click',e=>{if(!e.target.closest('.search-field')){ocultarSugerencias();ocultarSugerenciasConf&&ocultarSugerenciasConf();}});
+  if($('confBuscarEquipo')){
+    $('confBuscarEquipo').oninput=()=>mostrarSugerenciasConf($('confBuscarEquipo').value.trim());
+    $('confBuscarEquipo').onfocus=()=>mostrarSugerenciasConf($('confBuscarEquipo').value.trim());
+  }
+  if($('btnAbrirEquiposConf')) $('btnAbrirEquiposConf').onclick=()=>mostrarSugerenciasConf('');
+
   $('fechaDesde').onchange=aplicarFiltros;$('fechaHasta').onchange=aplicarFiltros;
   $('btnOrdenAsc').onclick=()=>cambiarOrdenFecha('asc');
   $('btnOrdenDesc').onclick=()=>cambiarOrdenFecha('desc');
@@ -369,3 +375,16 @@ function valor(v){return v==null?'':String(v)}function numero(v){if(v==null||v==
 function fmtF(f){return f?f.toLocaleDateString('es-CL'):''}function fmtN(n){return Number(n||0).toLocaleString('es-CL',{maximumFractionDigits:2})}
 function setEstado(t,cls,d){$('estadoValidacion').textContent=t;$('estadoValidacion').className='status '+cls;$('validacionDetalle').innerHTML=d;}
 function mostrarError(msg){setEstado('Error','error',msg);}
+
+function mostrarSugerenciasConf(t){
+ const c=$('sugerenciasEquipoConf'); if(!c)return;
+ const q=(t||'').toUpperCase();
+ c.innerHTML='';
+ (listaEquipos||[]).filter(x=>!q||x.toUpperCase().includes(q)).slice(0,100).forEach(eq=>{
+   const d=document.createElement('div'); d.textContent=eq;
+   d.onclick=()=>{$('confBuscarEquipo').value=eq; ocultarSugerenciasConf();};
+   c.appendChild(d);
+ });
+ c.style.display='block';
+}
+function ocultarSugerenciasConf(){const c=$('sugerenciasEquipoConf'); if(c){c.style.display='none'; c.innerHTML='';}}

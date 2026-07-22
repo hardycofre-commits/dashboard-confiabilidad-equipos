@@ -114,7 +114,14 @@
 <section id="viewConfiabilidad" class="view hidden">
 <h2>ANÁLISIS DE CONFIABILIDAD</h2>
 <div class="filters" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:12px;align-items:end;margin-bottom:16px">
-<div><label>Equipo</label><input id="confBuscarEquipo" placeholder="Escriba GN, BOMBA, UV, HATCHERY..."></div>
+<div class="field search-field equipo-combo">
+<label>Equipo</label>
+<div class="combo-wrapper">
+<input type="text" id="confBuscarEquipo" placeholder="Escriba GN, BOMBA, UV, HATCHERY..." autocomplete="off"/>
+<button type="button" id="btnAbrirEquiposConf" class="combo-arrow">▼</button>
+</div>
+<div id="sugerenciasEquipoConf" class="suggestions"></div>
+</div>
 <div><label>Unidad</label><select id="confUnidadFiltro"><option>Todas</option></select></div>
 <div><label>Fecha desde</label><input type="date" id="confDesde"></div>
 <div><label>Fecha hasta</label><input type="date" id="confHasta"></div>
