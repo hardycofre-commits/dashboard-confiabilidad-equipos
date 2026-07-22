@@ -364,13 +364,3 @@ function valor(v){return v==null?'':String(v)}function numero(v){if(v==null||v==
 function fmtF(f){return f?f.toLocaleDateString('es-CL'):''}function fmtN(n){return Number(n||0).toLocaleString('es-CL',{maximumFractionDigits:2})}
 function setEstado(t,cls,d){$('estadoValidacion').textContent=t;$('estadoValidacion').className='status '+cls;$('validacionDetalle').innerHTML=d;}
 function mostrarError(msg){setEstado('Error','error',msg);}
-
-document.addEventListener('DOMContentLoaded',()=>{
- const b=document.getElementById('menuConfiabilidad');
- if(b){
-   b.addEventListener('click',e=>{
-      e.preventDefault();
-      const p=document.getElementById('panelConfiabilidad');
-      if(p){p.style.display='block'; p.scrollIntoView({behavior:'smooth'});}
-   });
-});
