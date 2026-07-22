@@ -10,7 +10,7 @@
 <body>
   <aside class="sidebar">
     <a class="menu-item active" href="#" data-view="resumen">📊 Resumen</a>
-    <a class="menu-item" href="#" data-view="unidades">🏷️ Unidades</a>
+    <a class="menu-item" href="#" data-view="unidades">🏷️ Unidades</span></a><a href="#" class="menu-item" id="menuConfiabilidad"><span>📈 Confiabilidad</span></a></a>
   </aside>
 
   <main class="content">
@@ -32,7 +32,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v3.0.1</strong></div>
+      <div><span>Versión</span><strong>v2.6.4.1</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -95,9 +95,9 @@
         <article class="panel">
           <div class="panel-title"><h3>Próximas versiones</h3></div>
           <ul class="roadmap">
-            <li><b>v3.0</b> Tabla de confiabilidad</li>
-            <li><b>v3.0</b> Cálculo MTBF</li>
-            <li><b>v3.0</b> Cálculo MTTR</li>
+            <li><b>v2.6.4</b> Tabla de confiabilidad</li>
+            <li><b>v2.6.4</b> Cálculo MTBF</li>
+            <li><b>v2.6.4</b> Cálculo MTTR</li>
             <li><b>v2.7</b> Disponibilidad</li>
           </ul>
         </article>
@@ -177,10 +177,10 @@
 
   <script src="app.js"></script>
 
-<div id="panel-confiabilidad" style="display:none;margin-top:16px">
-<div style="padding:14px;border:1px solid #d8e3f2;border-radius:8px;background:#fff">
+<div id="panelConfiabilidad" style="display:none;margin:16px 0">
+<div style="background:#fff;border:1px solid #d9e2ef;border-radius:8px;padding:16px">
 <h3>ANÁLISIS DE CONFIABILIDAD</h3>
-<p>Seleccione un equipo en Resumen. Esta vista utilizará automáticamente el equipo y los filtros actuales.</p>
+<p>Seleccione un equipo desde Resumen para comenzar el análisis.</p>
 </div></div>
 </body>
 </html>

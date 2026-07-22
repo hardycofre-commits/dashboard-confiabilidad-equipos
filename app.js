@@ -365,22 +365,12 @@ function fmtF(f){return f?f.toLocaleDateString('es-CL'):''}function fmtN(n){retu
 function setEstado(t,cls,d){$('estadoValidacion').textContent=t;$('estadoValidacion').className='status '+cls;$('validacionDetalle').innerHTML=d;}
 function mostrarError(msg){setEstado('Error','error',msg);}
 
-function mostrarPanelConfiabilidad(){
- const base=document.querySelector('#datosBaseContainer')||document.querySelector('.datos-base')||document.querySelector('section');
- const p=document.getElementById('panel-confiabilidad');
- if(base) base.style.display='none';
- if(p) p.style.display='block';
-}
-function mostrarResumen(){
- const base=document.querySelector('#datosBaseContainer')||document.querySelector('.datos-base')||document.querySelector('section');
- const p=document.getElementById('panel-confiabilidad');
- if(base) base.style.display='';
- if(p) p.style.display='none';
-}
 document.addEventListener('DOMContentLoaded',()=>{
- const c=[...document.querySelectorAll('a,button')];
- c.forEach(el=>{
-   if(el.textContent.includes('Confiabilidad')) el.onclick=(e)=>{e.preventDefault();mostrarPanelConfiabilidad();};
-   if(el.textContent.includes('Resumen')) el.onclick=(e)=>{e.preventDefault();mostrarResumen();};
- });
+ const b=document.getElementById('menuConfiabilidad');
+ if(b){
+   b.addEventListener('click',e=>{
+      e.preventDefault();
+      const p=document.getElementById('panelConfiabilidad');
+      if(p){p.style.display='block'; p.scrollIntoView({behavior:'smooth'});}
+   });
 });
