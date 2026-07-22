@@ -25,7 +25,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong>--</strong>
-        <small>Versión 3.1</small>
+        <small>Versión 2.6.4</small>
       </div>
     </header>
 
@@ -33,7 +33,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v3.1</strong></div>
+      <div><span>Versión</span><strong>v2.6.4.1</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -110,7 +110,12 @@
       </section>
     </section>
 
-    <section id="viewUnidades" class="view hidden">
+    </section>
+<section id="viewConfiabilidad" class="view hidden">
+<h2>ANÁLISIS DE CONFIABILIDAD</h2>
+<div class="card"><p><strong>Equipo:</strong> <span id="confEquipo">Seleccione un equipo</span></p><p><strong>Unidad:</strong> <span id="confUnidad">-</span></p><p><strong>Fallas:</strong> <span id="confFallas">0</span></p></div><table class="tabla"><thead><tr><th>Aviso</th><th>Orden</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="8">Seleccione un equipo desde Resumen.</td></tr></tbody></table>
+</section>
+<section id="viewUnidades" class="view hidden">
       <section class="panel unidades-panel">
         <div class="panel-title">
           <h3>🏷️ UNIDADES</h3>
@@ -177,20 +182,5 @@
   </div>
 
   <script src="app.js"></script>
-
-<div id="viewConfiabilidad" class="hidden" style="margin:20px;border:1px solid #d9e3f5;border-radius:8px;padding:16px;background:#fff">
-<h2>ANÁLISIS DE CONFIABILIDAD</h2>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
-<div><b>Equipo</b><br><span id="confEquipo">Seleccione un equipo</span></div>
-<div><b>Unidad</b><br><span id="confUnidad">-</span></div>
-<div><b>Total fallas</b><br><span id="confFallas">0</span></div>
-<div><b>Periodo</b><br><span id="confPeriodo">Actual</span></div>
-</div>
-<table style="width:100%;border-collapse:collapse;font-size:12px">
-<thead><tr>
-<th>Equipo</th><th>Aviso</th><th>Orden</th><th>Inicio avería</th><th>Fin avería</th><th>Parada</th><th>LYD</th><th>Fin avería anterior</th><th>Horas calendario</th><th>Horas operativas</th><th>Estado cálculo</th>
-</tr></thead>
-<tbody><tr><td colspan="11" style="text-align:center;padding:20px">Seleccione un equipo desde Resumen para comenzar.</td></tr></tbody>
-</table></div>
 </body>
 </html>

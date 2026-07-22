@@ -49,7 +49,12 @@ function cambiarVista(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));
   document.querySelectorAll('.menu-item').forEach(x=>x.classList.remove('active'));
   if(v==='unidades'){$('viewUnidades').classList.remove('hidden');renderTablaUnidades();}
-  else {$('viewResumen').classList.remove('hidden');}
+  else if(v==='confiabilidad'){
+    $('viewConfiabilidad').classList.remove('hidden');
+    const eq=$('busquedaEquipo')?$('busquedaEquipo').value:'';
+    if($('confEquipo')) $('confEquipo').textContent=eq||'Seleccione un equipo';
+    if($('confFallas')) $('confFallas').textContent=(window.datosFiltrados?window.datosFiltrados.length:0);
+  } else {$('viewResumen').classList.remove('hidden');}
   document.querySelector(`.menu-item[data-view="${v}"]`).classList.add('active');
 }
 function configurarFechas(){$('fechaDesde').value='2025-01-01';$('fechaHasta').value='2026-12-31';}
