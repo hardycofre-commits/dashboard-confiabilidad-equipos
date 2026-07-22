@@ -113,7 +113,16 @@
     </section>
 <section id="viewConfiabilidad" class="view hidden">
 <h2>ANÁLISIS DE CONFIABILIDAD</h2>
-<div class="card"><p><strong>Equipo:</strong> <span id="confEquipo">Seleccione un equipo</span></p><p><strong>Unidad:</strong> <span id="confUnidad">-</span></p><p><strong>Fallas:</strong> <span id="confFallas">0</span></p></div><table class="tabla"><thead><tr><th>Aviso</th><th>Orden</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="8">Seleccione un equipo desde Resumen.</td></tr></tbody></table>
+<div class="filters" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:12px;align-items:end;margin-bottom:16px">
+<div><label>Equipo</label><input id="confBuscarEquipo" placeholder="Escriba GN, BOMBA, UV, HATCHERY..."></div>
+<div><label>Unidad</label><select id="confUnidadFiltro"><option>Todas</option></select></div>
+<div><label>Fecha desde</label><input type="date" id="confDesde"></div>
+<div><label>Fecha hasta</label><input type="date" id="confHasta"></div>
+<button id="btnAnalizar">Analizar</button>
+<button id="btnLimpiar">Limpiar</button>
+</div>
+<div class="card"><p><strong>Equipo:</strong> <span id="confEquipo">-</span></p><p><strong>Unidad:</strong> <span id="confUnidad">-</span></p><p><strong>Fallas:</strong> <span id="confFallas">0</span></p><p><strong>MTBF:</strong> <span id="confMtbf">--</span></p></div>
+<table class="tabla"><thead><tr><th>Aviso</th><th>Orden</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="8">Seleccione un equipo y presione Analizar.</td></tr></tbody></table>
 </section>
 <section id="viewUnidades" class="view hidden">
       <section class="panel unidades-panel">
