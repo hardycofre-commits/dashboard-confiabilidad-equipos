@@ -1,4 +1,4 @@
-# Dashboard Confiabilidad Equipos - v2.6.3
+# Dashboard Confiabilidad Equipos - v3.5
 
 ## Cambio único
 Se agregan botones de orden ascendente y descendente, similares a SAP.

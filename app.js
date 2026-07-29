@@ -35,15 +35,12 @@ function setupEventos(){
   $('btnAnterior').onclick=()=>{if(pendienteIndex>0){pendienteIndex--;renderWizard();}};
   $('btnGuardarSiguiente').onclick=guardarWizard;
   $('wizardUnidad').onchange=()=>{$('boxNuevaUnidad').classList.toggle('hidden',$('wizardUnidad').value!=='__NUEVA__');};
-      $('busquedaEquipo').oninput=()=>{mostrarSugerencias($('busquedaEquipo').value.trim());aplicarFiltros();};
-  $('busquedaEquipo').onfocus=()=>mostrarSugerencias($('busquedaEquipo').value.trim());
-  $('btnAbrirEquipos').onclick=()=>mostrarSugerencias('');
-  document.addEventListener('click',e=>{if(!e.target.closest('.search-field')){ocultarSugerencias();ocultarSugerenciasConf&&ocultarSugerenciasConf();}});
-  if($('confBuscarEquipo')){
-    $('confBuscarEquipo').oninput=()=>mostrarSugerenciasConf($('confBuscarEquipo').value.trim());
-    $('confBuscarEquipo').onfocus=()=>mostrarSugerenciasConf($('confBuscarEquipo').value.trim());
-  }
-  if($('btnAbrirEquiposConf')) $('btnAbrirEquiposConf').onclick=()=>mostrarSugerenciasConf('');
+  configurarBuscadorEquipos('busquedaEquipo','sugerenciasEquipo','btnAbrirEquipos',{
+    alEscribir:aplicarFiltros,
+    alSeleccionar:aplicarFiltros
+  });
+  configurarBuscadorEquipos('confBuscarEquipo','sugerenciasEquipoConf','btnAbrirEquiposConf');
+  document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarBuscadoresEquipos();});
 
   $('fechaDesde').onchange=aplicarFiltros;$('fechaHasta').onchange=aplicarFiltros;
   $('btnOrdenAsc').onclick=()=>cambiarOrdenFecha('asc');
@@ -292,8 +289,63 @@ function cargarListaEquipos(rows){
       .filter(Boolean)
   )].sort((a,b)=>a.localeCompare(b,'es'));
 }
-function mostrarSugerencias(t){$('sugerenciasEquipo').innerHTML='';const clave=normalizar(t);const res=(clave?listaEquipos.filter(e=>normalizar(e).includes(clave)):listaEquipos).slice(0,12);if(!res.length){$('sugerenciasEquipo').innerHTML='<div class="suggestion-empty">Sin coincidencias</div>';$('sugerenciasEquipo').style.display='block';return;}res.forEach(eq=>{$('sugerenciasEquipo').insertAdjacentHTML('beforeend',`<div class="suggestion-item">${eq}</div>`)});[...$('sugerenciasEquipo').children].forEach((d,i)=>d.onclick=()=>{$('busquedaEquipo').value=res[i];ocultarSugerencias();aplicarFiltros();});$('sugerenciasEquipo').style.display='block';}
-function ocultarSugerencias(){$('sugerenciasEquipo').style.display='none';}
+const buscadoresEquipos=[];
+function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
+  const input=$(inputId),contenedor=$(sugerenciasId),boton=$(botonId);
+  if(!input||!contenedor)return;
+  const estado={seleccion:-1,resultados:[],ocultar(){contenedor.style.display='none';contenedor.innerHTML='';}};
+  buscadoresEquipos.push(estado);
+  const marcarSeleccion=()=>{
+    [...contenedor.children].forEach((item,i)=>item.classList.toggle('selected',i===estado.seleccion));
+    const elegido=contenedor.children[estado.seleccion];
+    if(elegido)elegido.scrollIntoView({block:'nearest'});
+  };
+  const seleccionar=i=>{
+    if(i<0||i>=estado.resultados.length)return;
+    input.value=estado.resultados[i];
+    estado.ocultar();
+    if(acciones.alSeleccionar)acciones.alSeleccionar();
+  };
+  const mostrar=texto=>{
+    const clave=normalizar(texto);
+    estado.resultados=(clave?listaEquipos.filter(e=>normalizar(e).includes(clave)):listaEquipos).slice(0,100);
+    estado.seleccion=estado.resultados.length?0:-1;
+    contenedor.innerHTML='';
+    if(!estado.resultados.length){
+      const vacio=document.createElement('div');
+      vacio.className='suggestion-empty';
+      vacio.textContent='Sin coincidencias';
+      contenedor.appendChild(vacio);
+    }else{
+      estado.resultados.forEach((equipo,i)=>{
+        const item=document.createElement('div');
+        item.className='suggestion-item';
+        item.textContent=equipo;
+        item.onmouseenter=()=>{estado.seleccion=i;marcarSeleccion();};
+        item.onmousedown=e=>e.preventDefault();
+        item.onclick=()=>seleccionar(i);
+        contenedor.appendChild(item);
+      });
+    }
+    contenedor.style.display='block';
+    marcarSeleccion();
+  };
+  input.oninput=()=>{mostrar(input.value.trim());if(acciones.alEscribir)acciones.alEscribir();};
+  input.onfocus=()=>mostrar(input.value.trim());
+  input.onkeydown=e=>{
+    if(e.key!=='ArrowDown'&&e.key!=='ArrowUp'&&e.key!=='Enter'&&e.key!=='Escape')return;
+    if(e.key==='Escape'){estado.ocultar();return;}
+    e.preventDefault();
+    if(contenedor.style.display!=='block')mostrar(input.value.trim());
+    if(!estado.resultados.length)return;
+    if(e.key==='Enter'){seleccionar(estado.seleccion);return;}
+    const paso=e.key==='ArrowDown'?1:-1;
+    estado.seleccion=(estado.seleccion+paso+estado.resultados.length)%estado.resultados.length;
+    marcarSeleccion();
+  };
+  if(boton)boton.onclick=()=>{input.focus();mostrar('');};
+}
+function ocultarBuscadoresEquipos(){buscadoresEquipos.forEach(b=>b.ocultar());}
 function renderTablaBase(base){
   $('tablaBase').querySelector('thead').innerHTML=`
     <tr>
@@ -375,16 +427,3 @@ function valor(v){return v==null?'':String(v)}function numero(v){if(v==null||v==
 function fmtF(f){return f?f.toLocaleDateString('es-CL'):''}function fmtN(n){return Number(n||0).toLocaleString('es-CL',{maximumFractionDigits:2})}
 function setEstado(t,cls,d){$('estadoValidacion').textContent=t;$('estadoValidacion').className='status '+cls;$('validacionDetalle').innerHTML=d;}
 function mostrarError(msg){setEstado('Error','error',msg);}
-
-function mostrarSugerenciasConf(t){
- const c=$('sugerenciasEquipoConf'); if(!c)return;
- const q=(t||'').toUpperCase();
- c.innerHTML='';
- (listaEquipos||[]).filter(x=>!q||x.toUpperCase().includes(q)).slice(0,100).forEach(eq=>{
-   const d=document.createElement('div'); d.textContent=eq;
-   d.onclick=()=>{$('confBuscarEquipo').value=eq; ocultarSugerenciasConf();};
-   c.appendChild(d);
- });
- c.style.display='block';
-}
-function ocultarSugerenciasConf(){const c=$('sugerenciasEquipoConf'); if(c){c.style.display='none'; c.innerHTML='';}}
