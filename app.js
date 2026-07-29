@@ -189,19 +189,23 @@ function analizarConfiabilidad(){
   if(desde&&hasta&&desde>hasta)return alert('La fecha desde no puede ser posterior a la fecha hasta.');
   const unidad=$('confUnidadFiltro').value;
   const equipoNormalizado=normalizar(equipo);
-  const registros=construirDatosBase(datosOriginales).filter(r=>{
+  const registrosEquipo=construirDatosBase(datosOriginales).filter(r=>{
     const equipoRegistro=r.denominacionUbicacionTecnica||r.ubicacionTecnica;
     const fecha=r.inicioAveriaFecha||r.fechaAviso;
     return normalizar(equipoRegistro)===equipoNormalizado &&
-      normalizar(r.claseAviso)==='z2' &&
       (!unidad||r.unidad===unidad) &&
       (!desde||!fecha||fecha>=desde) &&
       (!hasta||!fecha||fecha<=hasta);
-  }).filter(r=>r.inicioAveriaFecha).sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
-  const filas=construirCronologiaConfiabilidad(registros);
+  });
+  const registros=registrosEquipo
+    .filter(r=>normalizar(r.claseAviso)==='z2'&&r.inicioAveriaFecha)
+    .sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
+  const periodosZ1=registrosEquipo.filter(esPeriodoZ1FueraOperacion);
+  const filas=construirCronologiaConfiabilidad(registros,periodosZ1);
   const intervalosMtbf=filas.filter(f=>Number.isFinite(f.horasOperativas));
   const mtbf=intervalosMtbf.length?intervalosMtbf.reduce((s,f)=>s+f.horasOperativas,0)/intervalosMtbf.length:null;
   window.datosConfiabilidad=filas;
+  window.periodosZ1Confiabilidad=periodosZ1;
   $('confEquipo').textContent=equipo;
   $('confUnidad').textContent=unidad||([...new Set(registros.map(r=>r.unidad))].join(', ')||'-');
   $('confFallas').textContent=new Set(registros.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
@@ -215,6 +219,7 @@ function limpiarAnalisisConfiabilidad(){
   $('confDesde').value='2025-01-01';
   $('confHasta').value='2026-12-31';
   window.datosConfiabilidad=[];
+  window.periodosZ1Confiabilidad=[];
   $('confEquipo').textContent='-';
   $('confUnidad').textContent='-';
   $('confFallas').textContent='0';
@@ -222,27 +227,40 @@ function limpiarAnalisisConfiabilidad(){
   $('confBody').innerHTML='<tr><td colspan="8">Seleccione un equipo y presione Analizar.</td></tr>';
 }
 
-function construirCronologiaConfiabilidad(registros){
+function construirCronologiaConfiabilidad(registros,periodosZ1=[]){
   return registros.map((registro,i)=>{
     const finAnterior=i>0?registros[i-1].finAveriaFecha:null;
     const diferencia=finAnterior?(registro.inicioAveriaFecha-finAnterior)/3600000:null;
     const horasCalendario=diferencia!=null&&diferencia>=0?diferencia:null;
-    const horasLYD=horasCalendario==null?null:Math.min(horasCalendario,calcularHorasLYD(finAnterior,registro.inicioAveriaFecha,registro.unidad));
-    const horasOperativas=horasCalendario==null?null:Math.max(0,horasCalendario-horasLYD);
-    return{...registro,finAveriaAnterior:finAnterior,horasCalendario,horasLYD,horasOperativas};
+    const horasNoOperativas=horasCalendario==null?null:Math.min(horasCalendario,calcularHorasNoOperativas(finAnterior,registro.inicioAveriaFecha,registro.unidad,periodosZ1));
+    const horasOperativas=horasCalendario==null?null:Math.max(0,horasCalendario-horasNoOperativas);
+    return{...registro,finAveriaAnterior:finAnterior,horasCalendario,horasNoOperativas,horasOperativas};
   });
 }
 
-function calcularHorasLYD(inicio,fin,unidad){
+function esPeriodoZ1FueraOperacion(registro){
+  return normalizar(registro.claseAviso)==='z1' &&
+    registro.duracionParada>0 &&
+    registro.inicioAveriaFecha &&
+    registro.finAveriaFecha &&
+    registro.finAveriaFecha>registro.inicioAveriaFecha;
+}
+
+function calcularHorasNoOperativas(inicio,fin,unidad,periodosZ1=[]){
   if(!inicio||!fin||fin<=inicio)return 0;
-  const intervalos=bloquesLYD
+  const intervalosLYD=bloquesLYD
     .filter(b=>normalizar(nombreUnidad(b.unidad))===normalizar(unidad))
     .map(b=>{
       const finInclusivo=new Date(b.fin.getTime()+86400000);
       return[inicio>b.inicio?inicio:b.inicio,fin<finInclusivo?fin:finInclusivo];
-    })
-    .filter(([a,z])=>z>a)
-    .sort((a,b)=>a[0]-b[0]);
+    });
+  const intervalosZ1=periodosZ1
+    .filter(r=>normalizar(r.unidad)===normalizar(unidad))
+    .map(r=>[
+      inicio>r.inicioAveriaFecha?inicio:r.inicioAveriaFecha,
+      fin<r.finAveriaFecha?fin:r.finAveriaFecha
+    ]);
+  const intervalos=[...intervalosLYD,...intervalosZ1].filter(([a,z])=>z>a).sort((a,b)=>a[0]-b[0]);
   if(!intervalos.length)return 0;
   const unidos=[];
   intervalos.forEach(([a,z])=>{
@@ -266,7 +284,7 @@ function renderCronologiaConfiabilidad(filas){
       <td>${escapeHtml(f.finAveria||'-')}</td>
       <td>${f.finAveriaAnterior?escapeHtml(f.finAveriaAnterior.toLocaleString('es-CL')):'--'}</td>
       <td>${f.horasCalendario==null?'--':fmtN(f.horasCalendario)}</td>
-      <td>${f.horasLYD==null?'--':fmtN(f.horasLYD)}</td>
+      <td>${f.horasNoOperativas==null?'--':fmtN(f.horasNoOperativas)}</td>
       <td>${f.horasOperativas==null?'--':fmtN(f.horasOperativas)}</td>
     </tr>
   `).join('');
