@@ -312,8 +312,8 @@ function renderCronologiaConfiabilidad(filas){
   }
   $('confBody').innerHTML=filas.map(f=>`
     <tr>
-      <td>${escapeHtml(f.aviso||'-')}</td>
-      <td>${escapeHtml(f.orden||'-')}</td>
+      <td><span class="copyable" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.aviso||'-')}')">${escapeHtml(f.aviso||'-')}</span></td>
+      <td><span class="copyable" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.orden||'-')}')">${escapeHtml(f.orden||'-')}</span></td>
       <td>${escapeHtml(f.inicioAveria||'-')}</td>
       <td>${escapeHtml(f.finAveria||'-')}</td>
       <td>${f.finAveriaAnterior?escapeHtml(f.finAveriaAnterior.toLocaleString('es-CL')):'--'}</td>
