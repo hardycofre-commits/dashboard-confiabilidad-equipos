@@ -41,6 +41,8 @@ function setupEventos(){
   });
   configurarBuscadorEquipos('confBuscarEquipo','sugerenciasEquipoConf','btnAbrirEquiposConf');
   document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarBuscadoresEquipos();});
+  if($('btnAnalizar'))$('btnAnalizar').onclick=analizarConfiabilidad;
+  if($('btnLimpiar'))$('btnLimpiar').onclick=limpiarAnalisisConfiabilidad;
 
   $('fechaDesde').onchange=aplicarFiltros;$('fechaHasta').onchange=aplicarFiltros;
   $('btnOrdenAsc').onclick=()=>cambiarOrdenFecha('asc');
@@ -54,13 +56,10 @@ function cambiarVista(v){
   if(v==='unidades'){$('viewUnidades').classList.remove('hidden');renderTablaUnidades();}
   else if(v==='confiabilidad'){
     $('viewConfiabilidad').classList.remove('hidden');
-    const eq=$('busquedaEquipo')?$('busquedaEquipo').value:'';
-    if($('confEquipo')) $('confEquipo').textContent=eq||'Seleccione un equipo';
-    if($('confFallas')) $('confFallas').textContent=(window.datosFiltrados?window.datosFiltrados.length:0);
   } else {$('viewResumen').classList.remove('hidden');}
   document.querySelector(`.menu-item[data-view="${v}"]`).classList.add('active');
 }
-function configurarFechas(){$('fechaDesde').value='2025-01-01';$('fechaHasta').value='2026-12-31';}
+function configurarFechas(){$('fechaDesde').value='2025-01-01';$('fechaHasta').value='2026-12-31';if($('confDesde'))$('confDesde').value='2025-01-01';if($('confHasta'))$('confHasta').value='2026-12-31';}
 async function cargarDesdeGitHub(){
  try{
   setEstado('Buscando','warning','Consultando carpeta datos/ en GitHub...');
@@ -170,11 +169,54 @@ function obtenerListaUnidades(){
 
 function cargarFiltroUnidades(){
   const actual = $('unidadFiltro')?.value || '';
+  const actualConf = $('confUnidadFiltro')?.value || '';
   const unidades = obtenerListaUnidades();
   $('unidadFiltro').innerHTML = '<option value="">Todas</option>' +
     unidades.map(u=>`<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
+  if($('confUnidadFiltro'))$('confUnidadFiltro').innerHTML = '<option value="">Todas</option>' +
+    unidades.map(u=>`<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join('');
 
   if(unidades.includes(actual)) $('unidadFiltro').value = actual;
+  if(unidades.includes(actualConf)) $('confUnidadFiltro').value = actualConf;
+}
+
+function analizarConfiabilidad(){
+  const equipo=$('confBuscarEquipo').value.trim();
+  if(!equipo)return alert('Selecciona un equipo para analizar.');
+  if(!datosOriginales.length)return alert('Los datos SAP todavía no están disponibles.');
+  const desde=$('confDesde').value?new Date($('confDesde').value+'T00:00:00'):null;
+  const hasta=$('confHasta').value?new Date($('confHasta').value+'T23:59:59'):null;
+  if(desde&&hasta&&desde>hasta)return alert('La fecha desde no puede ser posterior a la fecha hasta.');
+  const unidad=$('confUnidadFiltro').value;
+  const equipoNormalizado=normalizar(equipo);
+  const registros=construirDatosBase(datosOriginales).filter(r=>{
+    const equipoRegistro=r.denominacionUbicacionTecnica||r.ubicacionTecnica;
+    const fecha=r.inicioAveriaFecha||r.fechaAviso;
+    return normalizar(equipoRegistro)===equipoNormalizado &&
+      normalizar(r.claseAviso)==='z2' &&
+      (!unidad||r.unidad===unidad) &&
+      (!desde||!fecha||fecha>=desde) &&
+      (!hasta||!fecha||fecha<=hasta);
+  });
+  window.datosConfiabilidad=registros;
+  $('confEquipo').textContent=equipo;
+  $('confUnidad').textContent=unidad||([...new Set(registros.map(r=>r.unidad))].join(', ')||'-');
+  $('confFallas').textContent=new Set(registros.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
+  $('confMtbf').textContent='--';
+  $('confBody').innerHTML=`<tr><td colspan="8">${registros.length?`${registros.length.toLocaleString('es-CL')} avisos Z2 preparados para el análisis cronológico.`:'No se encontraron avisos Z2 para los filtros seleccionados.'}</td></tr>`;
+}
+
+function limpiarAnalisisConfiabilidad(){
+  $('confBuscarEquipo').value='';
+  $('confUnidadFiltro').value='';
+  $('confDesde').value='2025-01-01';
+  $('confHasta').value='2026-12-31';
+  window.datosConfiabilidad=[];
+  $('confEquipo').textContent='-';
+  $('confUnidad').textContent='-';
+  $('confFallas').textContent='0';
+  $('confMtbf').textContent='--';
+  $('confBody').innerHTML='<tr><td colspan="8">Seleccione un equipo y presione Analizar.</td></tr>';
 }
 
 let edicionUnidades = {};
