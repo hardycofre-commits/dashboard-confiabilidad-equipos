@@ -684,5 +684,5 @@ function convertirHora(v){if(!v)return{horas:0,minutos:0,segundos:0};if(v instan
 function normalizar(t){return String(t??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');}
 function valor(v){return v==null?'':String(v)}function numero(v){if(v==null||v==='')return 0;if(typeof v==='number')return v;const n=Number(String(v).replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n}
 function fmtF(f){return f?f.toLocaleDateString('es-CL'):''}function fmtN(n){return Number(n||0).toLocaleString('es-CL',{maximumFractionDigits:2})}
-function setEstado(t,cls,d){$('estadoValidacion').textContent=t;$('estadoValidacion').className='status '+cls;$('validacionDetalle').innerHTML=d;}
+function setEstado(t,cls,d){if($('estadoValidacion')){$('estadoValidacion').textContent=t;$('estadoValidacion').className='status '+cls;}if($('validacionDetalle'))$('validacionDetalle').innerHTML=d;}
 function mostrarError(msg){setEstado('Error','error',msg);}

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.4" />
+  <link rel="stylesheet" href="styles.css?v=4.5" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -24,7 +24,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong id="kDisponibilidad">--</strong>
-        <small>Versión 4.4</small>
+        <small>Versión 4.5</small>
       </div>
     </header>
 
@@ -32,7 +32,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v4.4</strong></div>
+      <div><span>Versión</span><strong>v4.5</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -67,11 +67,10 @@
           <div class="icon">🧭</div><div><span>Sin clasificar</span><strong id="kSinClasificar">0</strong><small>Click para clasificar</small></div>
         </article>
         <article class="kpi-card"><div class="icon">🧼</div><div><span>Bloques LYD</span><strong id="kBloquesLYD">0</strong><small>Lavado y desinfección</small></div></article>
-        <article class="kpi-card"><div class="icon">✅</div><div><span>Disponibilidad</span><strong>--</strong><small>Próxima versión</small></div></article>
       </section>
 
       <section class="dashboard-grid">
-        <article class="panel wide">
+        <article class="panel full">
           <div class="panel-title">
             <h3>DATOS BASE PARA CÁLCULO DE KPI</h3>
             <div class="table-title-actions">
@@ -85,21 +84,6 @@
             </div>
           </div>
           <div class="table-wrap base-wrap"><table id="tablaBase"><thead></thead><tbody></tbody></table></div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-title"><h3>Validación archivos</h3><span id="estadoValidacion" class="status warning">Buscando</span></div>
-          <div id="validacionDetalle" class="validation">Buscando últimos archivos en GitHub...</div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-title"><h3>Próximas versiones</h3></div>
-          <ul class="roadmap">
-            <li><b>v2.6.4</b> Tabla de confiabilidad</li>
-            <li><b>v2.6.4</b> Cálculo MTBF</li>
-            <li><b>v2.6.4</b> Cálculo MTTR</li>
-            <li><b>v2.7</b> Disponibilidad</li>
-          </ul>
         </article>
 
         <article class="panel full">
@@ -203,6 +187,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.4"></script>
+  <script src="app.js?v=4.5"></script>
 </body>
 </html>
