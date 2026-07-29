@@ -149,3 +149,5 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 
 .copyable{display:inline-block;cursor:pointer!important;user-select:text}.copyable:hover,.copyable:focus{color:#0b5cab;text-decoration:underline;font-weight:600;outline:none}
 #confBody .copyable{cursor:pointer!important}
+#rankingUnidad{margin-top:16px}
+#tablaRankingUnidad{min-width:760px}

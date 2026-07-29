@@ -53,8 +53,15 @@ function setupEventos(){
     alSeleccionar:()=>analizarConfiabilidad({silencioso:true})
   });
   document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarBuscadoresEquipos();});
-  ['confUnidadFiltro','confDesde','confHasta'].forEach(id=>{
-    if($(id))$(id).onchange=analizarConfiabilidadAutomaticamente;
+  if($('confUnidadFiltro'))$('confUnidadFiltro').onchange=()=>{
+    analizarConfiabilidadAutomaticamente();
+    renderRankingUnidad();
+  };
+  ['confDesde','confHasta'].forEach(id=>{
+    if($(id))$(id).onchange=()=>{
+      analizarConfiabilidadAutomaticamente();
+      renderRankingUnidad();
+    };
   });
 
   $('fechaDesde').onchange=aplicarFiltros;$('fechaHasta').onchange=aplicarFiltros;
@@ -228,21 +235,17 @@ function analizarConfiabilidad({silencioso=false}={}){
     .filter(r=>normalizar(r.claseAviso)==='z2'&&r.inicioAveriaFecha)
     .sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
   const periodosZ1=registrosEquipo.filter(esPeriodoZ1FueraOperacion);
-  const filas=construirCronologiaConfiabilidad(registros,periodosZ1);
-  const intervalosMtbf=filas.filter(f=>Number.isFinite(f.horasOperativas));
-  const mtbf=intervalosMtbf.length?intervalosMtbf.reduce((s,f)=>s+f.horasOperativas,0)/intervalosMtbf.length:null;
-  const mttr=calcularMttr(registros);
-  const disponibilidad=calcularDisponibilidad(mtbf,mttr);
-  window.datosConfiabilidad=filas;
+  const kpis=calcularKpisConfiabilidad(registros,periodosZ1);
+  window.datosConfiabilidad=kpis.filas;
   window.periodosZ1Confiabilidad=periodosZ1;
   $('confEquipo').textContent=equipo;
   $('confUnidad').textContent=unidad||([...new Set(registros.map(r=>r.unidad))].join(', ')||'-');
   $('confFallas').textContent=new Set(registros.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
-  $('confMtbf').textContent=mtbf==null?'--':`${fmtN(mtbf)} h`;
-  $('confMttr').textContent=mttr==null?'--':`${fmtN(mttr)} h`;
-  $('confDisponibilidad').textContent=disponibilidad==null?'--':`${fmtN(disponibilidad)} %`;
-  $('kDisponibilidad').textContent=disponibilidad==null?'--':`${fmtN(disponibilidad)} %`;
-  renderCronologiaConfiabilidad(filas);
+  $('confMtbf').textContent=kpis.mtbf==null?'--':`${fmtN(kpis.mtbf)} h`;
+  $('confMttr').textContent=kpis.mttr==null?'--':`${fmtN(kpis.mttr)} h`;
+  $('confDisponibilidad').textContent=kpis.disponibilidad==null?'--':`${fmtN(kpis.disponibilidad)} %`;
+  $('kDisponibilidad').textContent=kpis.disponibilidad==null?'--':`${fmtN(kpis.disponibilidad)} %`;
+  renderCronologiaConfiabilidad(kpis.filas);
 }
 
 function limpiarResultadosConfiabilidad(){
@@ -255,7 +258,7 @@ function limpiarResultadosConfiabilidad(){
   $('confMttr').textContent='--';
   $('confDisponibilidad').textContent='--';
   $('kDisponibilidad').textContent='--';
-  $('confBody').innerHTML='<tr><td colspan="8">Busque o seleccione un equipo para calcular el MTBF.</td></tr>';
+  $('confBody').innerHTML='<tr><td colspan="8">Busque o seleccione un equipo para calcular sus indicadores.</td></tr>';
 }
 
 function construirCronologiaConfiabilidad(registros,periodosZ1=[]){
@@ -267,6 +270,64 @@ function construirCronologiaConfiabilidad(registros,periodosZ1=[]){
     const horasOperativas=horasCalendario==null?null:Math.max(0,horasCalendario-horasNoOperativas);
     return{...registro,finAveriaAnterior:finAnterior,horasCalendario,horasNoOperativas,horasOperativas};
   });
+}
+
+function calcularKpisConfiabilidad(registros,periodosZ1=[]){
+  const filas=construirCronologiaConfiabilidad(registros,periodosZ1);
+  const intervalosMtbf=filas.filter(f=>Number.isFinite(f.horasOperativas));
+  const mtbf=intervalosMtbf.length?intervalosMtbf.reduce((s,f)=>s+f.horasOperativas,0)/intervalosMtbf.length:null;
+  const mttr=calcularMttr(registros);
+  return{filas,mtbf,mttr,disponibilidad:calcularDisponibilidad(mtbf,mttr)};
+}
+
+function renderRankingUnidad(){
+  const panel=$('rankingUnidad'),unidad=$('confUnidadFiltro').value;
+  if(!panel)return;
+  if(!unidad||!datosOriginales.length){
+    panel.classList.add('hidden');
+    $('rankingBody').innerHTML='';
+    return;
+  }
+  const desde=$('confDesde').value?new Date($('confDesde').value+'T00:00:00'):null;
+  const hasta=$('confHasta').value?new Date($('confHasta').value+'T23:59:59'):null;
+  if(desde&&hasta&&desde>hasta){panel.classList.add('hidden');return;}
+  const grupos=new Map();
+  construirDatosBase(datosOriginales)
+    .filter(r=>{
+      const fecha=r.inicioAveriaFecha||r.fechaAviso;
+      return r.unidad===unidad&&(!desde||!fecha||fecha>=desde)&&(!hasta||!fecha||fecha<=hasta);
+    })
+    .forEach(r=>{
+      const equipo=r.denominacionUbicacionTecnica||r.ubicacionTecnica;
+      if(!equipo)return;
+      if(!grupos.has(equipo))grupos.set(equipo,[]);
+      grupos.get(equipo).push(r);
+    });
+  const ranking=[...grupos].map(([equipo,registrosEquipo])=>{
+    const fallas=registrosEquipo
+      .filter(r=>normalizar(r.claseAviso)==='z2'&&r.inicioAveriaFecha)
+      .sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
+    const periodosZ1=registrosEquipo.filter(esPeriodoZ1FueraOperacion);
+    const kpis=calcularKpisConfiabilidad(fallas,periodosZ1);
+    return{equipo,fallas:new Set(fallas.map(r=>r.aviso).filter(Boolean)).size,...kpis};
+  }).sort((a,b)=>{
+    const da=Number.isFinite(a.disponibilidad)?a.disponibilidad:-Infinity;
+    const db=Number.isFinite(b.disponibilidad)?b.disponibilidad:-Infinity;
+    return db-da||(Number.isFinite(b.mtbf)?b.mtbf:-Infinity)-(Number.isFinite(a.mtbf)?a.mtbf:-Infinity)||a.equipo.localeCompare(b.equipo,'es');
+  });
+  $('rankingTitulo').textContent=`Ranking de disponibilidad — ${unidad}`;
+  $('rankingCantidad').textContent=`${ranking.length.toLocaleString('es-CL')} equipos`;
+  $('rankingBody').innerHTML=ranking.length?ranking.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${escapeHtml(r.equipo)}</td>
+      <td>${r.fallas.toLocaleString('es-CL')}</td>
+      <td>${r.mtbf==null?'--':`${fmtN(r.mtbf)} h`}</td>
+      <td>${r.mttr==null?'--':`${fmtN(r.mttr)} h`}</td>
+      <td>${r.disponibilidad==null?'--':`${fmtN(r.disponibilidad)} %`}</td>
+    </tr>
+  `).join(''):'<tr><td colspan="6">No hay equipos para la unidad y período seleccionados.</td></tr>';
+  panel.classList.remove('hidden');
 }
 
 function esPeriodoZ1FueraOperacion(registro){

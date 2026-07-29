@@ -25,7 +25,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong id="kDisponibilidad">--</strong>
-        <small>Versión 4.2.2</small>
+        <small>Versión 4.3</small>
       </div>
     </header>
 
@@ -33,7 +33,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v4.2.2</strong></div>
+      <div><span>Versión</span><strong>v4.3</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -127,7 +127,16 @@
 <div><label>Fecha hasta</label><input type="date" id="confHasta"></div>
 </div>
 <div class="card"><p><strong>Equipo:</strong> <span id="confEquipo">-</span></p><p><strong>Unidad:</strong> <span id="confUnidad">-</span></p><p><strong>Fallas:</strong> <span id="confFallas">0</span></p><p><strong>MTBF:</strong> <span id="confMtbf">--</span></p><p><strong>MTTR:</strong> <span id="confMttr">--</span></p><p><strong>Disponibilidad:</strong> <span id="confDisponibilidad">--</span></p></div>
-<table class="tabla"><thead><tr><th>Aviso</th><th>Orden</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD / Z1</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="8">Busque o seleccione un equipo para calcular el MTBF.</td></tr></tbody></table>
+<table class="tabla"><thead><tr><th>Aviso</th><th>Orden</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD / Z1</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="8">Busque o seleccione un equipo para calcular sus indicadores.</td></tr></tbody></table>
+<section id="rankingUnidad" class="panel full hidden">
+  <div class="panel-title"><h3 id="rankingTitulo">Ranking de disponibilidad</h3><span id="rankingCantidad">0 equipos</span></div>
+  <div class="table-wrap unidades-wrap">
+    <table id="tablaRankingUnidad">
+      <thead><tr><th>Posición</th><th>Equipo</th><th>Fallas</th><th>MTBF</th><th>MTTR</th><th>Disponibilidad</th></tr></thead>
+      <tbody id="rankingBody"></tbody>
+    </table>
+  </div>
+</section>
 </section>
 <section id="viewUnidades" class="view hidden">
       <section class="panel unidades-panel">
