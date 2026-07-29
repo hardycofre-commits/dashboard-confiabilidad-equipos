@@ -39,10 +39,15 @@ function setupEventos(){
     alEscribir:aplicarFiltros,
     alSeleccionar:aplicarFiltros
   });
-  configurarBuscadorEquipos('confBuscarEquipo','sugerenciasEquipoConf','btnAbrirEquiposConf');
+  configurarBuscadorEquipos('confBuscarEquipo','sugerenciasEquipoConf','btnAbrirEquiposConf',{
+    alEscribir:analizarConfiabilidadAutomaticamente,
+    alSeleccionar:()=>analizarConfiabilidad({silencioso:true})
+  });
   document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarBuscadoresEquipos();});
-  if($('btnAnalizar'))$('btnAnalizar').onclick=analizarConfiabilidad;
   if($('btnLimpiar'))$('btnLimpiar').onclick=limpiarAnalisisConfiabilidad;
+  ['confUnidadFiltro','confDesde','confHasta'].forEach(id=>{
+    if($(id))$(id).onchange=analizarConfiabilidadAutomaticamente;
+  });
 
   $('fechaDesde').onchange=aplicarFiltros;$('fechaHasta').onchange=aplicarFiltros;
   $('btnOrdenAsc').onclick=()=>cambiarOrdenFecha('asc');
@@ -180,13 +185,27 @@ function cargarFiltroUnidades(){
   if(unidades.includes(actualConf)) $('confUnidadFiltro').value = actualConf;
 }
 
-function analizarConfiabilidad(){
+function analizarConfiabilidadAutomaticamente(){
   const equipo=$('confBuscarEquipo').value.trim();
-  if(!equipo)return alert('Selecciona un equipo para analizar.');
-  if(!datosOriginales.length)return alert('Los datos SAP todavía no están disponibles.');
+  const coincidenciaExacta=listaEquipos.some(e=>normalizar(e)===normalizar(equipo));
+  if(coincidenciaExacta)analizarConfiabilidad({silencioso:true});
+  else limpiarResultadosConfiabilidad();
+}
+
+function analizarConfiabilidad({silencioso=false}={}){
+  const equipo=$('confBuscarEquipo').value.trim();
+  if(!equipo){limpiarResultadosConfiabilidad();return;}
+  if(!datosOriginales.length){
+    if(!silencioso)alert('Los datos SAP todavía no están disponibles.');
+    return;
+  }
   const desde=$('confDesde').value?new Date($('confDesde').value+'T00:00:00'):null;
   const hasta=$('confHasta').value?new Date($('confHasta').value+'T23:59:59'):null;
-  if(desde&&hasta&&desde>hasta)return alert('La fecha desde no puede ser posterior a la fecha hasta.');
+  if(desde&&hasta&&desde>hasta){
+    limpiarResultadosConfiabilidad();
+    if(!silencioso)alert('La fecha desde no puede ser posterior a la fecha hasta.');
+    return;
+  }
   const unidad=$('confUnidadFiltro').value;
   const equipoNormalizado=normalizar(equipo);
   const registrosEquipo=construirDatosBase(datosOriginales).filter(r=>{
@@ -218,13 +237,17 @@ function limpiarAnalisisConfiabilidad(){
   $('confUnidadFiltro').value='';
   $('confDesde').value='2025-01-01';
   $('confHasta').value='2026-12-31';
+  limpiarResultadosConfiabilidad();
+}
+
+function limpiarResultadosConfiabilidad(){
   window.datosConfiabilidad=[];
   window.periodosZ1Confiabilidad=[];
   $('confEquipo').textContent='-';
   $('confUnidad').textContent='-';
   $('confFallas').textContent='0';
   $('confMtbf').textContent='--';
-  $('confBody').innerHTML='<tr><td colspan="8">Seleccione un equipo y presione Analizar.</td></tr>';
+  $('confBody').innerHTML='<tr><td colspan="8">Busque o seleccione un equipo para calcular el MTBF.</td></tr>';
 }
 
 function construirCronologiaConfiabilidad(registros,periodosZ1=[]){
