@@ -197,13 +197,16 @@ function analizarConfiabilidad(){
       (!unidad||r.unidad===unidad) &&
       (!desde||!fecha||fecha>=desde) &&
       (!hasta||!fecha||fecha<=hasta);
-  });
-  window.datosConfiabilidad=registros;
+  }).filter(r=>r.inicioAveriaFecha).sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
+  const filas=construirCronologiaConfiabilidad(registros);
+  const intervalosMtbf=filas.filter(f=>Number.isFinite(f.horasOperativas));
+  const mtbf=intervalosMtbf.length?intervalosMtbf.reduce((s,f)=>s+f.horasOperativas,0)/intervalosMtbf.length:null;
+  window.datosConfiabilidad=filas;
   $('confEquipo').textContent=equipo;
   $('confUnidad').textContent=unidad||([...new Set(registros.map(r=>r.unidad))].join(', ')||'-');
   $('confFallas').textContent=new Set(registros.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
-  $('confMtbf').textContent='--';
-  $('confBody').innerHTML=`<tr><td colspan="8">${registros.length?`${registros.length.toLocaleString('es-CL')} avisos Z2 preparados para el análisis cronológico.`:'No se encontraron avisos Z2 para los filtros seleccionados.'}</td></tr>`;
+  $('confMtbf').textContent=mtbf==null?'--':`${fmtN(mtbf)} h`;
+  renderCronologiaConfiabilidad(filas);
 }
 
 function limpiarAnalisisConfiabilidad(){
@@ -217,6 +220,56 @@ function limpiarAnalisisConfiabilidad(){
   $('confFallas').textContent='0';
   $('confMtbf').textContent='--';
   $('confBody').innerHTML='<tr><td colspan="8">Seleccione un equipo y presione Analizar.</td></tr>';
+}
+
+function construirCronologiaConfiabilidad(registros){
+  return registros.map((registro,i)=>{
+    const finAnterior=i>0?registros[i-1].finAveriaFecha:null;
+    const diferencia=finAnterior?(registro.inicioAveriaFecha-finAnterior)/3600000:null;
+    const horasCalendario=diferencia!=null&&diferencia>=0?diferencia:null;
+    const horasLYD=horasCalendario==null?null:Math.min(horasCalendario,calcularHorasLYD(finAnterior,registro.inicioAveriaFecha,registro.unidad));
+    const horasOperativas=horasCalendario==null?null:Math.max(0,horasCalendario-horasLYD);
+    return{...registro,finAveriaAnterior:finAnterior,horasCalendario,horasLYD,horasOperativas};
+  });
+}
+
+function calcularHorasLYD(inicio,fin,unidad){
+  if(!inicio||!fin||fin<=inicio)return 0;
+  const intervalos=bloquesLYD
+    .filter(b=>normalizar(nombreUnidad(b.unidad))===normalizar(unidad))
+    .map(b=>{
+      const finInclusivo=new Date(b.fin.getTime()+86400000);
+      return[inicio>b.inicio?inicio:b.inicio,fin<finInclusivo?fin:finInclusivo];
+    })
+    .filter(([a,z])=>z>a)
+    .sort((a,b)=>a[0]-b[0]);
+  if(!intervalos.length)return 0;
+  const unidos=[];
+  intervalos.forEach(([a,z])=>{
+    const ultimo=unidos[unidos.length-1];
+    if(!ultimo||a>ultimo[1])unidos.push([a,z]);
+    else if(z>ultimo[1])ultimo[1]=z;
+  });
+  return unidos.reduce((s,[a,z])=>s+(z-a)/3600000,0);
+}
+
+function renderCronologiaConfiabilidad(filas){
+  if(!filas.length){
+    $('confBody').innerHTML='<tr><td colspan="8">No se encontraron avisos Z2 con inicio de avería para los filtros seleccionados.</td></tr>';
+    return;
+  }
+  $('confBody').innerHTML=filas.map(f=>`
+    <tr>
+      <td>${escapeHtml(f.aviso||'-')}</td>
+      <td>${escapeHtml(f.orden||'-')}</td>
+      <td>${escapeHtml(f.inicioAveria||'-')}</td>
+      <td>${escapeHtml(f.finAveria||'-')}</td>
+      <td>${f.finAveriaAnterior?escapeHtml(f.finAveriaAnterior.toLocaleString('es-CL')):'--'}</td>
+      <td>${f.horasCalendario==null?'--':fmtN(f.horasCalendario)}</td>
+      <td>${f.horasLYD==null?'--':fmtN(f.horasLYD)}</td>
+      <td>${f.horasOperativas==null?'--':fmtN(f.horasOperativas)}</td>
+    </tr>
+  `).join('');
 }
 
 let edicionUnidades = {};
