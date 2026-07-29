@@ -44,7 +44,6 @@ function setupEventos(){
     alSeleccionar:()=>analizarConfiabilidad({silencioso:true})
   });
   document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarBuscadoresEquipos();});
-  if($('btnLimpiar'))$('btnLimpiar').onclick=limpiarAnalisisConfiabilidad;
   ['confUnidadFiltro','confDesde','confHasta'].forEach(id=>{
     if($(id))$(id).onchange=analizarConfiabilidadAutomaticamente;
   });
@@ -230,14 +229,6 @@ function analizarConfiabilidad({silencioso=false}={}){
   $('confFallas').textContent=new Set(registros.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
   $('confMtbf').textContent=mtbf==null?'--':`${fmtN(mtbf)} h`;
   renderCronologiaConfiabilidad(filas);
-}
-
-function limpiarAnalisisConfiabilidad(){
-  $('confBuscarEquipo').value='';
-  $('confUnidadFiltro').value='';
-  $('confDesde').value='2025-01-01';
-  $('confHasta').value='2026-12-31';
-  limpiarResultadosConfiabilidad();
 }
 
 function limpiarResultadosConfiabilidad(){
