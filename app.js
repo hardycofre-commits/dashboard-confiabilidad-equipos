@@ -1,16 +1,25 @@
-function copiarTexto(el,valor){
-if(navigator.clipboard){navigator.clipboard.writeText(String(valor));}
-const original=el.textContent;el.textContent='✔ Copiado';
-setTimeout(()=>{el.textContent=original;},900);
-}
-
-
-function copiarTexto(el,valor){
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(String(valor));
+async function copiarTexto(el,valor){
+  const texto=String(valor);
+  let copiado=false;
+  if(navigator.clipboard&&window.isSecureContext){
+    try{
+      await navigator.clipboard.writeText(texto);
+      copiado=true;
+    }catch(error){}
+  }
+  if(!copiado){
+    const auxiliar=document.createElement('textarea');
+    auxiliar.value=texto;
+    auxiliar.setAttribute('readonly','');
+    auxiliar.style.position='fixed';
+    auxiliar.style.opacity='0';
+    document.body.appendChild(auxiliar);
+    auxiliar.select();
+    try{copiado=document.execCommand('copy');}catch(error){}
+    auxiliar.remove();
   }
   const original=el.textContent;
-  el.textContent='✔ Copiado';
+  el.textContent=copiado?'✔ Copiado':'No se pudo copiar';
   setTimeout(()=>{el.textContent=original;},900);
 }
 
@@ -312,8 +321,8 @@ function renderCronologiaConfiabilidad(filas){
   }
   $('confBody').innerHTML=filas.map(f=>`
     <tr>
-      <td><span class="copyable" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.aviso||'-')}')">${escapeHtml(f.aviso||'-')}</span></td>
-      <td><span class="copyable" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.orden||'-')}')">${escapeHtml(f.orden||'-')}</span></td>
+      <td><span class="copyable" role="button" tabindex="0" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.aviso||'-')}')" onkeydown="if(event.key==='Enter')copiarTexto(this,'${escapeHtml(f.aviso||'-')}')">${escapeHtml(f.aviso||'-')}</span></td>
+      <td><span class="copyable" role="button" tabindex="0" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.orden||'-')}')" onkeydown="if(event.key==='Enter')copiarTexto(this,'${escapeHtml(f.orden||'-')}')">${escapeHtml(f.orden||'-')}</span></td>
       <td>${escapeHtml(f.inicioAveria||'-')}</td>
       <td>${escapeHtml(f.finAveria||'-')}</td>
       <td>${f.finAveriaAnterior?escapeHtml(f.finAveriaAnterior.toLocaleString('es-CL')):'--'}</td>
