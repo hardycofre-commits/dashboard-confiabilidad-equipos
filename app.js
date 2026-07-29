@@ -222,12 +222,17 @@ function analizarConfiabilidad({silencioso=false}={}){
   const filas=construirCronologiaConfiabilidad(registros,periodosZ1);
   const intervalosMtbf=filas.filter(f=>Number.isFinite(f.horasOperativas));
   const mtbf=intervalosMtbf.length?intervalosMtbf.reduce((s,f)=>s+f.horasOperativas,0)/intervalosMtbf.length:null;
+  const mttr=calcularMttr(registros);
+  const disponibilidad=calcularDisponibilidad(mtbf,mttr);
   window.datosConfiabilidad=filas;
   window.periodosZ1Confiabilidad=periodosZ1;
   $('confEquipo').textContent=equipo;
   $('confUnidad').textContent=unidad||([...new Set(registros.map(r=>r.unidad))].join(', ')||'-');
   $('confFallas').textContent=new Set(registros.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
   $('confMtbf').textContent=mtbf==null?'--':`${fmtN(mtbf)} h`;
+  $('confMttr').textContent=mttr==null?'--':`${fmtN(mttr)} h`;
+  $('confDisponibilidad').textContent=disponibilidad==null?'--':`${fmtN(disponibilidad)} %`;
+  $('kDisponibilidad').textContent=disponibilidad==null?'--':`${fmtN(disponibilidad)} %`;
   renderCronologiaConfiabilidad(filas);
 }
 
@@ -238,6 +243,9 @@ function limpiarResultadosConfiabilidad(){
   $('confUnidad').textContent='-';
   $('confFallas').textContent='0';
   $('confMtbf').textContent='--';
+  $('confMttr').textContent='--';
+  $('confDisponibilidad').textContent='--';
+  $('kDisponibilidad').textContent='--';
   $('confBody').innerHTML='<tr><td colspan="8">Busque o seleccione un equipo para calcular el MTBF.</td></tr>';
 }
 
@@ -258,6 +266,18 @@ function esPeriodoZ1FueraOperacion(registro){
     registro.inicioAveriaFecha &&
     registro.finAveriaFecha &&
     registro.finAveriaFecha>registro.inicioAveriaFecha;
+}
+
+function calcularMttr(registros){
+  const reparaciones=registros
+    .filter(r=>r.inicioAveriaFecha&&r.finAveriaFecha&&r.finAveriaFecha>=r.inicioAveriaFecha)
+    .map(r=>(r.finAveriaFecha-r.inicioAveriaFecha)/3600000);
+  return reparaciones.length?reparaciones.reduce((s,h)=>s+h,0)/reparaciones.length:null;
+}
+
+function calcularDisponibilidad(mtbf,mttr){
+  if(!Number.isFinite(mtbf)||!Number.isFinite(mttr)||mtbf+mttr<=0)return null;
+  return mtbf/(mtbf+mttr)*100;
 }
 
 function calcularHorasNoOperativas(inicio,fin,unidad,periodosZ1=[]){
