@@ -318,7 +318,7 @@ function renderRankingUnidad(){
   $('rankingTitulo').textContent=`Ranking de disponibilidad — ${unidad}`;
   $('rankingCantidad').textContent=`${ranking.length.toLocaleString('es-CL')} equipos`;
   $('rankingBody').innerHTML=ranking.length?ranking.map((r,i)=>`
-    <tr>
+    <tr class="ranking-equipo-row" role="button" tabindex="0" title="Ver detalle de ${escapeHtml(r.equipo)}" data-equipo="${escapeHtml(r.equipo)}" onclick="seleccionarEquipoRanking(this.dataset.equipo)" onkeydown="if(event.key==='Enter')seleccionarEquipoRanking(this.dataset.equipo)">
       <td>${i+1}</td>
       <td>${escapeHtml(r.equipo)}</td>
       <td>${r.fallas.toLocaleString('es-CL')}</td>
@@ -328,6 +328,13 @@ function renderRankingUnidad(){
     </tr>
   `).join(''):'<tr><td colspan="6">No hay equipos para la unidad y período seleccionados.</td></tr>';
   panel.classList.remove('hidden');
+}
+
+function seleccionarEquipoRanking(equipo){
+  $('confBuscarEquipo').value=equipo;
+  analizarConfiabilidad({silencioso:true});
+  const detalle=$('detalleEquipo');
+  if(detalle)detalle.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function esPeriodoZ1FueraOperacion(registro){

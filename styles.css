@@ -151,3 +151,5 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 #confBody .copyable{cursor:pointer!important}
 #rankingUnidad{margin-top:16px}
 #tablaRankingUnidad{min-width:760px}
+.ranking-equipo-row{cursor:pointer}
+.ranking-equipo-row:hover,.ranking-equipo-row:focus{background:#e8f0fb;outline:none}
