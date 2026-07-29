@@ -26,10 +26,11 @@ async function copiarTexto(el,valor){
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main',folder:'datos'};
 const UNIDADES_BASE=['HATCHERY','FF2','ALEVINAJE','PRE SMOLT','RILES','FILTRADO','GENERADORES','OTROS'];
 const MAPEO_BASE=[['HATCHERY','HATCHERY'],['HAT','HATCHERY'],['FF2','FF2'],['FF','FF2'],['ALEVINAJE','ALEVINAJE'],['ALEV','ALEVINAJE'],['PRE-SMOLT','PRE SMOLT'],['PRE SMOLT','PRE SMOLT'],['PRESMOLT','PRE SMOLT'],['RILES','RILES'],['FILTRADO','FILTRADO'],['FILTRO','FILTRADO'],['GEN','GENERADORES'],['GENERADOR','GENERADORES']];
-const KEY_REGLAS='confEq_reglas_v21', KEY_UNIDADES='confEq_unidades_v21', KEY_NOMBRES='confEq_nombresUnidades_v23';
+const KEY_REGLAS='confEq_reglas_v21', KEY_UNIDADES='confEq_unidades_v21', KEY_NOMBRES='confEq_nombresUnidades_v23', KEY_AVISO_UNIDADES='confEq_avisoUnidades_v44';
 let reglasUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS)||'[]');
 let unidadesUsuario=JSON.parse(localStorage.getItem(KEY_UNIDADES)||'[]');
 let nombresUnidades=JSON.parse(localStorage.getItem(KEY_NOMBRES)||'{"Hat":"Hatchery","Hatchery":"Hatchery","FF":"FF2","FF2":"FF2","Pre":"Pre Smolt","Pre Smolt":"Pre Smolt","Alev":"Alevinaje","Alevinaje":"Alevinaje"}');
+let unidadesAviso=JSON.parse(localStorage.getItem(KEY_AVISO_UNIDADES)||'{}');
 let datosOriginales=[], datosBase=[], bloquesLYD=[], mapaColumnas={}, listaEquipos=[], pendientes=[], pendienteIndex=0;
 let ordenFecha='asc';
 const $=id=>document.getElementById(id);
@@ -161,7 +162,7 @@ function aplicarFiltros(){
   renderTablaUnidades();
   $('filasBase').textContent=`${base.length.toLocaleString('es-CL')} filas`;
 }
-function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]);const texto=`${den} ${ubi} ${des}`;const unidad=obtenerUnidad(texto);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:valor(r[mapaColumnas.aviso]),orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||convertirFecha(r[mapaColumnas.fechaAviso]),duracionParada:numero(r[mapaColumnas.duracionParada])};});}
+function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]), aviso=valor(r[mapaColumnas.aviso]);const texto=`${den} ${ubi} ${des}`;const unidad=unidadesAviso[aviso]||obtenerUnidad(texto);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:aviso,orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||convertirFecha(r[mapaColumnas.fechaAviso]),duracionParada:numero(r[mapaColumnas.duracionParada])};});}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
 function nombreUnidad(u){return normalizarUnidadGantt(u);}
 function actualizarKPIs(){const all=construirDatosBase(datosOriginales);$('kEquipos').textContent=new Set(datosBase.map(r=>r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');$('kAvisos').textContent=new Set(datosBase.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');$('kSinClasificar').textContent=getPendientes().length.toLocaleString('es-CL');}
@@ -597,13 +598,47 @@ function renderTablaBase(base){
         <td class="descripcion">${r.descripcion}</td>
         <td>${r.ubicacionTecnica}</td>
         <td>${r.denominacionUbicacionTecnica}</td>
-        <td>${r.unidad}</td>
+        <td>
+          <div class="aviso-unidad">
+            <span>${escapeHtml(r.unidad)}</span>
+            <button type="button" class="edit-pencil aviso-unidad-editar" title="Cambiar unidad del aviso" data-aviso="${escapeHtml(r.aviso)}" data-unidad="${escapeHtml(r.unidad)}" onclick="editarUnidadAviso(this)">✏️</button>
+          </div>
+        </td>
         <td>${r.inicioAveria}</td>
         <td>${r.finAveria}</td>
         <td>${fmtN(r.duracionParada)}</td>
       </tr>
     `).join('')
     : '<tr><td colspan="11">No hay datos</td></tr>';
+}
+
+function editarUnidadAviso(boton){
+  const aviso=boton.dataset.aviso,actual=boton.dataset.unidad,celda=boton.closest('td');
+  const selector=document.createElement('select');
+  selector.className='unidad-aviso-select';
+  const automatica=document.createElement('option');
+  automatica.value='__AUTO__';
+  automatica.textContent='Clasificación automática';
+  selector.appendChild(automatica);
+  [...new Set([...obtenerListaUnidades(),actual,'Sin clasificar'])].sort((a,b)=>a.localeCompare(b,'es')).forEach(unidad=>{
+    const opcion=document.createElement('option');
+    opcion.value=unidad;
+    opcion.textContent=unidad;
+    selector.appendChild(opcion);
+  });
+  selector.value=unidadesAviso[aviso]||'__AUTO__';
+  selector.onchange=()=>{
+    if(selector.value==='__AUTO__')delete unidadesAviso[aviso];
+    else unidadesAviso[aviso]=selector.value;
+    localStorage.setItem(KEY_AVISO_UNIDADES,JSON.stringify(unidadesAviso));
+    cargarFiltroUnidades();
+    aplicarFiltros();
+    analizarConfiabilidadAutomaticamente();
+    renderRankingUnidad();
+  };
+  celda.innerHTML='';
+  celda.appendChild(selector);
+  selector.focus();
 }
 
 function extraerBloquesLYD(m){const out=[];if(!m.length)return out;const maxCols=Math.max(...m.slice(0,10).map(f=>f.length));for(let c=1;c<maxCols;c++){let unidad='';for(let r=0;r<Math.min(10,m.length);r++){const v=m[r]?.[c];if(v&& !convertirFecha(v)){unidad=String(v);break;}}if(!unidad)continue;let ini=null,fin=null;for(let r=1;r<m.length;r++){const f=convertirFecha(m[r]?.[0]);if(!f)continue;const is=normalizar(m[r]?.[c]).includes('lyd');if(is&&!ini){ini=f;fin=f}else if(is){fin=f}else if(ini){out.push(crearBloque(unidad,ini,fin));ini=null;fin=null}}if(ini)out.push(crearBloque(unidad,ini,fin));}return out;}
