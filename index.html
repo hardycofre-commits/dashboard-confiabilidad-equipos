@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.6" />
+  <link rel="stylesheet" href="styles.css?v=4.7" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -24,7 +24,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong id="kDisponibilidad">--</strong>
-        <small>Versión 4.6</small>
+        <small>Versión 4.7</small>
       </div>
     </header>
 
@@ -32,7 +32,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v4.6</strong></div>
+      <div><span>Versión</span><strong>v4.7</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -110,7 +110,7 @@
 <div><label>Fecha hasta</label><input type="date" id="confHasta"></div>
 </div>
 <div id="detalleEquipo" class="card"><p><strong>Equipo:</strong> <span id="confEquipo">-</span></p><p><strong>Unidad:</strong> <span id="confUnidad">-</span></p><p><strong>Fallas:</strong> <span id="confFallas">0</span></p><p><strong>MTBF:</strong> <span id="confMtbf">--</span></p><p><strong>MTTR:</strong> <span id="confMttr">--</span></p><p><strong>Disponibilidad:</strong> <span id="confDisponibilidad">--</span></p></div>
-<table class="tabla"><thead><tr><th>Aviso</th><th>Orden</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD / Z1</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="8">Busque o seleccione un equipo para calcular sus indicadores.</td></tr></tbody></table>
+<table class="tabla"><thead><tr><th>Aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD / Z1</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr></tbody></table>
 <section id="rankingUnidad" class="panel full hidden">
   <div class="panel-title"><h3 id="rankingTitulo">Ranking de disponibilidad</h3><span id="rankingCantidad">0 equipos</span></div>
   <div class="table-wrap unidades-wrap">
@@ -187,6 +187,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.6"></script>
+  <script src="app.js?v=4.7"></script>
 </body>
 </html>

@@ -271,7 +271,7 @@ function limpiarResultadosConfiabilidad(){
   $('confMttr').textContent='--';
   $('confDisponibilidad').textContent='--';
   $('kDisponibilidad').textContent='--';
-  $('confBody').innerHTML='<tr><td colspan="8">Busque o seleccione un equipo para calcular sus indicadores.</td></tr>';
+  $('confBody').innerHTML='<tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr>';
 }
 
 function construirCronologiaConfiabilidad(registros,periodosZ1=[]){
@@ -424,13 +424,12 @@ function calcularHorasNoOperativas(inicio,fin,unidad,periodosZ1=[]){
 
 function renderCronologiaConfiabilidad(filas,periodoActual=null){
   if(!filas.length){
-    $('confBody').innerHTML='<tr><td colspan="8">No se encontraron avisos Z2 con inicio de avería para los filtros seleccionados.</td></tr>';
+    $('confBody').innerHTML='<tr><td colspan="7">No se encontraron avisos Z2 con inicio de avería para los filtros seleccionados.</td></tr>';
     return;
   }
   const filasFallas=filas.map(f=>`
     <tr>
       <td><span class="copyable" role="button" tabindex="0" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.aviso||'-')}')" onkeydown="if(event.key==='Enter')copiarTexto(this,'${escapeHtml(f.aviso||'-')}')">${escapeHtml(f.aviso||'-')}</span></td>
-      <td><span class="copyable" role="button" tabindex="0" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.orden||'-')}')" onkeydown="if(event.key==='Enter')copiarTexto(this,'${escapeHtml(f.orden||'-')}')">${escapeHtml(f.orden||'-')}</span></td>
       <td>${escapeHtml(f.inicioAveria||'-')}</td>
       <td>${escapeHtml(f.finAveria||'-')}</td>
       <td>${f.finAveriaAnterior?escapeHtml(f.finAveriaAnterior.toLocaleString('es-CL')):'--'}</td>
@@ -441,7 +440,7 @@ function renderCronologiaConfiabilidad(filas,periodoActual=null){
   `).join('');
   const filaPeriodoActual=periodoActual?`
     <tr class="periodo-operacion-actual">
-      <td colspan="3"><strong>En operaci&oacute;n actualmente</strong><small>Tiempo incluido en el MTBF</small></td>
+      <td colspan="2"><strong>En operaci&oacute;n actualmente</strong><small>Tiempo incluido en el MTBF</small></td>
       <td><small>Fecha de corte</small>${escapeHtml(periodoActual.fin.toLocaleString('es-CL'))}</td>
       <td><small>Desde el fin de la &uacute;ltima aver&iacute;a</small>${escapeHtml(periodoActual.inicio.toLocaleString('es-CL'))}</td>
       <td>${fmtN(periodoActual.horasCalendario)}</td>
