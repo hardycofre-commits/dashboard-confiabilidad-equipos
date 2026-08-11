@@ -32,6 +32,7 @@ let unidadesUsuario=JSON.parse(localStorage.getItem(KEY_UNIDADES)||'[]');
 let nombresUnidades=JSON.parse(localStorage.getItem(KEY_NOMBRES)||'{"Hat":"Hatchery","Hatchery":"Hatchery","FF":"FF2","FF2":"FF2","Pre":"Pre Smolt","Pre Smolt":"Pre Smolt","Alev":"Alevinaje","Alevinaje":"Alevinaje"}');
 let unidadesAviso=JSON.parse(localStorage.getItem(KEY_AVISO_UNIDADES)||'{}');
 let datosOriginales=[], datosBase=[], bloquesLYD=[], mapaColumnas={}, listaEquipos=[], pendientes=[], pendienteIndex=0;
+const equiposSeleccionados=new Set();
 let ordenFecha='asc';
 const $=id=>document.getElementById(id);
 
@@ -58,7 +59,8 @@ function setupEventos(){
   $('wizardUnidad').onchange=()=>{$('boxNuevaUnidad').classList.toggle('hidden',$('wizardUnidad').value!=='__NUEVA__');};
   configurarBuscadorEquipos('busquedaEquipo','sugerenciasEquipo','btnAbrirEquipos',{
     alEscribir:aplicarFiltros,
-    alSeleccionar:aplicarFiltros
+    alSeleccionar:aplicarFiltros,
+    seleccionMultiple:true
   });
   configurarBuscadorEquipos('confBuscarEquipo','sugerenciasEquipoConf','btnAbrirEquiposConf',{
     alEscribir:analizarConfiabilidadAutomaticamente,
@@ -149,7 +151,11 @@ function aplicarFiltros(){
   }
 
   const txt=normalizar($('busquedaEquipo').value);
-  if(txt){
+  const seleccionadosNormalizados=new Set([...equiposSeleccionados].map(normalizar));
+  if(seleccionadosNormalizados.size){
+    base=base.filter(r=>seleccionadosNormalizados.has(normalizar(r.denominacionUbicacionTecnica||r.ubicacionTecnica)));
+    $('txtFiltro').textContent=`Grupo: ${seleccionadosNormalizados.size} equipos`;
+  }else if(txt){
     base=base.filter(r=>
       normalizar(r.denominacionUbicacionTecnica).includes(txt) ||
       normalizar(r.ubicacionTecnica).includes(txt) ||
@@ -576,8 +582,17 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
   };
   const seleccionar=i=>{
     if(i<0||i>=estado.resultados.length)return;
-    input.value=estado.resultados[i];
-    estado.ocultar();
+    const equipo=estado.resultados[i];
+    if(acciones.seleccionMultiple){
+      if(equiposSeleccionados.has(equipo))equiposSeleccionados.delete(equipo);
+      else equiposSeleccionados.add(equipo);
+      input.value='';
+      renderEquiposSeleccionados();
+      mostrar('');
+    }else{
+      input.value=equipo;
+      estado.ocultar();
+    }
     if(acciones.alSeleccionar)acciones.alSeleccionar();
   };
   const mostrar=texto=>{
@@ -594,6 +609,7 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
       estado.resultados.forEach((equipo,i)=>{
         const item=document.createElement('div');
         item.className='suggestion-item';
+        if(acciones.seleccionMultiple&&equiposSeleccionados.has(equipo))item.classList.add('is-picked');
         item.textContent=equipo;
         item.onmouseenter=()=>{estado.seleccion=i;marcarSeleccion();};
         item.onmousedown=e=>e.preventDefault();
@@ -620,6 +636,32 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
   if(boton)boton.onclick=()=>{input.focus();mostrar('');};
 }
 function ocultarBuscadoresEquipos(){buscadoresEquipos.forEach(b=>b.ocultar());}
+function renderEquiposSeleccionados(){
+  const contenedor=$('equiposSeleccionados');
+  if(!contenedor)return;
+  contenedor.innerHTML='';
+  equiposSeleccionados.forEach(equipo=>{
+    const chip=document.createElement('span');
+    chip.className='equipment-chip';
+    const texto=document.createElement('span');
+    texto.textContent=equipo;
+    const quitar=document.createElement('button');
+    quitar.type='button';
+    quitar.setAttribute('aria-label',`Quitar ${equipo}`);
+    quitar.textContent='\u00d7';
+    quitar.onclick=()=>{equiposSeleccionados.delete(equipo);renderEquiposSeleccionados();aplicarFiltros();};
+    chip.append(texto,quitar);
+    contenedor.appendChild(chip);
+  });
+  if(equiposSeleccionados.size>1){
+    const limpiar=document.createElement('button');
+    limpiar.type='button';
+    limpiar.className='clear-equipment';
+    limpiar.textContent='Limpiar grupo';
+    limpiar.onclick=()=>{equiposSeleccionados.clear();renderEquiposSeleccionados();aplicarFiltros();};
+    contenedor.appendChild(limpiar);
+  }
+}
 function renderTablaBase(base){
   $('tablaBase').querySelector('thead').innerHTML=`
     <tr>
