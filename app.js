@@ -35,7 +35,18 @@ let datosOriginales=[], datosBase=[], bloquesLYD=[], mapaColumnas={}, listaEquip
 let ordenFecha='asc';
 const $=id=>document.getElementById(id);
 
-document.addEventListener('DOMContentLoaded',()=>{configurarFechas();setupEventos();cargarDesdeGitHub();});
+document.addEventListener('DOMContentLoaded',()=>{
+  configurarFechas();
+  setupEventos();
+  cargarDesdeGitHub();
+  setInterval(actualizarConfiabilidadPorTiempo,60000);
+});
+
+function actualizarConfiabilidadPorTiempo(){
+  if($('viewConfiabilidad')?.classList.contains('hidden'))return;
+  analizarConfiabilidadAutomaticamente();
+  renderRankingUnidad();
+}
 function setupEventos(){
   document.querySelectorAll('.menu-item').forEach(a=>a.onclick=e=>{e.preventDefault();cambiarVista(a.dataset.view);});
   $('btnActualizar').onclick=cargarDesdeGitHub;
@@ -236,7 +247,8 @@ function analizarConfiabilidad({silencioso=false}={}){
     .filter(r=>normalizar(r.claseAviso)==='z2'&&r.inicioAveriaFecha)
     .sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
   const periodosZ1=registrosEquipo.filter(esPeriodoZ1FueraOperacion);
-  const kpis=calcularKpisConfiabilidad(registros,periodosZ1);
+  const fechaCorte=obtenerFechaCorteAnalisis(hasta);
+  const kpis=calcularKpisConfiabilidad(registros,periodosZ1,fechaCorte);
   window.datosConfiabilidad=kpis.filas;
   window.periodosZ1Confiabilidad=periodosZ1;
   $('confEquipo').textContent=equipo;
@@ -273,12 +285,30 @@ function construirCronologiaConfiabilidad(registros,periodosZ1=[]){
   });
 }
 
-function calcularKpisConfiabilidad(registros,periodosZ1=[]){
+function obtenerFechaCorteAnalisis(hasta){
+  const ahora=new Date();
+  return hasta&&hasta<ahora?hasta:ahora;
+}
+
+function calcularKpisConfiabilidad(registros,periodosZ1=[],fechaCorte=new Date()){
   const filas=construirCronologiaConfiabilidad(registros,periodosZ1);
   const intervalosMtbf=filas.filter(f=>Number.isFinite(f.horasOperativas));
-  const mtbf=intervalosMtbf.length?intervalosMtbf.reduce((s,f)=>s+f.horasOperativas,0)/intervalosMtbf.length:null;
+  const ultimaFalla=registros.at(-1);
+  const inicioPeriodoActual=ultimaFalla?.finAveriaFecha;
+  let horasOperacionActual=null;
+  if(inicioPeriodoActual&&fechaCorte&&fechaCorte>inicioPeriodoActual){
+    const horasCalendarioActual=(fechaCorte-inicioPeriodoActual)/3600000;
+    const horasNoOperativasActual=Math.min(
+      horasCalendarioActual,
+      calcularHorasNoOperativas(inicioPeriodoActual,fechaCorte,ultimaFalla.unidad,periodosZ1)
+    );
+    horasOperacionActual=Math.max(0,horasCalendarioActual-horasNoOperativasActual);
+  }
+  const horasMtbf=intervalosMtbf.reduce((s,f)=>s+f.horasOperativas,0)+(horasOperacionActual??0);
+  const cantidadIntervalos=intervalosMtbf.length+(horasOperacionActual==null?0:1);
+  const mtbf=cantidadIntervalos?horasMtbf/cantidadIntervalos:null;
   const mttr=calcularMttr(registros);
-  return{filas,mtbf,mttr,disponibilidad:calcularDisponibilidad(mtbf,mttr)};
+  return{filas,mtbf,mttr,horasOperacionActual,disponibilidad:calcularDisponibilidad(mtbf,mttr)};
 }
 
 function renderRankingUnidad(){
@@ -291,6 +321,7 @@ function renderRankingUnidad(){
   }
   const desde=$('confDesde').value?new Date($('confDesde').value+'T00:00:00'):null;
   const hasta=$('confHasta').value?new Date($('confHasta').value+'T23:59:59'):null;
+  const fechaCorte=obtenerFechaCorteAnalisis(hasta);
   if(desde&&hasta&&desde>hasta){panel.classList.add('hidden');return;}
   const grupos=new Map();
   construirDatosBase(datosOriginales)
@@ -309,7 +340,7 @@ function renderRankingUnidad(){
       .filter(r=>normalizar(r.claseAviso)==='z2'&&r.inicioAveriaFecha)
       .sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
     const periodosZ1=registrosEquipo.filter(esPeriodoZ1FueraOperacion);
-    const kpis=calcularKpisConfiabilidad(fallas,periodosZ1);
+    const kpis=calcularKpisConfiabilidad(fallas,periodosZ1,fechaCorte);
     return{equipo,fallas:new Set(fallas.map(r=>r.aviso).filter(Boolean)).size,...kpis};
   }).sort((a,b)=>{
     const da=Number.isFinite(a.disponibilidad)?a.disponibilidad:-Infinity;
