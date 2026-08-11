@@ -580,16 +580,15 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
     const elegido=contenedor.children[estado.seleccion];
     if(elegido)elegido.scrollIntoView({block:'nearest'});
   };
-  const seleccionar=(i,{mantenerBusqueda=false}={})=>{
+  const seleccionar=i=>{
     if(i<0||i>=estado.resultados.length)return;
     const equipo=estado.resultados[i];
     if(acciones.seleccionMultiple){
       if(equiposSeleccionados.has(equipo))equiposSeleccionados.delete(equipo);
       else equiposSeleccionados.add(equipo);
       const busquedaActual=input.value;
-      if(!mantenerBusqueda)input.value='';
       renderEquiposSeleccionados();
-      mostrar(mantenerBusqueda?busquedaActual:'');
+      mostrar(busquedaActual);
     }else{
       input.value=equipo;
       estado.ocultar();
@@ -610,11 +609,15 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
       estado.resultados.forEach((equipo,i)=>{
         const item=document.createElement('div');
         item.className='suggestion-item';
-        if(acciones.seleccionMultiple&&equiposSeleccionados.has(equipo))item.classList.add('is-picked');
+        if(acciones.seleccionMultiple){
+          item.setAttribute('role','option');
+          item.setAttribute('aria-selected',String(equiposSeleccionados.has(equipo)));
+          if(equiposSeleccionados.has(equipo))item.classList.add('is-picked');
+        }
         item.textContent=equipo;
         item.onmouseenter=()=>{estado.seleccion=i;marcarSeleccion();};
         item.onmousedown=e=>e.preventDefault();
-        item.onclick=e=>seleccionar(i,{mantenerBusqueda:e.ctrlKey||e.metaKey});
+        item.onclick=()=>seleccionar(i);
         contenedor.appendChild(item);
       });
     }
@@ -629,7 +632,7 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
     e.preventDefault();
     if(contenedor.style.display!=='block')mostrar(input.value.trim());
     if(!estado.resultados.length)return;
-    if(e.key==='Enter'){seleccionar(estado.seleccion,{mantenerBusqueda:e.ctrlKey||e.metaKey});return;}
+    if(e.key==='Enter'){seleccionar(estado.seleccion);return;}
     const paso=e.key==='ArrowDown'?1:-1;
     estado.seleccion=(estado.seleccion+paso+estado.resultados.length)%estado.resultados.length;
     marcarSeleccion();
