@@ -149,6 +149,10 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 
 .copyable{display:inline-block;cursor:pointer!important;user-select:text}.copyable:hover,.copyable:focus{color:#0b5cab;text-decoration:underline;font-weight:600;outline:none}
 #confBody .copyable{cursor:pointer!important}
+.periodo-operacion-actual{background:#ecfdf3;border-top:2px solid #22a06b}
+.periodo-operacion-actual:hover{background:#dcfce7}
+.periodo-operacion-actual td{color:#075c3b;vertical-align:middle}
+.periodo-operacion-actual small{display:block;color:#47705f;font-size:10px;font-weight:700;margin-bottom:3px}
 #rankingUnidad{margin-top:16px}
 #tablaRankingUnidad{min-width:760px}
 .ranking-equipo-row{cursor:pointer}

@@ -258,7 +258,7 @@ function analizarConfiabilidad({silencioso=false}={}){
   $('confMttr').textContent=kpis.mttr==null?'--':`${fmtN(kpis.mttr)} h`;
   $('confDisponibilidad').textContent=kpis.disponibilidad==null?'--':`${fmtN(kpis.disponibilidad)} %`;
   $('kDisponibilidad').textContent=kpis.disponibilidad==null?'--':`${fmtN(kpis.disponibilidad)} %`;
-  renderCronologiaConfiabilidad(kpis.filas);
+  renderCronologiaConfiabilidad(kpis.filas,kpis.periodoActual);
 }
 
 function limpiarResultadosConfiabilidad(){
@@ -296,6 +296,7 @@ function calcularKpisConfiabilidad(registros,periodosZ1=[],fechaCorte=new Date()
   const ultimaFalla=registros.at(-1);
   const inicioPeriodoActual=ultimaFalla?.finAveriaFecha;
   let horasOperacionActual=null;
+  let periodoActual=null;
   if(inicioPeriodoActual&&fechaCorte&&fechaCorte>inicioPeriodoActual){
     const horasCalendarioActual=(fechaCorte-inicioPeriodoActual)/3600000;
     const horasNoOperativasActual=Math.min(
@@ -303,12 +304,19 @@ function calcularKpisConfiabilidad(registros,periodosZ1=[],fechaCorte=new Date()
       calcularHorasNoOperativas(inicioPeriodoActual,fechaCorte,ultimaFalla.unidad,periodosZ1)
     );
     horasOperacionActual=Math.max(0,horasCalendarioActual-horasNoOperativasActual);
+    periodoActual={
+      inicio:inicioPeriodoActual,
+      fin:fechaCorte,
+      horasCalendario:horasCalendarioActual,
+      horasNoOperativas:horasNoOperativasActual,
+      horasOperativas:horasOperacionActual
+    };
   }
   const horasMtbf=intervalosMtbf.reduce((s,f)=>s+f.horasOperativas,0)+(horasOperacionActual??0);
   const cantidadIntervalos=intervalosMtbf.length+(horasOperacionActual==null?0:1);
   const mtbf=cantidadIntervalos?horasMtbf/cantidadIntervalos:null;
   const mttr=calcularMttr(registros);
-  return{filas,mtbf,mttr,horasOperacionActual,disponibilidad:calcularDisponibilidad(mtbf,mttr)};
+  return{filas,mtbf,mttr,horasOperacionActual,periodoActual,disponibilidad:calcularDisponibilidad(mtbf,mttr)};
 }
 
 function renderRankingUnidad(){
@@ -414,12 +422,12 @@ function calcularHorasNoOperativas(inicio,fin,unidad,periodosZ1=[]){
   return unidos.reduce((s,[a,z])=>s+(z-a)/3600000,0);
 }
 
-function renderCronologiaConfiabilidad(filas){
+function renderCronologiaConfiabilidad(filas,periodoActual=null){
   if(!filas.length){
     $('confBody').innerHTML='<tr><td colspan="8">No se encontraron avisos Z2 con inicio de avería para los filtros seleccionados.</td></tr>';
     return;
   }
-  $('confBody').innerHTML=filas.map(f=>`
+  const filasFallas=filas.map(f=>`
     <tr>
       <td><span class="copyable" role="button" tabindex="0" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.aviso||'-')}')" onkeydown="if(event.key==='Enter')copiarTexto(this,'${escapeHtml(f.aviso||'-')}')">${escapeHtml(f.aviso||'-')}</span></td>
       <td><span class="copyable" role="button" tabindex="0" title="Clic para copiar" onclick="copiarTexto(this,'${escapeHtml(f.orden||'-')}')" onkeydown="if(event.key==='Enter')copiarTexto(this,'${escapeHtml(f.orden||'-')}')">${escapeHtml(f.orden||'-')}</span></td>
@@ -431,6 +439,17 @@ function renderCronologiaConfiabilidad(filas){
       <td>${f.horasOperativas==null?'--':fmtN(f.horasOperativas)}</td>
     </tr>
   `).join('');
+  const filaPeriodoActual=periodoActual?`
+    <tr class="periodo-operacion-actual">
+      <td colspan="3"><strong>En operaci&oacute;n actualmente</strong><small>Tiempo incluido en el MTBF</small></td>
+      <td><small>Fecha de corte</small>${escapeHtml(periodoActual.fin.toLocaleString('es-CL'))}</td>
+      <td><small>Desde el fin de la &uacute;ltima aver&iacute;a</small>${escapeHtml(periodoActual.inicio.toLocaleString('es-CL'))}</td>
+      <td>${fmtN(periodoActual.horasCalendario)}</td>
+      <td>${fmtN(periodoActual.horasNoOperativas)}</td>
+      <td><strong>${fmtN(periodoActual.horasOperativas)}</strong></td>
+    </tr>
+  `:'';
+  $('confBody').innerHTML=filasFallas+filaPeriodoActual;
 }
 
 let edicionUnidades = {};
