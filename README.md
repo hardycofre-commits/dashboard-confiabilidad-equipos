@@ -1,4 +1,4 @@
-# Dashboard Confiabilidad Equipos - v4.8
+# Dashboard Confiabilidad Equipos - v4.9
 
 ## Cambio único
 Se agregan botones de orden ascendente y descendente, similares a SAP.

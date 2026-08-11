@@ -160,3 +160,23 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 .aviso-unidad{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .aviso-unidad-editar{flex:0 0 30px;width:30px;height:26px}
 .unidad-aviso-select{min-width:150px;height:30px}
+
+.gantt-lyd{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:520px;background:#fff}
+.gantt-tablero{min-width:calc(190px + var(--ancho-linea));position:relative}
+.gantt-cabecera,.gantt-fila{display:grid;grid-template-columns:190px var(--ancho-linea)}
+.gantt-cabecera{position:sticky;top:0;z-index:8;background:#e8f0fb;border-bottom:1px solid #b9cce6}
+.gantt-esquina,.gantt-unidad{position:sticky;left:0;z-index:5;border-right:1px solid #c8d7eb}
+.gantt-esquina{padding:10px 12px;background:#e8f0fb;color:#002b66;font-size:11px;font-weight:900;z-index:10}
+.gantt-eje{height:38px;position:relative;background:#e8f0fb}
+.gantt-eje>span{position:absolute;inset-block:0;display:flex;align-items:center;justify-content:center;border-left:1px solid #b9cce6;color:#0b3a73;font-size:10px;font-weight:900;text-transform:capitalize;white-space:nowrap}
+.gantt-fila{min-height:48px;border-bottom:1px solid #e5edf8}
+.gantt-fila:nth-child(even) .gantt-unidad,.gantt-fila:nth-child(even) .gantt-pista{background-color:#f8fbff}
+.gantt-unidad{padding:8px 12px;background:#fff;display:flex;flex-direction:column;justify-content:center}
+.gantt-unidad strong{font-size:11px;color:#002b66}.gantt-unidad small{font-size:9px;color:#64748b;margin-top:3px}
+.gantt-pista{height:48px;position:relative;background:#fff}
+.gantt-linea-mes{position:absolute;top:0;bottom:0;border-left:1px dashed #d8e3f2}
+.gantt-barra{position:absolute;top:9px;height:30px;min-width:7px;border-radius:5px;box-shadow:0 2px 4px rgba(0,43,102,.22);display:flex;align-items:center;justify-content:center;gap:5px;color:#fff;overflow:hidden;white-space:nowrap;padding:0 5px;z-index:3}
+.gantt-barra span{font-size:10px;font-weight:900}.gantt-barra small{font-size:9px;opacity:.9}
+.gantt-color-0{background:#0b5cab}.gantt-color-1{background:#067a68}.gantt-color-2{background:#7c3aed}.gantt-color-3{background:#c05a08}.gantt-color-4{background:#be185d}.gantt-color-5{background:#475569}
+.gantt-hoy{position:absolute;top:0;bottom:0;border-left:2px solid #e11d48;z-index:4;pointer-events:none}.gantt-hoy i{position:absolute;top:2px;left:3px;background:#e11d48;color:#fff;border-radius:3px;padding:1px 4px;font-size:8px;font-style:normal;font-weight:900}
+.gantt-vacio{padding:28px;text-align:center;color:#64748b;font-size:12px}

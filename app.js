@@ -724,7 +724,60 @@ function crearBloque(unidad,inicio,fin){
     horas:dias*24
   };
 }
-function renderTablaLYD(b){$('tablaLYD').querySelector('thead').innerHTML='<tr><th>Unidad</th><th>Inicio LYD</th><th>Fin LYD</th><th>Días LYD</th><th>Horas no operativas planificadas</th></tr>';$('tablaLYD').querySelector('tbody').innerHTML=b.length?b.map(x=>`<tr><td>${nombreUnidad(x.unidad)}</td><td>${fmtF(x.inicio)}</td><td>${fmtF(x.fin)}</td><td>${x.dias}</td><td>${x.horas}</td></tr>`).join(''):'<tr><td colspan="5">No hay períodos LYD detectados</td></tr>';$('filasLYD').textContent=`${b.length} bloques`;}
+function renderTablaLYD(b){
+  const contenedor=$('ganttLYD');
+  $('filasLYD').textContent=`${b.length} bloques`;
+  if(!b.length){
+    contenedor.innerHTML='<div class="gantt-vacio">No hay per&iacute;odos L&amp;D detectados</div>';
+    return;
+  }
+
+  const bloques=[...b].sort((a,z)=>nombreUnidad(a.unidad).localeCompare(nombreUnidad(z.unidad),'es')||a.inicio-z.inicio);
+  const fechaMinima=new Date(Math.min(...bloques.map(x=>x.inicio)));
+  const fechaMaxima=new Date(Math.max(...bloques.map(x=>x.fin)));
+  const inicioEje=new Date(fechaMinima.getFullYear(),fechaMinima.getMonth(),1);
+  const finEje=new Date(fechaMaxima.getFullYear(),fechaMaxima.getMonth()+1,1);
+  const totalMs=finEje-inicioEje;
+  const meses=[];
+  for(let fecha=new Date(inicioEje);fecha<finEje;fecha=new Date(fecha.getFullYear(),fecha.getMonth()+1,1)){
+    const siguiente=new Date(fecha.getFullYear(),fecha.getMonth()+1,1);
+    meses.push({
+      etiqueta:fecha.toLocaleDateString('es-CL',{month:'short',year:'numeric'}).replace('.',''),
+      izquierda:(fecha-inicioEje)/totalMs*100,
+      ancho:(siguiente-fecha)/totalMs*100
+    });
+  }
+  const anchoLinea=Math.max(920,meses.length*105);
+  const unidades=[...new Set(bloques.map(x=>nombreUnidad(x.unidad)))];
+  const colorUnidad=new Map(unidades.map((unidad,i)=>[unidad,i%6]));
+  const ahora=new Date();
+  const posicionHoy=ahora>=inicioEje&&ahora<finEje?(ahora-inicioEje)/totalMs*100:null;
+  const grillaMeses=meses.map(m=>`<span class="gantt-linea-mes" style="left:${m.izquierda}%"></span>`).join('');
+  const ejeMeses=meses.map(m=>`<span style="left:${m.izquierda}%;width:${m.ancho}%">${escapeHtml(m.etiqueta)}</span>`).join('');
+  const lineaHoy=posicionHoy==null?'':`<span class="gantt-hoy" style="left:${posicionHoy}%"><i>Hoy</i></span>`;
+  const filas=bloques.map(x=>{
+    const unidad=nombreUnidad(x.unidad);
+    const izquierda=(x.inicio-inicioEje)/totalMs*100;
+    const ancho=Math.max((new Date(x.fin.getFullYear(),x.fin.getMonth(),x.fin.getDate()+1)-x.inicio)/totalMs*100,.35);
+    const titulo=`${unidad}: ${fmtF(x.inicio)} al ${fmtF(x.fin)} · ${x.dias} días · ${x.horas.toLocaleString('es-CL')} h`;
+    return `<div class="gantt-fila">
+      <div class="gantt-unidad"><strong>${escapeHtml(unidad)}</strong><small>${fmtF(x.inicio)} — ${fmtF(x.fin)}</small></div>
+      <div class="gantt-pista" style="width:${anchoLinea}px">
+        ${grillaMeses}${lineaHoy}
+        <div class="gantt-barra gantt-color-${colorUnidad.get(unidad)}" style="left:${izquierda}%;width:${ancho}%" title="${escapeHtml(titulo)}">
+          <span>${x.dias} d&iacute;as</span><small>${x.horas.toLocaleString('es-CL')} h</small>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  contenedor.innerHTML=`<div class="gantt-tablero" style="--ancho-linea:${anchoLinea}px">
+    <div class="gantt-cabecera">
+      <div class="gantt-esquina">Unidad / per&iacute;odo</div>
+      <div class="gantt-eje" style="width:${anchoLinea}px">${ejeMeses}</div>
+    </div>
+    ${filas}
+  </div>`;
+}
 function unirFechaHora(fv,hv){const f=convertirFecha(fv);if(!f)return null;const h=convertirHora(hv);return new Date(f.getFullYear(),f.getMonth(),f.getDate(),h.horas,h.minutos,h.segundos);}
 function convertirFecha(v){if(!v)return null;if(v instanceof Date&&!isNaN(v))return v;if(typeof v==='number')return new Date(Date.UTC(1899,11,30)+v*86400000);const s=String(v).trim(),m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);const f=new Date(s);return isNaN(f)?null:f;}
 function convertirHora(v){if(!v)return{horas:0,minutos:0,segundos:0};if(v instanceof Date&&!isNaN(v))return{horas:v.getHours(),minutos:v.getMinutes(),segundos:v.getSeconds()};if(typeof v==='number'){const t=Math.round(v*86400);return{horas:Math.floor(t/3600)%24,minutos:Math.floor((t%3600)/60),segundos:t%60};}const m=String(v).match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);return m?{horas:+m[1],minutos:+m[2],segundos:+(m[3]||0)}:{horas:0,minutos:0,segundos:0};}
