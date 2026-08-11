@@ -580,15 +580,16 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
     const elegido=contenedor.children[estado.seleccion];
     if(elegido)elegido.scrollIntoView({block:'nearest'});
   };
-  const seleccionar=i=>{
+  const seleccionar=(i,{mantenerBusqueda=false}={})=>{
     if(i<0||i>=estado.resultados.length)return;
     const equipo=estado.resultados[i];
     if(acciones.seleccionMultiple){
       if(equiposSeleccionados.has(equipo))equiposSeleccionados.delete(equipo);
       else equiposSeleccionados.add(equipo);
-      input.value='';
+      const busquedaActual=input.value;
+      if(!mantenerBusqueda)input.value='';
       renderEquiposSeleccionados();
-      mostrar('');
+      mostrar(mantenerBusqueda?busquedaActual:'');
     }else{
       input.value=equipo;
       estado.ocultar();
@@ -613,7 +614,7 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
         item.textContent=equipo;
         item.onmouseenter=()=>{estado.seleccion=i;marcarSeleccion();};
         item.onmousedown=e=>e.preventDefault();
-        item.onclick=()=>seleccionar(i);
+        item.onclick=e=>seleccionar(i,{mantenerBusqueda:e.ctrlKey||e.metaKey});
         contenedor.appendChild(item);
       });
     }
@@ -628,7 +629,7 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
     e.preventDefault();
     if(contenedor.style.display!=='block')mostrar(input.value.trim());
     if(!estado.resultados.length)return;
-    if(e.key==='Enter'){seleccionar(estado.seleccion);return;}
+    if(e.key==='Enter'){seleccionar(estado.seleccion,{mantenerBusqueda:e.ctrlKey||e.metaKey});return;}
     const paso=e.key==='ArrowDown'?1:-1;
     estado.seleccion=(estado.seleccion+paso+estado.resultados.length)%estado.resultados.length;
     marcarSeleccion();
