@@ -626,7 +626,6 @@ function renderTablaBase(base){
       <th>Fecha aviso</th>
       <th>Clase aviso</th>
       <th>Aviso</th>
-      <th>Orden</th>
       <th>Descripción</th>
       <th>Ubicación técnica</th>
       <th>Denominación ubicación técnica</th>
@@ -643,7 +642,6 @@ function renderTablaBase(base){
         <td>${fmtF(r.fechaAviso)}</td>
         <td>${r.claseAviso}</td>
         <td><span class="copyable" onclick="copiarTexto(this,'${r.aviso}')">${r.aviso}</span></td>
-        <td><span class="copyable" onclick="copiarTexto(this,'${r.orden}')">${r.orden}</span></td>
         <td class="descripcion">${r.descripcion}</td>
         <td>${r.ubicacionTecnica}</td>
         <td>${r.denominacionUbicacionTecnica}</td>
