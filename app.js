@@ -210,6 +210,7 @@ function renderEstadisticasConsulta(base){
   const avisos=new Set(base.map(r=>r.aviso).filter(Boolean));
   const porUnidad=new Map();
   const avisosPorClase=new Map();
+  const avisosPorEstado=new Map();
   for(const r of base){
     const unidad=r.unidad||'Sin clasificar';
     if(!porUnidad.has(unidad))porUnidad.set(unidad,{avisos:new Set(),equipos:new Set()});
@@ -220,19 +221,24 @@ function renderEstadisticasConsulta(base){
     const clase=(r.claseAviso||'Sin clase').toUpperCase();
     if(!avisosPorClase.has(clase))avisosPorClase.set(clase,new Set());
     if(r.aviso)avisosPorClase.get(clase).add(r.aviso);
+    const estado=r.estadoAviso||'EN TRATAMIENTO';
+    if(!avisosPorEstado.has(estado))avisosPorEstado.set(estado,new Set());
+    if(r.aviso)avisosPorEstado.get(estado).add(r.aviso);
   }
   const grupos=[...porUnidad.entries()].map(([unidad,d])=>({unidad,avisos:d.avisos.size,equipos:d.equipos.size})).sort((a,b)=>b.avisos-a.avisos||a.unidad.localeCompare(b.unidad,'es'));
   const clases=[...avisosPorClase.entries()].map(([clase,lista])=>({unidad:clase,avisos:lista.size,equipos:0})).sort((a,b)=>b.avisos-a.avisos||a.unidad.localeCompare(b.unidad,'es'));
+  const estados=['CERRADO','EN TRATAMIENTO'].map(estado=>({unidad:estado,avisos:avisosPorEstado.get(estado)?.size||0,equipos:0})).filter(x=>x.avisos>0);
   $('estadEquipos').textContent=equipos.size.toLocaleString('es-CL');
   $('estadAvisos').textContent=avisos.size.toLocaleString('es-CL');
   $('estadUnidades').textContent=grupos.length.toLocaleString('es-CL');
   const tipo=$('tipoFiltro').value.trim();
   $('estadisticasContexto').textContent=tipo?`Distribución de avisos para el tipo ${tipo.toUpperCase()}, según los filtros aplicados.`:'Distribución de los avisos según los filtros aplicados.';
   $('estadisticasLider').textContent=grupos.length?`Mayor cantidad: ${grupos[0].unidad} (${grupos[0].avisos.toLocaleString('es-CL')} avisos)`:'Sin datos';
-  if(!grupos.length){renderDonutInteractiva('graficoTortaUnidad','leyendaTortaUnidad',[],avisos.size);renderDonutInteractiva('graficoTortaClase','leyendaTortaClase',[],avisos.size);return;}
+  if(!grupos.length){renderDonutInteractiva('graficoTortaUnidad','leyendaTortaUnidad',[],avisos.size);renderDonutInteractiva('graficoTortaClase','leyendaTortaClase',[],avisos.size);renderDonutInteractiva('graficoTortaEstado','leyendaTortaEstado',[],avisos.size);return;}
   const colores=['#0b5cab','#2493e8','#7c3aed','#16a34a','#f59e0b','#e11d48','#0891b2','#64748b'];
   renderDonutInteractiva('graficoTortaUnidad','leyendaTortaUnidad',grupos,avisos.size,colores);
   renderDonutInteractiva('graficoTortaClase','leyendaTortaClase',clases,avisos.size,['#0b5cab','#f59e0b','#7c3aed','#64748b']);
+  renderDonutInteractiva('graficoTortaEstado','leyendaTortaEstado',estados,avisos.size,['#16a34a','#f59e0b']);
 }
 function renderDonutInteractiva(graficoId,leyendaId,grupos,totalCentro,colores=['#0b5cab','#2493e8','#7c3aed','#16a34a']){
   const grafico=$(graficoId),leyenda=$(leyendaId),total=grupos.reduce((s,g)=>s+g.avisos,0)||0;

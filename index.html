@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.29" />
+  <link rel="stylesheet" href="styles.css?v=4.30" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -126,6 +126,15 @@
                   <div class="donut-center"><strong>0</strong><span>avisos</span></div>
                 </div>
                 <div id="leyendaTortaClase" class="donut-legend"></div>
+              </div>
+            </section>
+            <section class="chart-card estado-card">
+              <div class="chart-heading"><h4>ESTADO DE LOS AVISOS</h4><span>Cerrados / en tratamiento</span></div>
+              <div class="donut-layout">
+                <div id="graficoTortaEstado" class="donut-chart" role="img" aria-label="Gráfico de torta de avisos cerrados y en tratamiento">
+                  <div class="donut-center"><strong>0</strong><span>avisos</span></div>
+                </div>
+                <div id="leyendaTortaEstado" class="donut-legend"></div>
               </div>
             </section>
           </div>
@@ -285,6 +294,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.29"></script>
+  <script src="app.js?v=4.30"></script>
 </body>
 </html>
