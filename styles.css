@@ -96,7 +96,10 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
   font-weight:900;
   color:#92400e;
 }
-.fila-tipo-sin-clasificar{box-shadow:inset 4px 0 #7c3aed}
+.fila-tipo-sin-clasificar{background:#f3efff;box-shadow:inset 4px 0 #7c3aed}
+.fila-tipo-sin-clasificar:hover{background:#e9e0ff}
+.fila-sin-clasificar.fila-tipo-sin-clasificar{background:#fff0d7;box-shadow:inset 4px 0 #7c3aed}
+.fila-sin-clasificar.fila-tipo-sin-clasificar:hover{background:#ffe4b8}
 .tipo-badge{display:inline-block;padding:4px 8px;border-radius:14px;background:#ede9fe;color:#5b21b6;font-size:10px;font-weight:900;white-space:nowrap}.tipo-badge.pending{background:#fee2e2;color:#991b1b}
 
 

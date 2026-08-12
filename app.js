@@ -217,7 +217,7 @@ function guardarWizard(){const p=pendientes[pendienteIndex];let unidad=$('wizard
 function generarRegla(t){return String(t).split(' ').filter(Boolean).slice(0,6).join(' ');}
 
 function obtenerListaTipos(){return [...new Set([...TIPOS_BASE,...tiposUsuario,...reglasTipoUsuario.map(r=>r.tipo)])].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));}
-function cargarFiltroTipos(){const lista=$('listaTiposEquipo');if(lista)lista.innerHTML=obtenerListaTipos().map(tipo=>`<option value="${escapeHtml(tipo)}"></option>`).join('');}
+function cargarFiltroTipos(){const lista=$('listaTiposEquipo');if(lista)lista.innerHTML=['Sin clasificar',...obtenerListaTipos()].map(tipo=>`<option value="${escapeHtml(tipo)}"></option>`).join('');}
 function getPendientesTipo({incluirOmitidos=true}={}){const all=construirDatosBase(datosOriginales).filter(r=>r.tipoEquipo==='Sin clasificar');const m=new Map();for(const r of all){const key=r.denominacionUbicacionTecnica||r.ubicacionTecnica||r.descripcion;if(!incluirOmitidos&&tiposOmitidosSesion.has(key))continue;if(!m.has(key))m.set(key,{equipo:key,ubicacion:r.ubicacionTecnica,descripcion:r.descripcion,cantidad:0});m.get(key).cantidad++;}return [...m.values()].sort((a,b)=>b.cantidad-a.cantidad);}
 function abrirWizardTipo(){tiposOmitidosSesion.clear();pendientesTipo=getPendientesTipo({incluirOmitidos:false});pendienteTipoIndex=0;$('wizardTipo').classList.remove('hidden');renderWizardTipo();}
 function cerrarWizardTipo(){$('wizardTipo').classList.add('hidden');cargarFiltroTipos();aplicarFiltros();}
