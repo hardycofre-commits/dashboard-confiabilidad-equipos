@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.11" />
+  <link rel="stylesheet" href="styles.css?v=4.12" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -49,6 +49,11 @@
           <div id="equiposSeleccionados" class="selected-equipment" aria-live="polite"></div>
           <div id="sugerenciasEquipo" class="suggestions"></div>
         </div>
+        <div class="field">
+          <label>Tipo de equipo</label>
+          <input type="text" id="tipoFiltro" list="listaTiposEquipo" placeholder="Ej: TRICKING" autocomplete="off" />
+          <datalist id="listaTiposEquipo"></datalist>
+        </div>
         <div class="field"><label>Unidad</label><select id="unidadFiltro"><option value="">Todas</option></select></div>
         <button id="btnActualizar">↻ Actualizar</button>
       </section>
@@ -66,7 +71,10 @@
         <article class="kpi-card"><div class="icon">🔧</div><div><span>Equipos</span><strong id="kEquipos">0</strong><small>Ubicaciones técnicas únicas</small></div></article>
         <article class="kpi-card"><div class="icon">📋</div><div><span>Avisos</span><strong id="kAvisos">0</strong><small>Número de aviso único</small></div></article>
         <article class="kpi-card clickable" id="cardSinClasificar" title="Abrir asistente de clasificación">
-          <div class="icon">🧭</div><div><span>Sin clasificar</span><strong id="kSinClasificar">0</strong><small>Click para clasificar</small></div>
+          <div class="icon">🧭</div><div><span>Unidades pendientes</span><strong id="kSinClasificar">0</strong><small>Click para clasificar</small></div>
+        </article>
+        <article class="kpi-card clickable" id="cardTiposSinClasificar" title="Clasificar tipos de equipo pendientes">
+          <div class="icon">🏷️</div><div><span>Tipos pendientes</span><strong id="kTiposSinClasificar">0</strong><small>Click para clasificar</small></div>
         </article>
         <article class="kpi-card"><div class="icon">🧼</div><div><span>Bloques LYD</span><strong id="kBloquesLYD">0</strong><small>Lavado y desinfección</small></div></article>
       </section>
@@ -202,6 +210,45 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.11"></script>
+  <div id="wizardTipo" class="modal hidden">
+    <div class="wizard-card">
+      <div class="wizard-header">
+        <div>
+          <h3>Clasificar tipo de equipo</h3>
+          <span id="wizardTipoProgreso">0 de 0</span>
+        </div>
+        <button id="btnCerrarWizardTipo" class="icon-btn" aria-label="Cerrar">×</button>
+      </div>
+
+      <div id="wizardTipoContenido">
+        <p class="modal-label">Denominación de la ubicación técnica</p>
+        <div id="wizardTipoEquipo" class="modal-equipo"></div>
+        <div class="context-grid">
+          <div><span>Ubicación técnica</span><strong id="wizardTipoUbicacion">-</strong></div>
+          <div><span>Última descripción</span><strong id="wizardTipoDescripcion">-</strong></div>
+          <div><span>Cantidad registros</span><strong id="wizardTipoCantidad">0</strong></div>
+        </div>
+        <label>Tipo de equipo</label>
+        <select id="wizardTipoSelect"></select>
+        <div id="boxNuevoTipo" class="hidden">
+          <label>Nuevo tipo de equipo</label>
+          <input type="text" id="wizardNuevoTipo" placeholder="Ej: BOMBA, TRICKING, FILTRO..." />
+        </div>
+        <div class="modal-actions">
+          <button id="btnAnteriorTipo" class="btn-secondary">Anterior</button>
+          <button id="btnGuardarSiguienteTipo">Guardar y siguiente</button>
+        </div>
+      </div>
+
+      <div id="wizardTipoFinalizado" class="hidden final-box">
+        <h3>✔ Clasificación finalizada</h3>
+        <p>No quedan tipos de equipo pendientes por clasificar.</p>
+        <button id="btnFinalizarWizardTipo">Cerrar</button>
+      </div>
+      <small>Los tipos y sus reglas quedan guardados en este navegador para futuras cargas.</small>
+    </div>
+  </div>
+
+  <script src="app.js?v=4.12"></script>
 </body>
 </html>

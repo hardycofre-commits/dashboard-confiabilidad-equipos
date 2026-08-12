@@ -26,12 +26,17 @@ async function copiarTexto(el,valor){
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main',folder:'datos'};
 const UNIDADES_BASE=['HATCHERY','FF2','ALEVINAJE','PRE SMOLT','RILES','FILTRADO','GENERADORES','OTROS'];
 const MAPEO_BASE=[['HATCHERY','HATCHERY'],['HAT','HATCHERY'],['FF2','FF2'],['FF','FF2'],['ALEVINAJE','ALEVINAJE'],['ALEV','ALEVINAJE'],['PRE-SMOLT','PRE SMOLT'],['PRE SMOLT','PRE SMOLT'],['PRESMOLT','PRE SMOLT'],['RILES','RILES'],['FILTRADO','FILTRADO'],['FILTRO','FILTRADO'],['GEN','GENERADORES'],['GENERADOR','GENERADORES']];
+const TIPOS_BASE=['TRICKING'];
 const KEY_REGLAS='confEq_reglas_v21', KEY_UNIDADES='confEq_unidades_v21', KEY_NOMBRES='confEq_nombresUnidades_v23', KEY_AVISO_UNIDADES='confEq_avisoUnidades_v44';
+const KEY_TIPOS='confEq_tipos_v1', KEY_REGLAS_TIPO='confEq_reglasTipos_v1';
 let reglasUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS)||'[]');
 let unidadesUsuario=JSON.parse(localStorage.getItem(KEY_UNIDADES)||'[]');
 let nombresUnidades=JSON.parse(localStorage.getItem(KEY_NOMBRES)||'{"Hat":"Hatchery","Hatchery":"Hatchery","FF":"FF2","FF2":"FF2","Pre":"Pre Smolt","Pre Smolt":"Pre Smolt","Alev":"Alevinaje","Alevinaje":"Alevinaje"}');
 let unidadesAviso=JSON.parse(localStorage.getItem(KEY_AVISO_UNIDADES)||'{}');
+let tiposUsuario=JSON.parse(localStorage.getItem(KEY_TIPOS)||'[]');
+let reglasTipoUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS_TIPO)||'[]');
 let datosOriginales=[], datosBase=[], bloquesLYD=[], mapaColumnas={}, listaEquipos=[], pendientes=[], pendienteIndex=0;
+let pendientesTipo=[], pendienteTipoIndex=0;
 const equiposSeleccionados=new Set();
 let ordenFecha='asc';
 const $=id=>document.getElementById(id);
@@ -52,11 +57,17 @@ function setupEventos(){
   document.querySelectorAll('.menu-item').forEach(a=>a.onclick=e=>{e.preventDefault();cambiarVista(a.dataset.view);});
   $('btnActualizar').onclick=cargarDesdeGitHub;
   $('cardSinClasificar').onclick=abrirWizard;
+  $('cardTiposSinClasificar').onclick=abrirWizardTipo;
   $('btnCerrarWizard').onclick=cerrarWizard;
   $('btnFinalizarWizard').onclick=cerrarWizard;
   $('btnAnterior').onclick=()=>{if(pendienteIndex>0){pendienteIndex--;renderWizard();}};
   $('btnGuardarSiguiente').onclick=guardarWizard;
   $('wizardUnidad').onchange=()=>{$('boxNuevaUnidad').classList.toggle('hidden',$('wizardUnidad').value!=='__NUEVA__');};
+  $('btnCerrarWizardTipo').onclick=cerrarWizardTipo;
+  $('btnFinalizarWizardTipo').onclick=cerrarWizardTipo;
+  $('btnAnteriorTipo').onclick=()=>{if(pendienteTipoIndex>0){pendienteTipoIndex--;renderWizardTipo();}};
+  $('btnGuardarSiguienteTipo').onclick=guardarWizardTipo;
+  $('wizardTipoSelect').onchange=()=>{$('boxNuevoTipo').classList.toggle('hidden',$('wizardTipoSelect').value!=='__NUEVO__');};
   configurarBuscadorEquipos('busquedaEquipo','sugerenciasEquipo','btnAbrirEquipos',{
     alEscribir:aplicarFiltros,
     alSeleccionar:aplicarFiltros,
@@ -82,6 +93,7 @@ function setupEventos(){
   $('btnOrdenAsc').onclick=()=>cambiarOrdenFecha('asc');
   $('btnOrdenDesc').onclick=()=>cambiarOrdenFecha('desc');
   $('unidadFiltro').onchange=aplicarFiltros;
+  $('tipoFiltro').oninput=aplicarFiltros;
   $('btnGuardarUnidades').onclick=guardarTodosNombresUnidades;
 }
 function cambiarVista(v){
@@ -110,7 +122,7 @@ async function listarArchivosDatos(){const r=await fetch(`https://api.github.com
 function esSAP(i){const n=normalizar(i.name);return i.type==='file'&&/\.(xlsx|xls)$/i.test(i.name)&&(n.includes('sap')||n.includes('export'))&&!n.includes('gantt');}
 function esGantt(i){const n=normalizar(i.name);return i.type==='file'&&/\.(xlsx|xls)$/i.test(i.name)&&n.includes('gantt');}
 function selUlt(arr,f){const x=arr.filter(f).sort((a,b)=>a.name.localeCompare(b.name,'es',{numeric:true}));return x[x.length-1];}
-async function cargarSAP(a){$('kArchivo').textContent=a.name;$('txtArchivo').textContent=a.name;const rows=await leerExcel(a.download_url,'json');datosOriginales=rows.filter(r=>valor(r[detectarColumnas(Object.keys(rows[0]||{})).orden]).trim()!=='');mapaColumnas=detectarColumnas(Object.keys(rows[0]||{}));$('txtRegistros').textContent=`${rows.length.toLocaleString('es-CL')} registros SAP leídos`;cargarListaEquipos(rows);cargarFiltroUnidades();aplicarFiltros();}
+async function cargarSAP(a){$('kArchivo').textContent=a.name;$('txtArchivo').textContent=a.name;const rows=await leerExcel(a.download_url,'json');datosOriginales=rows.filter(r=>valor(r[detectarColumnas(Object.keys(rows[0]||{})).orden]).trim()!=='');mapaColumnas=detectarColumnas(Object.keys(rows[0]||{}));$('txtRegistros').textContent=`${rows.length.toLocaleString('es-CL')} registros SAP leídos`;cargarListaEquipos(rows);cargarFiltroUnidades();cargarFiltroTipos();aplicarFiltros();}
 async function cargarGantt(a){$('kArchivoGantt').textContent=a.name;$('txtGantt').textContent=a.name;const m=await leerExcel(a.download_url,'array');bloquesLYD=extraerBloquesLYD(m);$('kBloquesLYD').textContent=bloquesLYD.length.toLocaleString('es-CL');renderTablaLYD(bloquesLYD);renderTablaUnidades();}
 async function leerExcel(url,modo){const r=await fetch(url+'?v='+Date.now());if(!r.ok)throw new Error('No fue posible descargar archivo.');const b=await r.arrayBuffer(), wb=XLSX.read(b,{type:'array',cellDates:true}), sh=wb.Sheets[wb.SheetNames[0]];return modo==='array'?XLSX.utils.sheet_to_json(sh,{header:1,defval:''}):XLSX.utils.sheet_to_json(sh,{defval:''});}
 
@@ -174,6 +186,12 @@ function aplicarFiltros(){
     $('txtFiltro').textContent=`Unidad: ${unidadSeleccionada}`;
   }
 
+  const tipoBuscado=normalizar($('tipoFiltro').value);
+  if(tipoBuscado){
+    base=base.filter(r=>normalizar(r.tipoEquipo).includes(tipoBuscado));
+    $('txtFiltro').textContent=`Tipo: ${$('tipoFiltro').value}`;
+  }
+
   base=ordenarRegistrosPorFecha(base);
   datosBase=base;
   actualizarKPIs();
@@ -181,10 +199,11 @@ function aplicarFiltros(){
   renderTablaUnidades();
   $('filasBase').textContent=`${base.length.toLocaleString('es-CL')} filas`;
 }
-function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]), aviso=valor(r[mapaColumnas.aviso]);const texto=`${den} ${ubi} ${des}`;const unidad=unidadesAviso[aviso]||obtenerUnidad(texto);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:aviso,orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||convertirFecha(r[mapaColumnas.fechaAviso]),duracionParada:numero(r[mapaColumnas.duracionParada])};});}
+function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]), aviso=valor(r[mapaColumnas.aviso]);const texto=`${den} ${ubi} ${des}`;const unidad=unidadesAviso[aviso]||obtenerUnidad(texto);const tipoEquipo=obtenerTipoEquipo(den);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:aviso,orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:tipoEquipo,estadoTipo:tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||convertirFecha(r[mapaColumnas.fechaAviso]),duracionParada:numero(r[mapaColumnas.duracionParada])};});}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
+function obtenerTipoEquipo(denominacion){const n=normalizar(denominacion);if(!n)return 'Sin clasificar';for(const r of reglasTipoUsuario)if(n.includes(normalizar(r.buscar)))return r.tipo;for(const tipo of [...TIPOS_BASE,...tiposUsuario])if(n.includes(normalizar(tipo)))return tipo;return 'Sin clasificar';}
 function nombreUnidad(u){return normalizarUnidadGantt(u);}
-function actualizarKPIs(){const all=construirDatosBase(datosOriginales);$('kEquipos').textContent=new Set(datosBase.map(r=>r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');$('kAvisos').textContent=new Set(datosBase.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');$('kSinClasificar').textContent=getPendientes().length.toLocaleString('es-CL');}
+function actualizarKPIs(){const all=construirDatosBase(datosOriginales);$('kEquipos').textContent=new Set(datosBase.map(r=>r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');$('kAvisos').textContent=new Set(datosBase.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');$('kSinClasificar').textContent=getPendientes().length.toLocaleString('es-CL');$('kTiposSinClasificar').textContent=getPendientesTipo().length.toLocaleString('es-CL');}
 
 function getPendientes(){const all=construirDatosBase(datosOriginales).filter(r=>r.unidad==='Sin clasificar');const m=new Map();for(const r of all){const key=r.denominacionUbicacionTecnica||r.ubicacionTecnica||r.descripcion;if(!m.has(key))m.set(key,{equipo:key,ubicacion:r.ubicacionTecnica,descripcion:r.descripcion,texto:r.textoClasificacion,cantidad:0});m.get(key).cantidad++;}return [...m.values()].sort((a,b)=>b.cantidad-a.cantidad);}
 function abrirWizard(){pendientes=getPendientes();pendienteIndex=0;$('wizardClasificacion').classList.remove('hidden');renderWizard();}
@@ -193,6 +212,15 @@ function renderWizard(){pendientes=getPendientes();if(!pendientes.length){$('wiz
 function llenarUnidades(){const select=$('wizardUnidad');const unidades=[...new Set([...UNIDADES_BASE,...unidadesUsuario])];select.innerHTML='<option value="">Seleccionar unidad</option>'+unidades.map(u=>`<option value="${u}">${nombreUnidad(u)}</option>`).join('')+'<option value="__NUEVA__">➕ Nueva unidad...</option>';}
 function guardarWizard(){const p=pendientes[pendienteIndex];let unidad=$('wizardUnidad').value;if(unidad==='__NUEVA__'){unidad=$('wizardNuevaUnidad').value.trim().toUpperCase();if(!unidad)return alert('Escribe el nombre de la nueva unidad.');if(!unidadesUsuario.includes(unidad)){unidadesUsuario.push(unidad);nombresUnidades[unidad]=unidad;localStorage.setItem(KEY_UNIDADES,JSON.stringify(unidadesUsuario));localStorage.setItem(KEY_NOMBRES,JSON.stringify(nombresUnidades));}}if(!unidad)return alert('Selecciona una unidad.');const regla=generarRegla(p.equipo);reglasUsuario.unshift({buscar:regla,unidad});localStorage.setItem(KEY_REGLAS,JSON.stringify(reglasUsuario));aplicarFiltros();pendientes=getPendientes();if(pendienteIndex>=pendientes.length)pendienteIndex=pendientes.length-1;if(!pendientes.length){renderWizard();return;}renderWizard();}
 function generarRegla(t){return String(t).split(' ').filter(Boolean).slice(0,6).join(' ');}
+
+function obtenerListaTipos(){return [...new Set([...TIPOS_BASE,...tiposUsuario,...reglasTipoUsuario.map(r=>r.tipo)])].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));}
+function cargarFiltroTipos(){const lista=$('listaTiposEquipo');if(lista)lista.innerHTML=obtenerListaTipos().map(tipo=>`<option value="${escapeHtml(tipo)}"></option>`).join('');}
+function getPendientesTipo(){const all=construirDatosBase(datosOriginales).filter(r=>r.tipoEquipo==='Sin clasificar');const m=new Map();for(const r of all){const key=r.denominacionUbicacionTecnica||r.ubicacionTecnica||r.descripcion;if(!m.has(key))m.set(key,{equipo:key,ubicacion:r.ubicacionTecnica,descripcion:r.descripcion,cantidad:0});m.get(key).cantidad++;}return [...m.values()].sort((a,b)=>b.cantidad-a.cantidad);}
+function abrirWizardTipo(){pendientesTipo=getPendientesTipo();pendienteTipoIndex=0;$('wizardTipo').classList.remove('hidden');renderWizardTipo();}
+function cerrarWizardTipo(){$('wizardTipo').classList.add('hidden');cargarFiltroTipos();aplicarFiltros();}
+function renderWizardTipo(){pendientesTipo=getPendientesTipo();if(!pendientesTipo.length){$('wizardTipoContenido').classList.add('hidden');$('wizardTipoFinalizado').classList.remove('hidden');$('wizardTipoProgreso').textContent='Finalizado';return;}$('wizardTipoContenido').classList.remove('hidden');$('wizardTipoFinalizado').classList.add('hidden');if(pendienteTipoIndex>=pendientesTipo.length)pendienteTipoIndex=pendientesTipo.length-1;const p=pendientesTipo[pendienteTipoIndex];$('wizardTipoProgreso').textContent=`${pendienteTipoIndex+1} de ${pendientesTipo.length}`;$('wizardTipoEquipo').textContent=p.equipo;$('wizardTipoUbicacion').textContent=p.ubicacion||'-';$('wizardTipoDescripcion').textContent=p.descripcion||'-';$('wizardTipoCantidad').textContent=p.cantidad;llenarTipos();$('boxNuevoTipo').classList.add('hidden');$('wizardNuevoTipo').value='';}
+function llenarTipos(){const select=$('wizardTipoSelect');select.innerHTML='<option value="">Seleccionar tipo</option>'+obtenerListaTipos().map(tipo=>`<option value="${escapeHtml(tipo)}">${escapeHtml(tipo)}</option>`).join('')+'<option value="__NUEVO__">➕ Nuevo tipo...</option>';}
+function guardarWizardTipo(){const p=pendientesTipo[pendienteTipoIndex];let tipo=$('wizardTipoSelect').value;if(tipo==='__NUEVO__'){tipo=$('wizardNuevoTipo').value.trim().toUpperCase();if(!tipo)return alert('Escribe el nombre del nuevo tipo de equipo.');if(!tiposUsuario.includes(tipo))tiposUsuario.push(tipo);}if(!tipo)return alert('Selecciona un tipo de equipo.');reglasTipoUsuario.unshift({buscar:generarRegla(p.equipo),tipo});localStorage.setItem(KEY_TIPOS,JSON.stringify(tiposUsuario));localStorage.setItem(KEY_REGLAS_TIPO,JSON.stringify(reglasTipoUsuario));cargarFiltroTipos();aplicarFiltros();pendientesTipo=getPendientesTipo();if(pendienteTipoIndex>=pendientesTipo.length)pendienteTipoIndex=pendientesTipo.length-1;renderWizardTipo();}
 
 function obtenerListaUnidades(){
   const unidades = new Set();
@@ -677,6 +705,7 @@ function renderTablaBase(base){
       <th>Descripción</th>
       <th>Ubicación técnica</th>
       <th>Denominación ubicación técnica</th>
+      <th>Tipo de equipo</th>
       <th>Unidad</th>
       <th>Inicio avería</th>
       <th>Fin avería</th>
@@ -686,13 +715,14 @@ function renderTablaBase(base){
 
   $('tablaBase').querySelector('tbody').innerHTML=base.length
     ? base.map(r=>`
-      <tr class="${r.unidad==='Sin clasificar'?'fila-sin-clasificar':''}">
+      <tr class="${r.unidad==='Sin clasificar'?'fila-sin-clasificar':''} ${r.tipoEquipo==='Sin clasificar'?'fila-tipo-sin-clasificar':''}">
         <td>${fmtF(r.fechaAviso)}</td>
         <td>${r.claseAviso}</td>
         <td><span class="copyable" onclick="copiarTexto(this,'${r.aviso}')">${r.aviso}</span></td>
         <td class="descripcion">${r.descripcion}</td>
         <td>${r.ubicacionTecnica}</td>
         <td>${r.denominacionUbicacionTecnica}</td>
+        <td><span class="tipo-badge ${r.tipoEquipo==='Sin clasificar'?'pending':''}">${escapeHtml(r.tipoEquipo)}</span></td>
         <td>
           <div class="aviso-unidad">
             <span>${escapeHtml(r.unidad)}</span>
