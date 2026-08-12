@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.12" />
+  <link rel="stylesheet" href="styles.css?v=4.13" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -236,19 +236,20 @@
         </div>
         <div class="modal-actions">
           <button id="btnAnteriorTipo" class="btn-secondary">Anterior</button>
+          <button id="btnOmitirTipo" class="btn-secondary">Omitir / siguiente</button>
           <button id="btnGuardarSiguienteTipo">Guardar y siguiente</button>
         </div>
       </div>
 
       <div id="wizardTipoFinalizado" class="hidden final-box">
-        <h3>✔ Clasificación finalizada</h3>
-        <p>No quedan tipos de equipo pendientes por clasificar.</p>
+        <h3>✔ Revisión finalizada</h3>
+        <p>Se revisaron todos los registros de esta sesión. Los omitidos permanecen sin clasificar.</p>
         <button id="btnFinalizarWizardTipo">Cerrar</button>
       </div>
-      <small>Los tipos y sus reglas quedan guardados en este navegador para futuras cargas.</small>
+      <small>Puede omitir un registro sin clasificarlo. Los tipos guardados se aplicarán automáticamente en futuras cargas.</small>
     </div>
   </div>
 
-  <script src="app.js?v=4.12"></script>
+  <script src="app.js?v=4.13"></script>
 </body>
 </html>
