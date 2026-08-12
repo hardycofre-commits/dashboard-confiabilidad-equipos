@@ -201,8 +201,37 @@ function aplicarFiltros(){
   datosBase=base;
   actualizarKPIs();
   renderTablaBase(base.slice(0,300));
+  renderEstadisticasConsulta(base);
   renderTablaUnidades();
   $('filasBase').textContent=`${base.length.toLocaleString('es-CL')} filas`;
+}
+function renderEstadisticasConsulta(base){
+  const equipos=new Set(base.map(r=>r.denominacionUbicacionTecnica||r.ubicacionTecnica).filter(Boolean));
+  const avisos=new Set(base.map(r=>r.aviso).filter(Boolean));
+  const porUnidad=new Map();
+  for(const r of base){
+    const unidad=r.unidad||'Sin clasificar';
+    if(!porUnidad.has(unidad))porUnidad.set(unidad,{avisos:new Set(),equipos:new Set()});
+    const grupo=porUnidad.get(unidad);
+    if(r.aviso)grupo.avisos.add(r.aviso);
+    const equipo=r.denominacionUbicacionTecnica||r.ubicacionTecnica;
+    if(equipo)grupo.equipos.add(equipo);
+  }
+  const grupos=[...porUnidad.entries()].map(([unidad,d])=>({unidad,avisos:d.avisos.size,equipos:d.equipos.size})).sort((a,b)=>b.avisos-a.avisos||a.unidad.localeCompare(b.unidad,'es'));
+  $('estadEquipos').textContent=equipos.size.toLocaleString('es-CL');
+  $('estadAvisos').textContent=avisos.size.toLocaleString('es-CL');
+  $('estadUnidades').textContent=grupos.length.toLocaleString('es-CL');
+  const tipo=$('tipoFiltro').value.trim();
+  $('estadisticasContexto').textContent=tipo?`Distribución de avisos para el tipo ${tipo.toUpperCase()}, según los filtros aplicados.`:'Distribución de los avisos según los filtros aplicados.';
+  $('estadisticasLider').textContent=grupos.length?`Mayor cantidad: ${grupos[0].unidad} (${grupos[0].avisos.toLocaleString('es-CL')} avisos)`:'Sin datos';
+  if(!grupos.length){$('graficoAvisosUnidad').innerHTML='<div class="chart-empty">No hay datos para representar con los filtros actuales.</div>';return;}
+  const maximo=Math.max(...grupos.map(g=>g.avisos),1);
+  $('graficoAvisosUnidad').innerHTML=grupos.map(g=>`<div class="bar-row" aria-label="${escapeHtml(g.unidad)}: ${g.avisos} avisos">
+    <span class="bar-label">${escapeHtml(g.unidad)}</span>
+    <div class="bar-track"><div class="bar-fill" style="width:${g.avisos/maximo*100}%"></div></div>
+    <strong>${g.avisos.toLocaleString('es-CL')}</strong>
+    <small>${g.equipos.toLocaleString('es-CL')} equipo${g.equipos===1?'':'s'}</small>
+  </div>`).join('');
 }
 function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]), aviso=valor(r[mapaColumnas.aviso]);const texto=`${den} ${ubi} ${des}`;const unidad=unidadesAviso[aviso]||unidadesDenominacion[normalizarFrase(den)]||obtenerUnidad(texto);const tipoEquipo=obtenerTipoEquipo(den,tiposAviso[aviso]);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:aviso,orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:tipoEquipo,estadoTipo:tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||convertirFecha(r[mapaColumnas.fechaAviso]),duracionParada:numero(r[mapaColumnas.duracionParada])};});}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
