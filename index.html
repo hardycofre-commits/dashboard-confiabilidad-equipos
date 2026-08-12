@@ -4,13 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.9" />
+  <link rel="stylesheet" href="styles.css?v=4.11" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <aside class="sidebar">
     <a class="menu-item active" href="#" data-view="resumen">📊 Resumen</a>
     <a class="menu-item" href="#" data-view="confiabilidad">📈 Confiabilidad</a>
+    <a class="menu-item" href="#" data-view="gantt">📅 Carta Gantt</a>
   </aside>
 
   <main class="content">
@@ -24,7 +25,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong id="kDisponibilidad">--</strong>
-        <small>Versión 4.9</small>
+        <small>Versión 4.10</small>
       </div>
     </header>
 
@@ -32,7 +33,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v4.9</strong></div>
+      <div><span>Versión</span><strong>v4.10</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -87,10 +88,6 @@
           <div class="table-wrap base-wrap"><table id="tablaBase"><thead></thead><tbody></tbody></table></div>
         </article>
 
-        <article class="panel full">
-          <div class="panel-title"><h3>PERÍODOS LYD DETECTADOS EN GANTT</h3><span id="filasLYD">0 bloques</span></div>
-          <div id="ganttLYD" class="gantt-lyd" aria-label="Carta Gantt de per&iacute;odos L&amp;D"></div>
-        </article>
       </section>
     </section>
 
@@ -121,6 +118,23 @@
     </table>
   </div>
 </section>
+</section>
+<section id="viewGantt" class="view hidden gantt-view">
+  <div class="gantt-page-heading">
+    <div>
+      <span class="section-kicker">PLANIFICACIÓN OPERACIONAL</span>
+      <h2>CARTA GANTT — PERÍODOS L&amp;D</h2>
+      <p>Vista completa de los períodos de lavado y desinfección detectados.</p>
+    </div>
+    <div class="gantt-page-count"><strong id="filasLYD">0</strong><span>bloques programados</span></div>
+  </div>
+  <article class="panel gantt-page-panel">
+    <div class="gantt-legend" aria-label="Ayuda de lectura">
+      <span><i class="legend-line"></i> Fecha actual</span>
+      <span>Desplácese horizontalmente para revisar todo el período</span>
+    </div>
+    <div id="ganttLYD" class="gantt-lyd" aria-label="Carta Gantt de per&iacute;odos L&amp;D"></div>
+  </article>
 </section>
 <section id="viewUnidades" class="view hidden">
       <section class="panel unidades-panel">
@@ -188,6 +202,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.9"></script>
+  <script src="app.js?v=4.11"></script>
 </body>
 </html>

@@ -90,6 +90,8 @@ function cambiarVista(v){
   if(v==='unidades'){$('viewUnidades').classList.remove('hidden');renderTablaUnidades();}
   else if(v==='confiabilidad'){
     $('viewConfiabilidad').classList.remove('hidden');
+  } else if(v==='gantt'){
+    $('viewGantt').classList.remove('hidden');
   } else {$('viewResumen').classList.remove('hidden');}
   document.querySelector(`.menu-item[data-view="${v}"]`).classList.add('active');
 }
@@ -772,7 +774,7 @@ function crearBloque(unidad,inicio,fin){
 }
 function renderTablaLYD(b){
   const contenedor=$('ganttLYD');
-  $('filasLYD').textContent=`${b.length} bloques`;
+  $('filasLYD').textContent=b.length.toLocaleString('es-CL');
   if(!b.length){
     contenedor.innerHTML='<div class="gantt-vacio">No hay per&iacute;odos L&amp;D detectados</div>';
     return;
@@ -793,7 +795,7 @@ function renderTablaLYD(b){
       ancho:(siguiente-fecha)/totalMs*100
     });
   }
-  const anchoLinea=Math.max(920,meses.length*105);
+  const anchoLinea=Math.max(1200,meses.length*140);
   const unidades=[...new Set(bloques.map(x=>nombreUnidad(x.unidad)))];
   const colorUnidad=new Map(unidades.map((unidad,i)=>[unidad,i%6]));
   const ahora=new Date();
