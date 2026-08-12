@@ -100,7 +100,7 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 .fila-tipo-sin-clasificar:hover{background:#e9e0ff}
 .fila-sin-clasificar.fila-tipo-sin-clasificar{background:#fff0d7;box-shadow:inset 4px 0 #7c3aed}
 .fila-sin-clasificar.fila-tipo-sin-clasificar:hover{background:#ffe4b8}
-.tipo-badge{display:inline-block;padding:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;text-transform:none;white-space:nowrap}.tipo-badge.pending{padding:4px 8px;border-radius:14px;background:#fee2e2;color:#991b1b;font-size:10px;font-weight:900}
+.tipo-badge{display:inline-block;padding:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;text-transform:none;white-space:nowrap}.tipo-badge.pending{padding:4px 8px;border-radius:14px;background:#fee2e2;color:#991b1b;font:inherit;font-weight:inherit}
 
 
 /* v2.6.2 - Permitir copiar texto de la tabla */
@@ -114,12 +114,13 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 
 #tablaBase td{
   cursor:text;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:12px;
+  font-weight:400;
+  line-height:normal;
 }
-
-#tablaBase td:nth-child(3),
-#tablaBase td:nth-child(4){
-  font-family:Consolas, monospace;
-}
+#tablaBase td span:not(.sort-lines){font:inherit}
+#tablaBase .copyable:hover,#tablaBase .copyable:focus{font-weight:inherit}
 
 .table-title-actions{
   display:flex;
