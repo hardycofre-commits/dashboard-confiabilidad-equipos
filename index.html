@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.27" />
+  <link rel="stylesheet" href="styles.css?v=4.28" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -119,9 +119,14 @@
                 <div id="leyendaTortaUnidad" class="donut-legend"></div>
               </div>
             </section>
-            <section class="chart-card bars-card">
-              <div class="chart-heading"><h4>AVISOS POR UNIDAD</h4><span>Ordenado de mayor a menor</span></div>
-              <div id="graficoAvisosUnidad" class="bar-chart" aria-label="Gráfico de avisos por unidad"></div>
+            <section class="chart-card clase-card">
+              <div class="chart-heading"><h4>AVISOS POR CLASE</h4><span>Distribución Z1 / Z2</span></div>
+              <div class="donut-layout">
+                <div id="graficoTortaClase" class="donut-chart" role="img" aria-label="Gráfico de torta de avisos Z1 y Z2">
+                  <div class="donut-center"><strong>0</strong><span>avisos</span></div>
+                </div>
+                <div id="leyendaTortaClase" class="donut-legend"></div>
+              </div>
             </section>
           </div>
         </article>
@@ -280,6 +285,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.27"></script>
+  <script src="app.js?v=4.28"></script>
 </body>
 </html>
