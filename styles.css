@@ -103,6 +103,7 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 .fila-sin-clasificar.fila-tipo-sin-clasificar{background:#fff0d7;box-shadow:inset 4px 0 #7c3aed}
 .fila-sin-clasificar.fila-tipo-sin-clasificar:hover{background:#ffe4b8}
 .tipo-badge{display:inline-block;padding:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;text-transform:none;white-space:nowrap}.tipo-badge.pending{padding:4px 8px;border-radius:14px;background:#fee2e2;color:#991b1b;font:inherit;font-weight:inherit}
+.estado-aviso{display:inline-block;padding:4px 8px;border-radius:14px;font-size:10px;font-weight:800;white-space:nowrap}.estado-aviso.cerrado{background:#dcfce7;color:#166534}.estado-aviso.tratamiento{background:#fef3c7;color:#92400e}
 
 
 /* v2.6.2 - Permitir copiar texto de la tabla */
