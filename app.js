@@ -750,7 +750,7 @@ function editarTipoAviso(boton){
   const aviso=boton.dataset.aviso,actual=boton.dataset.tipo,celda=boton.closest('td');
   const selector=document.createElement('select');
   selector.className='unidad-aviso-select';
-  selector.innerHTML='<option value="__AUTO__">Clasificación automática</option>'+
+  selector.innerHTML='<option value="__AUTO__">Clasificación automática</option><option value="No aplica">Omitir / no aplica</option>'+
     [...new Set([...obtenerListaTipos(),actual,'Sin clasificar'])].sort((a,b)=>a.localeCompare(b,'es')).map(tipo=>`<option value="${escapeHtml(tipo)}">${escapeHtml(tipo)}</option>`).join('');
   selector.value=tiposAviso[aviso]||'__AUTO__';
   selector.onchange=()=>{
