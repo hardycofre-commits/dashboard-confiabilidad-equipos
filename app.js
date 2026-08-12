@@ -224,11 +224,19 @@ function renderEstadisticasConsulta(base){
   const tipo=$('tipoFiltro').value.trim();
   $('estadisticasContexto').textContent=tipo?`Distribución de avisos para el tipo ${tipo.toUpperCase()}, según los filtros aplicados.`:'Distribución de los avisos según los filtros aplicados.';
   $('estadisticasLider').textContent=grupos.length?`Mayor cantidad: ${grupos[0].unidad} (${grupos[0].avisos.toLocaleString('es-CL')} avisos)`:'Sin datos';
-  if(!grupos.length){$('graficoAvisosUnidad').innerHTML='<div class="chart-empty">No hay datos para representar con los filtros actuales.</div>';return;}
+  if(!grupos.length){$('graficoAvisosUnidad').innerHTML='<div class="chart-empty">No hay datos para representar con los filtros actuales.</div>';$('graficoTortaUnidad').style.background='#e8eef7';$('graficoTortaUnidad').innerHTML='<div class="donut-center"><strong>0</strong><span>avisos</span></div>';$('leyendaTortaUnidad').innerHTML='<div class="chart-empty">Sin distribución disponible.</div>';return;}
+  const colores=['#0b5cab','#2493e8','#7c3aed','#16a34a','#f59e0b','#e11d48','#0891b2','#64748b'];
+  const totalDistribucion=grupos.reduce((s,g)=>s+g.avisos,0)||1;
+  let acumulado=0;
+  const segmentos=grupos.map((g,i)=>{const inicio=acumulado,fin=acumulado+g.avisos/totalDistribucion*100;acumulado=fin;return `${colores[i%colores.length]} ${inicio}% ${fin}%`;});
+  $('graficoTortaUnidad').style.background=`conic-gradient(${segmentos.join(',')})`;
+  $('graficoTortaUnidad').innerHTML=`<div class="donut-center"><strong>${avisos.size.toLocaleString('es-CL')}</strong><span>avisos</span></div>`;
+  $('graficoTortaUnidad').setAttribute('aria-label',grupos.map(g=>`${g.unidad}: ${Math.round(g.avisos/totalDistribucion*100)}%`).join(', '));
+  $('leyendaTortaUnidad').innerHTML=grupos.map((g,i)=>`<div class="legend-item"><i style="background:${colores[i%colores.length]}"></i><span>${escapeHtml(g.unidad)}</span><strong>${g.avisos.toLocaleString('es-CL')}</strong><small>${(g.avisos/totalDistribucion*100).toLocaleString('es-CL',{maximumFractionDigits:1})}%</small></div>`).join('');
   const maximo=Math.max(...grupos.map(g=>g.avisos),1);
-  $('graficoAvisosUnidad').innerHTML=grupos.map(g=>`<div class="bar-row" aria-label="${escapeHtml(g.unidad)}: ${g.avisos} avisos">
+  $('graficoAvisosUnidad').innerHTML=grupos.map((g,i)=>`<div class="bar-row" aria-label="${escapeHtml(g.unidad)}: ${g.avisos} avisos">
     <span class="bar-label">${escapeHtml(g.unidad)}</span>
-    <div class="bar-track"><div class="bar-fill" style="width:${g.avisos/maximo*100}%"></div></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${g.avisos/maximo*100}%;background:${colores[i%colores.length]}"></div></div>
     <strong>${g.avisos.toLocaleString('es-CL')}</strong>
     <small>${g.equipos.toLocaleString('es-CL')} equipo${g.equipos===1?'':'s'}</small>
   </div>`).join('');

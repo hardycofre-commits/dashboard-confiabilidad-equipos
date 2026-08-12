@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.24" />
+  <link rel="stylesheet" href="styles.css?v=4.27" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -109,8 +109,21 @@
             <div><span>Avisos encontrados</span><strong id="estadAvisos">0</strong></div>
             <div><span>Unidades involucradas</span><strong id="estadUnidades">0</strong></div>
           </div>
-          <div class="chart-heading"><h4>AVISOS POR UNIDAD</h4><span>Ordenado de mayor a menor</span></div>
-          <div id="graficoAvisosUnidad" class="bar-chart" aria-label="Gráfico de avisos por unidad"></div>
+          <div class="estadisticas-graficos">
+            <section class="chart-card donut-card">
+              <div class="chart-heading"><h4>DISTRIBUCIÓN POR UNIDAD</h4><span>Porcentaje de avisos</span></div>
+              <div class="donut-layout">
+                <div id="graficoTortaUnidad" class="donut-chart" role="img" aria-label="Gráfico de torta de avisos por unidad">
+                  <div class="donut-center"><strong>0</strong><span>avisos</span></div>
+                </div>
+                <div id="leyendaTortaUnidad" class="donut-legend"></div>
+              </div>
+            </section>
+            <section class="chart-card bars-card">
+              <div class="chart-heading"><h4>AVISOS POR UNIDAD</h4><span>Ordenado de mayor a menor</span></div>
+              <div id="graficoAvisosUnidad" class="bar-chart" aria-label="Gráfico de avisos por unidad"></div>
+            </section>
+          </div>
         </article>
 
       </section>
@@ -267,6 +280,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.26"></script>
+  <script src="app.js?v=4.27"></script>
 </body>
 </html>
