@@ -37,7 +37,7 @@ let unidadesDenominacion=JSON.parse(localStorage.getItem(KEY_DEN_UNIDADES)||'{}'
 let tiposUsuario=JSON.parse(localStorage.getItem(KEY_TIPOS)||'[]');
 let reglasTipoUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS_TIPO)||'[]');
 let tiposAviso=JSON.parse(localStorage.getItem(KEY_AVISO_TIPOS)||'{}');
-let datosOriginales=[], datosBase=[], bloquesLYD=[], planAnual=[], archivoPlanAnual='', mapaColumnas={}, ordenesZ1PorPlan=new Map(), listaEquipos=[], pendientes=[], pendienteIndex=0;
+let datosOriginales=[], datosBase=[], bloquesLYD=[], planAnual=[], archivoPlanAnual='', mapaColumnas={}, ordenesZ1PorPlan=new Map(), listaEquipos=[], palabrasDescripcion=[], pendientes=[], pendienteIndex=0;
 let pendientesTipo=[], pendienteTipoIndex=0;
 const tiposOmitidosSesion=new Set();
 const equiposSeleccionados=new Set();
@@ -83,6 +83,7 @@ function setupEventos(){
     alSeleccionar:aplicarFiltros,
     seleccionMultiple:true
   });
+  configurarBuscadorDescripcion();
   configurarBuscadorEquipos('confBuscarEquipo','sugerenciasEquipoConf','btnAbrirEquiposConf',{
     alEscribir:analizarConfiabilidadAutomaticamente,
     alSeleccionar:()=>analizarConfiabilidad({silencioso:true})
@@ -99,14 +100,10 @@ function setupEventos(){
     };
   });
 
-  $('fechaDesde').onchange=aplicarFiltros;$('fechaHasta').onchange=aplicarFiltros;
   $('btnOrdenAsc').onclick=()=>cambiarOrdenFecha('asc');
   $('btnOrdenDesc').onclick=()=>cambiarOrdenFecha('desc');
   $('unidadFiltro').onchange=aplicarFiltros;
-  $('tipoFiltro').oninput=()=>{
-    if(normalizar($('tipoFiltro').value)==='todos')$('tipoFiltro').value='';
-    aplicarFiltros();
-  };
+  $('tipoFiltro').onchange=aplicarFiltros;
   $('btnGuardarUnidades').onclick=guardarTodosNombresUnidades;
   if($('planBuscar'))$('planBuscar').oninput=renderPlanAnual;
   if($('planMes'))$('planMes').onchange=renderPlanAnual;
@@ -130,7 +127,7 @@ function cambiarVista(v){
   } else {$('viewResumen').classList.remove('hidden');}
   document.querySelector(`.menu-item[data-view="${v}"]`).classList.add('active');
 }
-function configurarFechas(){$('fechaDesde').value='2025-01-01';$('fechaHasta').value='2026-12-31';if($('confDesde'))$('confDesde').value='2025-01-01';if($('confHasta'))$('confHasta').value='2026-12-31';}
+function configurarFechas(){if($('confDesde'))$('confDesde').value='2025-01-01';if($('confHasta'))$('confHasta').value='2026-12-31';}
 async function cargarDesdeGitHub(){
  try{
   setEstado('Buscando','warning','Consultando carpeta datos/ en GitHub...');
@@ -231,15 +228,9 @@ function ordenarRegistrosPorFecha(registros){
 function aplicarFiltros(){
   let base=construirDatosBase(datosOriginales);
 
-  const d=$('fechaDesde').value?new Date($('fechaDesde').value+'T00:00:00'):null;
-  const h=$('fechaHasta').value?new Date($('fechaHasta').value+'T23:59:59'):null;
-
-  if(d||h){
-    base=base.filter(r=>{
-      const f=r.inicioAveriaFecha||r.fechaAviso;
-      if(!f)return true;
-      return (!d||f>=d)&&(!h||f<=h);
-    });
+  const descripcionBuscada=normalizar($('busquedaDescripcion').value);
+  if(descripcionBuscada){
+    base=base.filter(r=>normalizar(r.descripcion).includes(descripcionBuscada));
   }
 
   const txt=normalizar($('busquedaEquipo').value);
@@ -269,6 +260,7 @@ function aplicarFiltros(){
     base=base.filter(r=>normalizar(r.tipoEquipo).includes(tipoBuscado));
     $('txtFiltro').textContent=`Tipo: ${$('tipoFiltro').value}`;
   }
+  if(descripcionBuscada)$('txtFiltro').textContent=`Descripción: ${$('busquedaDescripcion').value}`;
 
   actualizarKPIs(base);
   if(estadoAvisoSeleccionado){
@@ -315,7 +307,14 @@ function guardarWizard(){const p=pendientes[pendienteIndex];if(!p)return alert('
 function generarRegla(t){return String(t).split(' ').filter(Boolean).slice(0,6).join(' ');}
 
 function obtenerListaTipos(){return [...new Set([...TIPOS_BASE,...tiposUsuario,...reglasTipoUsuario.map(r=>r.tipo)].map(normalizarNombreTipo))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));}
-function cargarFiltroTipos(){const lista=$('listaTiposEquipo');if(lista)lista.innerHTML=['Todos','Sin clasificar',...obtenerListaTipos()].map(tipo=>`<option value="${escapeHtml(tipo)}"></option>`).join('');}
+function cargarFiltroTipos(){
+  const select=$('tipoFiltro');
+  if(!select)return;
+  const actual=select.value;
+  const tipos=['Sin clasificar',...obtenerListaTipos()];
+  select.innerHTML='<option value="">Todos</option>'+tipos.map(tipo=>`<option value="${escapeHtml(tipo)}">${escapeHtml(tipo)}</option>`).join('');
+  if(tipos.includes(actual))select.value=actual;
+}
 function getPendientesTipo({incluirOmitidos=true}={}){const all=construirDatosBase(datosOriginales).filter(r=>r.tipoEquipo==='Sin clasificar');const m=new Map();for(const r of all){const key=r.denominacionUbicacionTecnica||r.ubicacionTecnica||r.descripcion;if(!incluirOmitidos&&tiposOmitidosSesion.has(key))continue;if(!m.has(key))m.set(key,{equipo:key,ubicacion:r.ubicacionTecnica,descripcion:r.descripcion,cantidad:0,avisos:[]});const pendiente=m.get(key);pendiente.cantidad++;if(r.aviso&&!pendiente.avisos.includes(r.aviso))pendiente.avisos.push(r.aviso);}return [...m.values()].sort((a,b)=>b.cantidad-a.cantidad);}
 function abrirWizardTipo(){tiposOmitidosSesion.clear();pendientesTipo=getPendientesTipo({incluirOmitidos:false});pendienteTipoIndex=0;$('wizardTipo').classList.remove('hidden');renderWizardTipo();}
 function cerrarWizardTipo(){$('wizardTipo').classList.add('hidden');cargarFiltroTipos();aplicarFiltros();}
@@ -695,13 +694,34 @@ function detectarColumnas(cols){const c=cols.map(x=>({original:x,key:normalizar(
 function buscar(cols,ps){for(const p0 of ps){const p=normalizar(p0);const e=cols.find(c=>c.key.includes(p)||p.includes(c.key));if(e)return e.original;}return null;}
 function buscarExact(cols,ps){for(const p0 of ps){const p=normalizar(p0),e=cols.find(c=>c.key===p);if(e)return e.original;}return buscar(cols,ps);}
 function cargarListaEquipos(rows){
+  const base=construirDatosBase(rows);
   listaEquipos=[...new Set(
-    construirDatosBase(rows)
+    base
       .map(r=>r.denominacionUbicacionTecnica||r.ubicacionTecnica)
       .filter(Boolean)
   )].sort((a,b)=>a.localeCompare(b,'es'));
+  palabrasDescripcion=[...new Set(base.flatMap(r=>r.descripcion.split(/[^A-ZÁÉÍÓÚÜÑ0-9]+/).filter(p=>p.length>=3)))].sort((a,b)=>a.localeCompare(b,'es'));
 }
 const buscadoresEquipos=[];
+function configurarBuscadorDescripcion(){
+  const input=$('busquedaDescripcion'),contenedor=$('sugerenciasDescripcion');
+  if(!input||!contenedor)return;
+  const estado={ocultar(){contenedor.style.display='none';contenedor.innerHTML='';}};
+  buscadoresEquipos.push(estado);
+  const mostrar=()=>{
+    const clave=normalizar(input.value);
+    const resultados=(clave?palabrasDescripcion.filter(p=>normalizar(p).includes(clave)):palabrasDescripcion).slice(0,30);
+    contenedor.innerHTML=resultados.length?resultados.map(p=>`<div class="suggestion-item">${escapeHtml(p)}</div>`).join(''):'<div class="suggestion-empty">Sin coincidencias</div>';
+    [...contenedor.querySelectorAll('.suggestion-item')].forEach(item=>{
+      item.onmousedown=e=>e.preventDefault();
+      item.onclick=()=>{input.value=item.textContent;estado.ocultar();aplicarFiltros();};
+    });
+    contenedor.style.display='block';
+  };
+  input.oninput=()=>{mostrar();aplicarFiltros();};
+  input.onfocus=mostrar;
+  input.onkeydown=e=>{if(e.key==='Escape')estado.ocultar();};
+}
 function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
   const input=$(inputId),contenedor=$(sugerenciasId),boton=$(botonId);
   if(!input||!contenedor)return;

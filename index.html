@@ -39,8 +39,11 @@
 
     <section id="viewResumen" class="view">
       <section class="filters">
-        <div class="field"><label>Fecha desde</label><input type="date" id="fechaDesde" value="2025-01-01" /></div>
-        <div class="field"><label>Fecha hasta</label><input type="date" id="fechaHasta" value="2026-12-31" /></div>
+        <div class="field search-field descripcion-search">
+          <label>Buscar en descripción <span class="filter-hint">Escribe una palabra</span></label>
+          <input type="text" id="busquedaDescripcion" placeholder="Ej: INSPECCIÓN, BOMBA, CAMBIO..." autocomplete="off" />
+          <div id="sugerenciasDescripcion" class="suggestions"></div>
+        </div>
         <div class="field search-field equipo-combo">
           <label>Equipo <span class="filter-hint">Haz clic para marcar varios</span></label>
           <div class="combo-wrapper">
@@ -52,8 +55,7 @@
         </div>
         <div class="field">
           <label>Tipo de equipo</label>
-          <input type="text" id="tipoFiltro" list="listaTiposEquipo" placeholder="Ej: TRICKING" autocomplete="off" />
-          <datalist id="listaTiposEquipo"></datalist>
+          <select id="tipoFiltro"><option value="">Todos</option></select>
         </div>
         <div class="field"><label>Unidad</label><select id="unidadFiltro"><option value="">Todas</option></select></div>
         <button id="btnActualizar">↻ Actualizar</button>
