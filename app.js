@@ -103,7 +103,10 @@ function setupEventos(){
   $('btnGuardarUnidades').onclick=guardarTodosNombresUnidades;
   if($('planBuscar'))$('planBuscar').oninput=renderPlanAnual;
   if($('planMes'))$('planMes').onchange=renderPlanAnual;
-  document.querySelectorAll('.plan-kpi-filter').forEach(b=>b.onclick=()=>cambiarFiltroEstadoPlan(b.dataset.estado));
+  document.querySelectorAll('.plan-kpi-filter').forEach(kpi=>{
+    kpi.onclick=()=>cambiarFiltroEstadoPlan(kpi.dataset.estado);
+    kpi.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cambiarFiltroEstadoPlan(kpi.dataset.estado);}};
+  });
   if($('btnLimpiarPlan'))$('btnLimpiarPlan').onclick=()=>{$('planBuscar').value='';$('planMes').value='';estadoPlanSeleccionado='';renderPlanAnual();};
 }
 function cambiarVista(v){
