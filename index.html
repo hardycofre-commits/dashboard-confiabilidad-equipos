@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.30" />
+  <link rel="stylesheet" href="styles.css?v=4.31" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -12,6 +12,7 @@
     <a class="menu-item active" href="#" data-view="resumen">📊 Resumen</a>
     <a class="menu-item" href="#" data-view="confiabilidad">📈 Confiabilidad</a>
     <a class="menu-item" href="#" data-view="gantt">📅 Carta Gantt</a>
+    <a class="menu-item" href="#" data-view="plan-anual">🛠️ Plan anual</a>
   </aside>
 
   <main class="content">
@@ -188,6 +189,35 @@
     <div id="ganttLYD" class="gantt-lyd" aria-label="Carta Gantt de per&iacute;odos L&amp;D"></div>
   </article>
 </section>
+<section id="viewPlanAnual" class="view hidden plan-view">
+  <div class="gantt-page-heading">
+    <div>
+      <span class="section-kicker">MANTENCIÓN PREVENTIVA</span>
+      <h2>PLAN ANUAL DE MANTENCIÓN</h2>
+      <p id="planFuente">Cargando planificación anual...</p>
+    </div>
+    <div class="gantt-page-count"><strong id="planAvanceCabecera">0%</strong><span>avance anual</span></div>
+  </div>
+  <section class="filters plan-filters">
+    <div class="field search-field">
+      <label>Buscar equipo o mantención</label>
+      <input type="search" id="planBuscar" placeholder="Equipo, ubicación, plan, operación u orden..." autocomplete="off" />
+    </div>
+    <div class="field"><label>Mes planificado</label><select id="planMes"><option value="">Todos los meses</option></select></div>
+    <div class="field"><label>Estado</label><select id="planEstado"><option value="">Todos</option><option value="Completado">Completado</option><option value="Pendiente">Pendiente futuro</option><option value="Vencido">Vencido</option></select></div>
+    <button id="btnLimpiarPlan" type="button">Limpiar filtros</button>
+  </section>
+  <section class="plan-kpis">
+    <article><span>Avance anual</span><strong id="planAvance">0%</strong><div class="plan-progress"><i id="planProgressBar"></i></div><small id="planConteoAvance">0 de 0 actividades</small></article>
+    <article><span>Realizado</span><strong id="planCompletado">0</strong><small>actividades completadas</small></article>
+    <article><span>Próximos meses</span><strong id="planPendiente">0</strong><small>actividades por ejecutar</small></article>
+    <article class="risk"><span>Vencido</span><strong id="planVencido">0</strong><small>fecha cumplida sin cierre</small></article>
+  </section>
+  <article class="panel plan-panel">
+    <div class="panel-title"><div><h3>DETALLE DEL PLAN</h3><p id="planContexto">Todas las actividades</p></div><span id="planFilas">0 filas</span></div>
+    <div class="table-wrap plan-table-wrap"><table id="tablaPlan"><thead><tr><th>Fecha</th><th>Estado</th><th>Equipo</th><th>Ubicación técnica</th><th>Plan de mantención</th><th>Operación</th><th>Orden</th><th>Trabajo</th></tr></thead><tbody></tbody></table></div>
+  </article>
+</section>
 <section id="viewUnidades" class="view hidden">
       <section class="panel unidades-panel">
         <div class="panel-title">
@@ -294,6 +324,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.30"></script>
+  <script src="app.js?v=4.31"></script>
 </body>
 </html>
