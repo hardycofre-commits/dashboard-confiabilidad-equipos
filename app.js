@@ -22,6 +22,10 @@ async function copiarTexto(el,valor){
   el.textContent=copiado?'✔ Copiado':'No se pudo copiar';
   setTimeout(()=>{el.textContent=original;},900);
 }
+function celdaCopiable(valor){
+  const texto=String(valor||'-');
+  return `<span class="copyable" role="button" tabindex="0" title="Clic para copiar" data-copy="${escapeHtml(texto)}">${escapeHtml(texto)}</span>`;
+}
 
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main',folder:'datos'};
 const UNIDADES_BASE=['HATCHERY','FF2','ALEVINAJE','PRE SMOLT','RILES','FILTRADO','GENERADORES','OTROS'];
@@ -198,7 +202,13 @@ function renderPlanAnual(){
   const texto=normalizar($('planBuscar').value),mes=$('planMes').value,estado=estadoPlanSeleccionado;
   const filtradas=planAnual.filter(x=>(!texto||[x.equipo,x.ubicacion,x.plan,x.operacion,x.orden].some(v=>normalizar(v).includes(texto)))&&(!mes||`${x.fecha?.getFullYear()}-${String((x.fecha?.getMonth()??-1)+1).padStart(2,'0')}`===mes)&&(!estado||x.estado===estado)).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
   $('planFilas').textContent=`${filtradas.length.toLocaleString('es-CL')} filas`;$('planContexto').textContent=(texto||mes||estado)?'Resultados según los filtros aplicados':'Todas las actividades del plan anual';
-  $('tablaPlan').querySelector('tbody').innerHTML=filtradas.length?filtradas.map(x=>`<tr><td>${fmtF(x.fecha)}</td><td><span class="plan-status ${normalizar(x.estado)}">${x.estado}</span></td><td>${escapeHtml(x.equipo||'-')}</td><td>${escapeHtml(x.ubicacion||'-')}</td><td class="descripcion">${escapeHtml(x.plan||'-')}</td><td class="descripcion">${escapeHtml(x.operacion||'-')}</td><td>${escapeHtml(x.orden||'-')}</td><td>${x.trabajo?`${fmtN(x.trabajo)} ${escapeHtml(x.unidadTrabajo)}`:'-'}</td></tr>`).join(''):'<tr><td colspan="8">No hay actividades que coincidan con la búsqueda.</td></tr>';
+  const tbody=$('tablaPlan').querySelector('tbody');
+  tbody.innerHTML=filtradas.length?filtradas.map(x=>`<tr><td>${fmtF(x.fecha)}</td><td><span class="plan-status ${normalizar(x.estado)}">${x.estado}</span></td><td>${celdaCopiable(x.equipo)}</td><td>${celdaCopiable(x.ubicacion)}</td><td class="descripcion">${escapeHtml(x.plan||'-')}</td><td class="descripcion">${escapeHtml(x.operacion||'-')}</td><td>${celdaCopiable(x.orden)}</td><td>${x.trabajo?`${fmtN(x.trabajo)} ${escapeHtml(x.unidadTrabajo)}`:'-'}</td></tr>`).join(''):'<tr><td colspan="8">No hay actividades que coincidan con la búsqueda.</td></tr>';
+  tbody.querySelectorAll('.copyable').forEach(el=>{
+    const copiar=()=>copiarTexto(el,el.dataset.copy);
+    el.onclick=copiar;
+    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();copiar();}};
+  });
 }
 
 function cambiarOrdenFecha(tipo){
