@@ -37,7 +37,7 @@ let unidadesDenominacion=JSON.parse(localStorage.getItem(KEY_DEN_UNIDADES)||'{}'
 let tiposUsuario=JSON.parse(localStorage.getItem(KEY_TIPOS)||'[]');
 let reglasTipoUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS_TIPO)||'[]');
 let tiposAviso=JSON.parse(localStorage.getItem(KEY_AVISO_TIPOS)||'{}');
-let datosOriginales=[], datosBase=[], bloquesLYD=[], planAnual=[], archivoPlanAnual='', mapaColumnas={}, listaEquipos=[], pendientes=[], pendienteIndex=0;
+let datosOriginales=[], datosBase=[], bloquesLYD=[], planAnual=[], archivoPlanAnual='', mapaColumnas={}, ordenesZ1PorPlan=new Map(), listaEquipos=[], pendientes=[], pendienteIndex=0;
 let pendientesTipo=[], pendienteTipoIndex=0;
 const tiposOmitidosSesion=new Set();
 const equiposSeleccionados=new Set();
@@ -135,7 +135,7 @@ function esSAP(i){const n=normalizar(i.name);return i.type==='file'&&/\.(xlsx|xl
 function esGantt(i){const n=normalizar(i.name);return i.type==='file'&&/\.(xlsx|xls)$/i.test(i.name)&&n.includes('gantt');}
 function esPlanAnual(i){const n=normalizar(i.name);return i.type==='file'&&/\.(xlsx|xls)$/i.test(i.name)&&n.includes('plan')&&(n.includes('anual')||n.includes('mantencion')||n.includes('mantenimiento'));}
 function selUlt(arr,f){const x=arr.filter(f).sort((a,b)=>a.name.localeCompare(b.name,'es',{numeric:true}));return x[x.length-1];}
-async function cargarSAP(a){$('kArchivo').textContent=a.name;$('txtArchivo').textContent=a.name;const rows=await leerExcel(a.download_url,'json');datosOriginales=rows.filter(r=>valor(r[detectarColumnas(Object.keys(rows[0]||{})).orden]).trim()!=='');mapaColumnas=detectarColumnas(Object.keys(rows[0]||{}));$('txtRegistros').textContent=`${rows.length.toLocaleString('es-CL')} registros SAP leídos`;cargarListaEquipos(rows);cargarFiltroUnidades();cargarFiltroTipos();aplicarFiltros();}
+async function cargarSAP(a){$('kArchivo').textContent=a.name;$('txtArchivo').textContent=a.name;const rows=await leerExcel(a.download_url,'json');mapaColumnas=detectarColumnas(Object.keys(rows[0]||{}));ordenesZ1PorPlan=construirOrdenesZ1(rows);datosOriginales=rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='');$('txtRegistros').textContent=`${rows.length.toLocaleString('es-CL')} registros SAP leídos`;cargarListaEquipos(rows);cargarFiltroUnidades();cargarFiltroTipos();aplicarFiltros();}
 async function cargarGantt(a){$('kArchivoGantt').textContent=a.name;$('txtGantt').textContent=a.name;const m=await leerExcel(a.download_url,'array');bloquesLYD=extraerBloquesLYD(m);$('kBloquesLYD').textContent=bloquesLYD.length.toLocaleString('es-CL');renderTablaLYD(bloquesLYD);renderTablaUnidades();}
 async function cargarPlanAnual(a){archivoPlanAnual=a.name;const rows=await leerExcel(a.download_url,'json');planAnual=rows.map(normalizarFilaPlan).filter(x=>(x.fecha||x.equipo||x.plan)&&(x.estado!=='Vencido'||x.orden.trim()!==''));cargarMesesPlan();renderPlanAnual();}
 async function leerExcel(url,modo){const r=await fetch(url+'?v='+Date.now());if(!r.ok)throw new Error('No fue posible descargar archivo.');const b=await r.arrayBuffer(), wb=XLSX.read(b,{type:'array',cellDates:true}), sh=wb.Sheets[wb.SheetNames[0]];return modo==='array'?XLSX.utils.sheet_to_json(sh,{header:1,defval:''}):XLSX.utils.sheet_to_json(sh,{defval:''});}
@@ -145,8 +145,27 @@ function normalizarFilaPlan(r){
   const fecha=convertirFecha(get('fechaplanificada'));
   const status=valor(get('statordentrega','statusorden','estado'));
   const completado=normalizar(status).includes('concluido');
+  const ubicacion=valor(get('ubicaciontecnica'));
+  const plan=valor(get('txtplanmantenim','textoplanmantenimiento'));
+  const ordenOriginal=valor(get('orden')).trim();
+  const ordenZ1=completado?ordenesZ1PorPlan.get(`${normalizar(plan)}|${normalizar(ubicacion)}`)?.orden||'':'';
   const hoy=new Date();hoy.setHours(23,59,59,999);
-  return{fecha,status,estado:completado?'Completado':(fecha&&fecha<hoy?'Vencido':'Pendiente'),equipo:valor(get('denominaciondelaubicaciontecnica','denominacionubicaciontecnica')),ubicacion:valor(get('ubicaciontecnica')),plan:valor(get('txtplanmantenim','textoplanmantenimiento')),operacion:valor(get('textobreveoperacion')),orden:valor(get('orden')),trabajo:numero(get('trabajo')),unidadTrabajo:valor(get('unidaddetrabajo'))};
+  return{fecha,status,estado:completado?'Completado':(fecha&&fecha<hoy?'Vencido':'Pendiente'),equipo:valor(get('denominaciondelaubicaciontecnica','denominacionubicaciontecnica')),ubicacion,plan,operacion:valor(get('textobreveoperacion')),orden:ordenOriginal||ordenZ1,ordenRecuperada:!ordenOriginal&&!!ordenZ1,trabajo:numero(get('trabajo')),unidadTrabajo:valor(get('unidaddetrabajo'))};
+}
+
+function construirOrdenesZ1(rows){
+  const mapa=new Map();
+  rows.forEach((r,i)=>{
+    if(normalizar(r[mapaColumnas.claseAviso])!=='z1')return;
+    const orden=valor(r[mapaColumnas.orden]).trim(),descripcion=valor(r[mapaColumnas.descripcion]),ubicacion=valor(r[mapaColumnas.ubicacionTecnica]);
+    if(!orden||!descripcion||!ubicacion)return;
+    const clave=`${normalizar(descripcion)}|${normalizar(ubicacion)}`;
+    const fecha=convertirFecha(r[mapaColumnas.fechaAviso]);
+    const candidato={orden,fecha:fecha?.getTime()??-Infinity,aviso:numero(r[mapaColumnas.aviso]),i};
+    const actual=mapa.get(clave);
+    if(!actual||candidato.fecha>actual.fecha||(candidato.fecha===actual.fecha&&candidato.aviso>actual.aviso)||(candidato.fecha===actual.fecha&&candidato.aviso===actual.aviso&&i>actual.i))mapa.set(clave,candidato);
+  });
+  return mapa;
 }
 function cargarMesesPlan(){
   const meses=[...new Set(planAnual.filter(x=>x.fecha).map(x=>`${x.fecha.getFullYear()}-${String(x.fecha.getMonth()+1).padStart(2,'0')}`))].sort();
