@@ -185,8 +185,19 @@ function construirOrdenesZ1(rows){
   });
   return mapa;
 }
+function claveOrden(orden){return normalizarFrase(orden).replace(/\s+/g,'');}
+function obtenerOrdenesCerradasSAP(){
+  return new Set(construirDatosBase(datosOriginales).filter(r=>r.estadoAviso==='CERRADO'&&r.orden).map(r=>claveOrden(r.orden)).filter(Boolean));
+}
+function obtenerPlanActualizadoConSAP(){
+  const cerradas=obtenerOrdenesCerradasSAP();
+  return planAnual.map(x=>{
+    const cerradoSAP=Boolean(x.orden&&cerradas.has(claveOrden(x.orden)));
+    return cerradoSAP?{...x,estado:'Completado',cerradoSAP:true}:x;
+  });
+}
 function cargarMesesPlan(){
-  const meses=[...new Set(planAnual.filter(x=>x.fecha).map(x=>`${x.fecha.getFullYear()}-${String(x.fecha.getMonth()+1).padStart(2,'0')}`))].sort();
+  const meses=[...new Set(obtenerPlanActualizadoConSAP().filter(x=>x.fecha).map(x=>`${x.fecha.getFullYear()}-${String(x.fecha.getMonth()+1).padStart(2,'0')}`))].sort();
   $('planMes').innerHTML='<option value="">Todos los meses</option>'+meses.map(m=>{const [a,n]=m.split('-');const t=new Date(+a,+n-1,1).toLocaleDateString('es-CL',{month:'long',year:'numeric'});return `<option value="${m}">${t}</option>`;}).join('');
 }
 function cambiarFiltroEstadoPlan(estado){
@@ -195,12 +206,13 @@ function cambiarFiltroEstadoPlan(estado){
 }
 function renderPlanAnual(){
   if(!$('tablaPlan'))return;
-  const total=planAnual.length,completados=planAnual.filter(x=>x.estado==='Completado').length,pendientes=planAnual.filter(x=>x.estado==='Pendiente').length,vencidos=planAnual.filter(x=>x.estado==='Vencido').length;
+  const planVigente=obtenerPlanActualizadoConSAP(),actualizadasSAP=planVigente.filter(x=>x.cerradoSAP).length;
+  const total=planVigente.length,completados=planVigente.filter(x=>x.estado==='Completado').length,pendientes=planVigente.filter(x=>x.estado==='Pendiente').length,vencidos=planVigente.filter(x=>x.estado==='Vencido').length;
   const avance=total?Math.round(completados/total*100):0;
-  $('planAvance').textContent=$('planAvanceCabecera').textContent=`${avance}%`;$('planCompletado').textContent=completados.toLocaleString('es-CL');$('planPendiente').textContent=pendientes.toLocaleString('es-CL');$('planVencido').textContent=vencidos.toLocaleString('es-CL');$('planConteoAvance').textContent=`${completados.toLocaleString('es-CL')} de ${total.toLocaleString('es-CL')} actividades`;$('planProgressBar').style.width=`${avance}%`;$('planFuente').textContent=archivoPlanAnual?`Fuente: ${archivoPlanAnual}`:'No se encontró un archivo de plan anual en datos/.';
+  $('planAvance').textContent=$('planAvanceCabecera').textContent=`${avance}%`;$('planCompletado').textContent=completados.toLocaleString('es-CL');$('planPendiente').textContent=pendientes.toLocaleString('es-CL');$('planVencido').textContent=vencidos.toLocaleString('es-CL');$('planConteoAvance').textContent=`${completados.toLocaleString('es-CL')} de ${total.toLocaleString('es-CL')} actividades`;$('planProgressBar').style.width=`${avance}%`;$('planFuente').textContent=archivoPlanAnual?`Fuente: ${archivoPlanAnual}. ${actualizadasSAP.toLocaleString('es-CL')} actividades marcadas como realizadas según el SAP de Resumen.`:'No se encontró un archivo de plan anual en datos/.';
   document.querySelectorAll('.plan-kpi-filter').forEach(b=>{const activo=b.dataset.estado===estadoPlanSeleccionado;b.classList.toggle('active',activo);b.setAttribute('aria-pressed',String(activo));});
   const texto=normalizar($('planBuscar').value),mes=$('planMes').value,estado=estadoPlanSeleccionado;
-  const filtradas=planAnual.filter(x=>(!texto||[x.equipo,x.ubicacion,x.plan,x.operacion,x.orden].some(v=>normalizar(v).includes(texto)))&&(!mes||`${x.fecha?.getFullYear()}-${String((x.fecha?.getMonth()??-1)+1).padStart(2,'0')}`===mes)&&(!estado||x.estado===estado)).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
+  const filtradas=planVigente.filter(x=>(!texto||[x.equipo,x.ubicacion,x.plan,x.operacion,x.orden].some(v=>normalizar(v).includes(texto)))&&(!mes||`${x.fecha?.getFullYear()}-${String((x.fecha?.getMonth()??-1)+1).padStart(2,'0')}`===mes)&&(!estado||x.estado===estado)).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
   $('planFilas').textContent=`${filtradas.length.toLocaleString('es-CL')} filas`;$('planContexto').textContent=(texto||mes||estado)?'Resultados según los filtros aplicados':'Todas las actividades del plan anual';
   const tbody=$('tablaPlan').querySelector('tbody');
   tbody.innerHTML=filtradas.length?filtradas.map(x=>`<tr><td>${fmtF(x.fecha)}</td><td><span class="plan-status ${normalizar(x.estado)}">${x.estado}</span></td><td>${celdaCopiable(x.equipo)}</td><td>${celdaCopiable(x.ubicacion)}</td><td class="descripcion">${escapeHtml(x.plan||'-')}</td><td class="descripcion">${escapeHtml(x.operacion||'-')}</td><td>${celdaCopiable(x.orden)}</td><td>${x.trabajo?`${fmtN(x.trabajo)} ${escapeHtml(x.unidadTrabajo)}`:'-'}</td></tr>`).join(''):'<tr><td colspan="8">No hay actividades que coincidan con la búsqueda.</td></tr>';
