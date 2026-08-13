@@ -70,14 +70,15 @@
 
       <section class="kpi-grid">
         <article class="kpi-card"><div class="icon">🔧</div><div><span>Equipos</span><strong id="kEquipos">0</strong><small>Ubicaciones técnicas únicas</small></div></article>
-        <article class="kpi-card"><div class="icon">📋</div><div><span>Avisos</span><strong id="kAvisos">0</strong><small>Número de aviso único</small></div></article>
+        <article class="kpi-card kpi-macro clickable active" id="cardAvisos" role="button" tabindex="0" aria-pressed="true" title="Mostrar todos los avisos"><div class="icon">📋</div><div><span>Avisos</span><strong id="kAvisos">0</strong><small>Click para mostrar todos</small></div></article>
+        <article class="kpi-card kpi-macro clickable cerrado" id="cardAvisosCerrados" role="button" tabindex="0" aria-pressed="false" title="Filtrar avisos cerrados"><div class="icon">✅</div><div><span>Avisos cerrados</span><strong id="kAvisosCerrados">0</strong><small>Click para filtrar</small></div></article>
+        <article class="kpi-card kpi-macro clickable tratamiento" id="cardAvisosTratamiento" role="button" tabindex="0" aria-pressed="false" title="Filtrar avisos en tratamiento"><div class="icon">🛠️</div><div><span>En tratamiento</span><strong id="kAvisosTratamiento">0</strong><small>Click para filtrar</small></div></article>
         <article class="kpi-card clickable" id="cardSinClasificar" title="Abrir asistente de clasificación">
           <div class="icon">🧭</div><div><span>Unidades pendientes</span><strong id="kSinClasificar">0</strong><small>Click para clasificar</small></div>
         </article>
         <article class="kpi-card clickable" id="cardTiposSinClasificar" title="Clasificar tipos de equipo pendientes">
           <div class="icon">🏷️</div><div><span>Tipos pendientes</span><strong id="kTiposSinClasificar">0</strong><small>Click para clasificar</small></div>
         </article>
-        <article class="kpi-card"><div class="icon">🧼</div><div><span>Bloques LYD</span><strong id="kBloquesLYD">0</strong><small>Lavado y desinfección</small></div></article>
       </section>
 
       <section class="dashboard-grid">
@@ -95,50 +96,6 @@
             </div>
           </div>
           <div class="table-wrap base-wrap"><table id="tablaBase"><thead></thead><tbody></tbody></table></div>
-        </article>
-
-        <article class="panel full estadisticas-panel">
-          <div class="panel-title estadisticas-title">
-            <div>
-              <h3>ESTADÍSTICA DE LA CONSULTA</h3>
-              <p id="estadisticasContexto">Distribución de los avisos según los filtros aplicados.</p>
-            </div>
-            <span id="estadisticasLider">Sin datos</span>
-          </div>
-          <div class="estadisticas-kpis">
-            <div><span>Equipos con avisos</span><strong id="estadEquipos">0</strong></div>
-            <div><span>Avisos encontrados</span><strong id="estadAvisos">0</strong></div>
-            <div><span>Unidades involucradas</span><strong id="estadUnidades">0</strong></div>
-          </div>
-          <div class="estadisticas-graficos">
-            <section class="chart-card donut-card">
-              <div class="chart-heading"><h4>DISTRIBUCIÓN POR UNIDAD</h4><span>Porcentaje de avisos</span></div>
-              <div class="donut-layout">
-                <div id="graficoTortaUnidad" class="donut-chart" role="img" aria-label="Gráfico de torta de avisos por unidad">
-                  <div class="donut-center"><strong>0</strong><span>avisos</span></div>
-                </div>
-                <div id="leyendaTortaUnidad" class="donut-legend"></div>
-              </div>
-            </section>
-            <section class="chart-card clase-card">
-              <div class="chart-heading"><h4>AVISOS POR CLASE</h4><span>Distribución Z1 / Z2</span></div>
-              <div class="donut-layout">
-                <div id="graficoTortaClase" class="donut-chart" role="img" aria-label="Gráfico de torta de avisos Z1 y Z2">
-                  <div class="donut-center"><strong>0</strong><span>avisos</span></div>
-                </div>
-                <div id="leyendaTortaClase" class="donut-legend"></div>
-              </div>
-            </section>
-            <section class="chart-card estado-card">
-              <div class="chart-heading"><h4>ESTADO DE LOS AVISOS</h4><span>Cerrados / en tratamiento</span></div>
-              <div class="donut-layout">
-                <div id="graficoTortaEstado" class="donut-chart" role="img" aria-label="Gráfico de torta de avisos cerrados y en tratamiento">
-                  <div class="donut-center"><strong>0</strong><span>avisos</span></div>
-                </div>
-                <div id="leyendaTortaEstado" class="donut-legend"></div>
-              </div>
-            </section>
-          </div>
         </article>
 
       </section>
