@@ -42,6 +42,7 @@ let pendientesTipo=[], pendienteTipoIndex=0;
 const tiposOmitidosSesion=new Set();
 const equiposSeleccionados=new Set();
 let ordenFecha='asc';
+let estadoPlanSeleccionado='';
 const $=id=>document.getElementById(id);
 
 document.addEventListener('DOMContentLoaded',()=>{
@@ -102,8 +103,8 @@ function setupEventos(){
   $('btnGuardarUnidades').onclick=guardarTodosNombresUnidades;
   if($('planBuscar'))$('planBuscar').oninput=renderPlanAnual;
   if($('planMes'))$('planMes').onchange=renderPlanAnual;
-  if($('planEstado'))$('planEstado').onchange=renderPlanAnual;
-  if($('btnLimpiarPlan'))$('btnLimpiarPlan').onclick=()=>{$('planBuscar').value='';$('planMes').value='';$('planEstado').value='';renderPlanAnual();};
+  document.querySelectorAll('.plan-kpi-filter').forEach(b=>b.onclick=()=>cambiarFiltroEstadoPlan(b.dataset.estado));
+  if($('btnLimpiarPlan'))$('btnLimpiarPlan').onclick=()=>{$('planBuscar').value='';$('planMes').value='';estadoPlanSeleccionado='';renderPlanAnual();};
 }
 function cambiarVista(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));
@@ -171,12 +172,17 @@ function cargarMesesPlan(){
   const meses=[...new Set(planAnual.filter(x=>x.fecha).map(x=>`${x.fecha.getFullYear()}-${String(x.fecha.getMonth()+1).padStart(2,'0')}`))].sort();
   $('planMes').innerHTML='<option value="">Todos los meses</option>'+meses.map(m=>{const [a,n]=m.split('-');const t=new Date(+a,+n-1,1).toLocaleDateString('es-CL',{month:'long',year:'numeric'});return `<option value="${m}">${t}</option>`;}).join('');
 }
+function cambiarFiltroEstadoPlan(estado){
+  estadoPlanSeleccionado=estadoPlanSeleccionado===estado?'':estado;
+  renderPlanAnual();
+}
 function renderPlanAnual(){
   if(!$('tablaPlan'))return;
   const total=planAnual.length,completados=planAnual.filter(x=>x.estado==='Completado').length,pendientes=planAnual.filter(x=>x.estado==='Pendiente').length,vencidos=planAnual.filter(x=>x.estado==='Vencido').length;
   const avance=total?Math.round(completados/total*100):0;
   $('planAvance').textContent=$('planAvanceCabecera').textContent=`${avance}%`;$('planCompletado').textContent=completados.toLocaleString('es-CL');$('planPendiente').textContent=pendientes.toLocaleString('es-CL');$('planVencido').textContent=vencidos.toLocaleString('es-CL');$('planConteoAvance').textContent=`${completados.toLocaleString('es-CL')} de ${total.toLocaleString('es-CL')} actividades`;$('planProgressBar').style.width=`${avance}%`;$('planFuente').textContent=archivoPlanAnual?`Fuente: ${archivoPlanAnual}`:'No se encontró un archivo de plan anual en datos/.';
-  const texto=normalizar($('planBuscar').value),mes=$('planMes').value,estado=$('planEstado').value;
+  document.querySelectorAll('.plan-kpi-filter').forEach(b=>{const activo=b.dataset.estado===estadoPlanSeleccionado;b.classList.toggle('active',activo);b.setAttribute('aria-pressed',String(activo));});
+  const texto=normalizar($('planBuscar').value),mes=$('planMes').value,estado=estadoPlanSeleccionado;
   const filtradas=planAnual.filter(x=>(!texto||[x.equipo,x.ubicacion,x.plan,x.operacion,x.orden].some(v=>normalizar(v).includes(texto)))&&(!mes||`${x.fecha?.getFullYear()}-${String((x.fecha?.getMonth()??-1)+1).padStart(2,'0')}`===mes)&&(!estado||x.estado===estado)).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
   $('planFilas').textContent=`${filtradas.length.toLocaleString('es-CL')} filas`;$('planContexto').textContent=(texto||mes||estado)?'Resultados según los filtros aplicados':'Todas las actividades del plan anual';
   $('tablaPlan').querySelector('tbody').innerHTML=filtradas.length?filtradas.map(x=>`<tr><td>${fmtF(x.fecha)}</td><td><span class="plan-status ${normalizar(x.estado)}">${x.estado}</span></td><td>${escapeHtml(x.equipo||'-')}</td><td>${escapeHtml(x.ubicacion||'-')}</td><td class="descripcion">${escapeHtml(x.plan||'-')}</td><td class="descripcion">${escapeHtml(x.operacion||'-')}</td><td>${escapeHtml(x.orden||'-')}</td><td>${x.trabajo?`${fmtN(x.trabajo)} ${escapeHtml(x.unidadTrabajo)}`:'-'}</td></tr>`).join(''):'<tr><td colspan="8">No hay actividades que coincidan con la búsqueda.</td></tr>';
