@@ -411,7 +411,7 @@ function analizarConfiabilidadAutomaticamente(){
 
 function fechaRegistroConfiabilidad(registro){return registro.inicioAveriaFecha||registro.fechaAviso||null;}
 function dentroPeriodoConfiabilidad(registro){const fecha=fechaRegistroConfiabilidad(registro);return Boolean(fecha&&fecha>=FECHA_INICIO_CONFIABILIDAD);}
-function tieneClasificacionConfiabilidad(registro){return Boolean(registro&&registro.tipoEquipo&&registro.tipoEquipo!=='Sin clasificar');}
+function tieneClasificacionConfiabilidad(registro){return Boolean(registro&&registro.tipoEquipo&&!['Sin clasificar','NO APLICA'].includes(registro.tipoEquipo));}
 
 function calcularConfiabilidadTotal(base,fechaCorte=new Date()){
   const grupos=new Map();
