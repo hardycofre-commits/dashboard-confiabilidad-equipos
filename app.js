@@ -28,6 +28,7 @@ function celdaCopiable(valor){
 }
 
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main',folder:'datos'};
+const FECHA_INICIO_CONFIABILIDAD=new Date(2025,0,1);
 const UNIDADES_BASE=['HATCHERY','FF2','ALEVINAJE','PRE SMOLT','RILES','FILTRADO','GENERADORES','OTROS'];
 const MAPEO_BASE=[['HATCHERY','HATCHERY'],['HAT','HATCHERY'],['FF2','FF2'],['FF','FF2'],['ALEVINAJE','ALEVINAJE'],['ALEV','ALEVINAJE'],['PRE-SMOLT','PRE SMOLT'],['PRE SMOLT','PRE SMOLT'],['PRESMOLT','PRE SMOLT'],['RILES','RILES'],['FILTRADO','FILTRADO'],['FILTRO','FILTRADO'],['GEN','GENERADORES'],['GENERADOR','GENERADORES']];
 const TIPOS_BASE=['BOMBA','ESTANQUE','TRICKING'];
@@ -42,10 +43,12 @@ let tiposUsuario=JSON.parse(localStorage.getItem(KEY_TIPOS)||'[]');
 let reglasTipoUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS_TIPO)||'[]');
 let tiposAviso=JSON.parse(localStorage.getItem(KEY_AVISO_TIPOS)||'{}');
 let datosOriginales=[], datosBase=[], bloquesLYD=[], planAnual=[], archivoPlanAnual='', mapaColumnas={}, ordenesZ1PorPlan=new Map(), listaEquipos=[], palabrasDescripcion=[], pendientes=[], pendienteIndex=0;
+const registrosSeleccionados=new Map();
 let pendientesTipo=[], pendienteTipoIndex=0;
 const tiposOmitidosSesion=new Set();
 const equiposSeleccionados=new Set();
 let ordenFecha='asc';
+let rankingCampoOrden='disponibilidad',rankingDireccionOrden='desc',rankingMinimizado=true;
 let estadoPlanSeleccionado='';
 let estadoAvisoSeleccionado='';
 const $=id=>document.getElementById(id);
@@ -66,6 +69,7 @@ function actualizarConfiabilidadPorTiempo(){
 function setupEventos(){
   document.querySelectorAll('.menu-item').forEach(a=>a.onclick=e=>{e.preventDefault();cambiarVista(a.dataset.view);});
   $('btnActualizar').onclick=cargarDesdeGitHub;
+  $('btnCopiarSeleccionados').onclick=copiarRegistrosSeleccionados;
   $('cardSinClasificar').onclick=abrirWizard;
   $('cardTiposSinClasificar').onclick=abrirWizardTipo;
   configurarMacroAvisos('cardAvisos','');
@@ -90,13 +94,17 @@ function setupEventos(){
   configurarBuscadorDescripcion();
   configurarBuscadorEquipos('confBuscarEquipo','sugerenciasEquipoConf','btnAbrirEquiposConf',{
     alEscribir:analizarConfiabilidadAutomaticamente,
-    alSeleccionar:()=>analizarConfiabilidad({silencioso:true})
+    alSeleccionar:analizarConfiabilidadAutomaticamente,
+    incluirTodos:true
   });
   document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarBuscadoresEquipos();});
   if($('confUnidadFiltro'))$('confUnidadFiltro').onchange=()=>{
+    rankingMinimizado=true;
     analizarConfiabilidadAutomaticamente();
     renderRankingUnidad();
   };
+  if($('btnToggleRanking'))$('btnToggleRanking').onclick=toggleRanking;
+  document.querySelectorAll('.ranking-sort-btn').forEach(boton=>boton.onclick=()=>cambiarOrdenRanking(boton.dataset.campo,boton.dataset.direccion));
   ['confDesde','confHasta'].forEach(id=>{
     if($(id))$(id).onchange=()=>{
       analizarConfiabilidadAutomaticamente();
@@ -123,6 +131,10 @@ function cambiarVista(v){
   if(v==='unidades'){$('viewUnidades').classList.remove('hidden');renderTablaUnidades();}
   else if(v==='confiabilidad'){
     $('viewConfiabilidad').classList.remove('hidden');
+    rankingMinimizado=true;
+    cargarFiltroUnidades();
+    analizarConfiabilidadAutomaticamente();
+    renderRankingUnidad();
   } else if(v==='gantt'){
     $('viewGantt').classList.remove('hidden');
   } else if(v==='plan-anual'){
@@ -296,6 +308,25 @@ function aplicarFiltros(){
   renderTablaUnidades();
   $('filasBase').textContent=`${base.length.toLocaleString('es-CL')} filas`;
 }
+function claveRegistroBase(r){return `${r.aviso}|${r.orden}|${r.descripcion}|${r.fechaAviso?.getTime()||''}`;}
+function actualizarBotonSeleccionados(){
+  const boton=$('btnCopiarSeleccionados'),cantidad=registrosSeleccionados.size;
+  boton.textContent=`Copiar seleccionados (${cantidad.toLocaleString('es-CL')})`;
+  boton.disabled=!cantidad;
+}
+async function copiarRegistrosSeleccionados(){
+  const seleccionados=[...registrosSeleccionados.values()];
+  if(!seleccionados.length)return;
+  const limpiar=v=>String(v??'').replace(/[\t\r\n]+/g,' ').trim();
+  const filas=[['Fecha aviso','Orden','Descripción'],...seleccionados.map(r=>[fmtF(r.fechaAviso),r.orden,r.descripcion])];
+  const texto=filas.map(f=>f.map(limpiar).join('\t')).join('\n');
+  let copiado=false;
+  if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(texto);copiado=true;}catch(error){}}
+  if(!copiado){const auxiliar=document.createElement('textarea');auxiliar.value=texto;auxiliar.style.position='fixed';auxiliar.style.opacity='0';document.body.appendChild(auxiliar);auxiliar.select();try{copiado=document.execCommand('copy');}catch(error){}auxiliar.remove();}
+  const boton=$('btnCopiarSeleccionados'),original=boton.textContent;
+  boton.textContent=copiado?'Copiado para Excel':'No se pudo copiar';
+  setTimeout(()=>{boton.textContent=original;},1200);
+}
 function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]).toLocaleUpperCase('es-CL'), aviso=valor(r[mapaColumnas.aviso]), statusSistema=valor(r[mapaColumnas.statusSistema]);const texto=`${den} ${ubi} ${des}`;const unidad=unidadesAviso[aviso]||unidadesDenominacion[normalizarFrase(den)]||obtenerUnidad(texto);const tipoEquipo=obtenerTipoEquipo(den,tiposAviso[aviso]);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:aviso,statusSistema,estadoAviso:obtenerEstadoAviso(statusSistema),orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:tipoEquipo,estadoTipo:tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||convertirFecha(r[mapaColumnas.fechaAviso]),duracionParada:numero(r[mapaColumnas.duracionParada])};});}
 function obtenerEstadoAviso(statusSistema){const codigos=normalizarFrase(statusSistema).split(' ');return codigos.includes('mece')?'CERRADO':'EN TRATAMIENTO';}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
@@ -325,7 +356,7 @@ function abrirWizard(){pendientes=getPendientes();pendienteIndex=0;$('wizardClas
 function cerrarWizard(){$('wizardClasificacion').classList.add('hidden');aplicarFiltros();}
 function renderWizard(){pendientes=getPendientes();if(!pendientes.length){$('wizardContenido').classList.add('hidden');$('wizardFinalizado').classList.remove('hidden');$('wizardProgreso').textContent='Finalizado';return;}$('wizardContenido').classList.remove('hidden');$('wizardFinalizado').classList.add('hidden');if(pendienteIndex>=pendientes.length)pendienteIndex=pendientes.length-1;const p=pendientes[pendienteIndex];$('wizardProgreso').textContent=`${pendienteIndex+1} de ${pendientes.length}`;$('wizardEquipo').textContent=p.equipo;$('wizardUbicacion').textContent=p.ubicacion||'-';$('wizardDescripcion').textContent=p.descripcion||'-';$('wizardCantidad').textContent=p.cantidad;llenarUnidades();$('boxNuevaUnidad').classList.add('hidden');$('wizardNuevaUnidad').value='';}
 function llenarUnidades(){const select=$('wizardUnidad');const unidades=[...new Set([...UNIDADES_BASE,...unidadesUsuario])];select.innerHTML='<option value="">Seleccionar unidad</option>'+unidades.map(u=>`<option value="${u}">${nombreUnidad(u)}</option>`).join('')+'<option value="__NUEVA__">➕ Nueva unidad...</option>';}
-function guardarWizard(){const p=pendientes[pendienteIndex];if(!p)return alert('No hay un equipo pendiente para guardar.');const selector=$('wizardUnidad');let unidad=selector.value;if(unidad==='__NUEVA__'){unidad=$('wizardNuevaUnidad').value.trim().toUpperCase();if(!unidad)return alert('Escribe el nombre de la nueva unidad.');if(!unidadesUsuario.includes(unidad)){unidadesUsuario.push(unidad);nombresUnidades[unidad]=unidad;localStorage.setItem(KEY_UNIDADES,JSON.stringify(unidadesUsuario));localStorage.setItem(KEY_NOMBRES,JSON.stringify(nombresUnidades));}}if(!unidad)return alert('Selecciona una unidad.');selector.disabled=true;$('btnGuardarSiguiente').disabled=true;try{const clave=normalizarFrase(p.equipo);unidadesDenominacion[clave]=unidad;for(const aviso of p.avisos||[])unidadesAviso[aviso]=unidad;localStorage.setItem(KEY_DEN_UNIDADES,JSON.stringify(unidadesDenominacion));localStorage.setItem(KEY_AVISO_UNIDADES,JSON.stringify(unidadesAviso));cargarFiltroUnidades();aplicarFiltros();pendientes=getPendientes();if(pendienteIndex>=pendientes.length)pendienteIndex=Math.max(0,pendientes.length-1);renderWizard();}catch(error){console.error(error);alert('No fue posible guardar la unidad. Intenta nuevamente.');}finally{selector.disabled=false;$('btnGuardarSiguiente').disabled=false;}}
+function guardarWizard(){const p=pendientes[pendienteIndex];if(!p)return alert('No hay un equipo pendiente para guardar.');const selector=$('wizardUnidad');let unidad=selector.value;if(unidad==='__NUEVA__'){unidad=$('wizardNuevaUnidad').value.trim().toUpperCase();if(!unidad)return alert('Escribe el nombre de la nueva unidad.');if(!unidadesUsuario.includes(unidad)){unidadesUsuario.push(unidad);nombresUnidades[unidad]=unidad;localStorage.setItem(KEY_UNIDADES,JSON.stringify(unidadesUsuario));localStorage.setItem(KEY_NOMBRES,JSON.stringify(nombresUnidades));}}if(!unidad)return alert('Selecciona una unidad.');selector.disabled=true;$('btnGuardarSiguiente').disabled=true;try{const clave=normalizarFrase(p.equipo);unidadesDenominacion[clave]=unidad;for(const aviso of p.avisos||[])unidadesAviso[aviso]=unidad;localStorage.setItem(KEY_DEN_UNIDADES,JSON.stringify(unidadesDenominacion));localStorage.setItem(KEY_AVISO_UNIDADES,JSON.stringify(unidadesAviso));cargarFiltroUnidades();aplicarFiltros();analizarConfiabilidadAutomaticamente();renderRankingUnidad();pendientes=getPendientes();if(pendienteIndex>=pendientes.length)pendienteIndex=Math.max(0,pendientes.length-1);renderWizard();}catch(error){console.error(error);alert('No fue posible guardar la unidad. Intenta nuevamente.');}finally{selector.disabled=false;$('btnGuardarSiguiente').disabled=false;}}
 function generarRegla(t){return String(t).split(' ').filter(Boolean).slice(0,6).join(' ');}
 
 function obtenerListaTipos(){return [...new Set([...TIPOS_BASE,...tiposUsuario,...reglasTipoUsuario.map(r=>r.tipo)].map(normalizarNombreTipo))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));}
@@ -375,7 +406,53 @@ function analizarConfiabilidadAutomaticamente(){
   const equipo=$('confBuscarEquipo').value.trim();
   const coincidenciaExacta=listaEquipos.some(e=>normalizar(e)===normalizar(equipo));
   if(coincidenciaExacta)analizarConfiabilidad({silencioso:true});
-  else limpiarResultadosConfiabilidad();
+  else mostrarConfiabilidadTotal();
+}
+
+function fechaRegistroConfiabilidad(registro){return registro.inicioAveriaFecha||registro.fechaAviso||null;}
+function dentroPeriodoConfiabilidad(registro){const fecha=fechaRegistroConfiabilidad(registro);return Boolean(fecha&&fecha>=FECHA_INICIO_CONFIABILIDAD);}
+function tieneClasificacionConfiabilidad(registro){return Boolean(registro&&registro.unidad&&registro.unidad!=='Sin clasificar');}
+
+function calcularConfiabilidadTotal(base,fechaCorte=new Date()){
+  const grupos=new Map();
+  base.filter(tieneClasificacionConfiabilidad).forEach(r=>{
+    const equipo=r.denominacionUbicacionTecnica||r.ubicacionTecnica;
+    if(!equipo)return;
+    if(!grupos.has(equipo))grupos.set(equipo,[]);
+    grupos.get(equipo).push(r);
+  });
+  let horasOperativas=0,horasReparacion=0,intervalos=0,reparaciones=0,fallas=0,equipos=0;
+  grupos.forEach(registrosEquipo=>{
+    const registros=registrosEquipo.filter(r=>normalizar(r.claseAviso)==='z2'&&r.inicioAveriaFecha).sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
+    const periodosZ1=registrosEquipo.filter(esPeriodoZ1FueraOperacion),kpis=calcularKpisConfiabilidad(registros,periodosZ1,fechaCorte);
+    if(!Number.isFinite(kpis.disponibilidad))return;
+    equipos++;
+    fallas+=new Set(registros.map(r=>r.aviso).filter(Boolean)).size;
+    const intervalosEquipo=kpis.filas.filter(f=>Number.isFinite(f.horasOperativas));
+    horasOperativas+=intervalosEquipo.reduce((s,f)=>s+f.horasOperativas,0)+(kpis.horasOperacionActual??0);
+    intervalos+=intervalosEquipo.length+(kpis.horasOperacionActual==null?0:1);
+    const reparacionesEquipo=registros.filter(r=>r.inicioAveriaFecha&&r.finAveriaFecha&&r.finAveriaFecha>=r.inicioAveriaFecha).map(r=>(r.finAveriaFecha-r.inicioAveriaFecha)/3600000);
+    horasReparacion+=reparacionesEquipo.reduce((s,h)=>s+h,0);
+    reparaciones+=reparacionesEquipo.length;
+  });
+  const mtbf=intervalos?horasOperativas/intervalos:null,mttr=reparaciones?horasReparacion/reparaciones:null;
+  return{equipos,fallas,mtbf,mttr,disponibilidad:calcularDisponibilidad(mtbf,mttr)};
+}
+
+function mostrarConfiabilidadTotal(){
+  if(!datosOriginales.length){limpiarResultadosConfiabilidad();return;}
+  const unidad=$('confUnidadFiltro').value,base=construirDatosBase(datosOriginales).filter(r=>tieneClasificacionConfiabilidad(r)&&dentroPeriodoConfiabilidad(r)&&(!unidad||r.unidad===unidad));
+  const total=calcularConfiabilidadTotal(base,new Date());
+  $('confEquipo').textContent=`Todos los equipos (${total.equipos.toLocaleString('es-CL')})`;
+  $('confUnidad').textContent=unidad||'Todas las unidades';
+  $('confFallas').textContent=total.fallas.toLocaleString('es-CL');
+  $('confMtbf').textContent=total.mtbf==null?'--':`${fmtN(total.mtbf)} h`;
+  $('confMttr').textContent=total.mttr==null?'--':`${fmtN(total.mttr)} h`;
+  $('confDisponibilidad').textContent=total.disponibilidad==null?'--':`${fmtN(total.disponibilidad)} %`;
+  $('kDisponibilidad').textContent=total.disponibilidad==null?'--':`${fmtN(total.disponibilidad)} %`;
+  $('historialConfiabilidad').classList.add('hidden');
+  const puntos=construirDisponibilidadAcumuladaTotal(base,new Date());
+  renderGraficoDisponibilidadPuntos(puntos,unidad?`Todos los equipos · ${unidad}`:'Todos los equipos');
 }
 
 function analizarConfiabilidad({silencioso=false}={}){
@@ -385,21 +462,15 @@ function analizarConfiabilidad({silencioso=false}={}){
     if(!silencioso)alert('Los datos SAP todavía no están disponibles.');
     return;
   }
-  const desde=$('confDesde').value?new Date($('confDesde').value+'T00:00:00'):null;
-  const hasta=$('confHasta').value?new Date($('confHasta').value+'T23:59:59'):null;
-  if(desde&&hasta&&desde>hasta){
-    limpiarResultadosConfiabilidad();
-    if(!silencioso)alert('La fecha desde no puede ser posterior a la fecha hasta.');
-    return;
-  }
+  const desde=FECHA_INICIO_CONFIABILIDAD,hasta=null;
   const unidad=$('confUnidadFiltro').value;
   const equipoNormalizado=normalizar(equipo);
   const registrosEquipo=construirDatosBase(datosOriginales).filter(r=>{
     const equipoRegistro=r.denominacionUbicacionTecnica||r.ubicacionTecnica;
     const fecha=r.inicioAveriaFecha||r.fechaAviso;
-    return normalizar(equipoRegistro)===equipoNormalizado &&
+    return tieneClasificacionConfiabilidad(r)&&normalizar(equipoRegistro)===equipoNormalizado && fecha&&
       (!unidad||r.unidad===unidad) &&
-      (!desde||!fecha||fecha>=desde) &&
+      fecha>=desde &&
       (!hasta||!fecha||fecha<=hasta);
   });
   const registros=registrosEquipo
@@ -417,6 +488,8 @@ function analizarConfiabilidad({silencioso=false}={}){
   $('confMttr').textContent=kpis.mttr==null?'--':`${fmtN(kpis.mttr)} h`;
   $('confDisponibilidad').textContent=kpis.disponibilidad==null?'--':`${fmtN(kpis.disponibilidad)} %`;
   $('kDisponibilidad').textContent=kpis.disponibilidad==null?'--':`${fmtN(kpis.disponibilidad)} %`;
+  $('historialConfiabilidad').classList.remove('hidden');
+  renderGraficoDisponibilidadAcumulada(kpis.filas,kpis.periodoActual,equipo);
   renderCronologiaConfiabilidad(kpis.filas,kpis.periodoActual);
 }
 
@@ -430,6 +503,8 @@ function limpiarResultadosConfiabilidad(){
   $('confMttr').textContent='--';
   $('confDisponibilidad').textContent='--';
   $('kDisponibilidad').textContent='--';
+  $('graficoDisponibilidad').classList.add('hidden');
+  $('graficoDisponibilidadSvg').innerHTML='';
   $('confBody').innerHTML='<tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr>';
 }
 
@@ -481,20 +556,18 @@ function calcularKpisConfiabilidad(registros,periodosZ1=[],fechaCorte=new Date()
 function renderRankingUnidad(){
   const panel=$('rankingUnidad'),unidad=$('confUnidadFiltro').value;
   if(!panel)return;
-  if(!unidad||!datosOriginales.length){
+  if(!datosOriginales.length){
     panel.classList.add('hidden');
     $('rankingBody').innerHTML='';
     return;
   }
-  const desde=$('confDesde').value?new Date($('confDesde').value+'T00:00:00'):null;
-  const hasta=$('confHasta').value?new Date($('confHasta').value+'T23:59:59'):null;
+  const desde=FECHA_INICIO_CONFIABILIDAD,hasta=null;
   const fechaCorte=obtenerFechaCorteAnalisis(hasta);
-  if(desde&&hasta&&desde>hasta){panel.classList.add('hidden');return;}
   const grupos=new Map();
   construirDatosBase(datosOriginales)
     .filter(r=>{
       const fecha=r.inicioAveriaFecha||r.fechaAviso;
-      return r.unidad===unidad&&(!desde||!fecha||fecha>=desde)&&(!hasta||!fecha||fecha<=hasta);
+      return tieneClasificacionConfiabilidad(r)&&Boolean(fecha)&&(!unidad||r.unidad===unidad)&&fecha>=desde&&(!hasta||fecha<=hasta);
     })
     .forEach(r=>{
       const equipo=r.denominacionUbicacionTecnica||r.ubicacionTecnica;
@@ -508,30 +581,79 @@ function renderRankingUnidad(){
       .sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
     const periodosZ1=registrosEquipo.filter(esPeriodoZ1FueraOperacion);
     const kpis=calcularKpisConfiabilidad(fallas,periodosZ1,fechaCorte);
-    return{equipo,fallas:new Set(fallas.map(r=>r.aviso).filter(Boolean)).size,...kpis};
-  }).sort((a,b)=>{
-    const da=Number.isFinite(a.disponibilidad)?a.disponibilidad:-Infinity;
-    const db=Number.isFinite(b.disponibilidad)?b.disponibilidad:-Infinity;
-    return db-da||(Number.isFinite(b.mtbf)?b.mtbf:-Infinity)-(Number.isFinite(a.mtbf)?a.mtbf:-Infinity)||a.equipo.localeCompare(b.equipo,'es');
+    const conteoUnidades=new Map();
+    registrosEquipo.forEach(r=>conteoUnidades.set(r.unidad,(conteoUnidades.get(r.unidad)||0)+1));
+    const unidadClasificada=[...conteoUnidades].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'es'))[0]?.[0]||'Sin clasificar';
+    return{equipo,unidadClasificada,fallas:new Set(fallas.map(r=>r.aviso).filter(Boolean)).size,...kpis};
+  }).filter(r=>r.fallas>0&&Number.isFinite(r.mtbf)&&Number.isFinite(r.mttr)&&Number.isFinite(r.disponibilidad)).sort((a,b)=>{
+    const diferencia=rankingDireccionOrden==='asc'?a[rankingCampoOrden]-b[rankingCampoOrden]:b[rankingCampoOrden]-a[rankingCampoOrden];
+    return diferencia||a.equipo.localeCompare(b.equipo,'es');
   });
-  $('rankingTitulo').textContent=`Ranking de disponibilidad — ${unidad}`;
+  $('rankingTitulo').textContent=`Ranking de disponibilidad — ${unidad||'TODOS LOS EQUIPOS'}`;
   $('rankingCantidad').textContent=`${ranking.length.toLocaleString('es-CL')} equipos`;
   $('rankingBody').innerHTML=ranking.length?ranking.map((r,i)=>`
     <tr class="ranking-equipo-row" role="button" tabindex="0" title="Ver detalle de ${escapeHtml(r.equipo)}" data-equipo="${escapeHtml(r.equipo)}" onclick="seleccionarEquipoRanking(this.dataset.equipo)" onkeydown="if(event.key==='Enter')seleccionarEquipoRanking(this.dataset.equipo)">
       <td>${i+1}</td>
       <td>${escapeHtml(r.equipo)}</td>
+      <td class="ranking-classification-cell"><div class="ranking-classification"><span>${escapeHtml(r.unidadClasificada)}</span><button type="button" class="ranking-edit-classification" title="Modificar clasificación" aria-label="Modificar clasificación de ${escapeHtml(r.equipo)}" data-equipo="${escapeHtml(r.equipo)}" data-unidad="${escapeHtml(r.unidadClasificada)}" onclick="event.stopPropagation();editarClasificacionRanking(this)">✏️</button></div></td>
       <td>${r.fallas.toLocaleString('es-CL')}</td>
       <td>${r.mtbf==null?'--':`${fmtN(r.mtbf)} h`}</td>
       <td>${r.mttr==null?'--':`${fmtN(r.mttr)} h`}</td>
       <td>${r.disponibilidad==null?'--':`${fmtN(r.disponibilidad)} %`}</td>
     </tr>
-  `).join(''):'<tr><td colspan="6">No hay equipos para la unidad y período seleccionados.</td></tr>';
+  `).join(''):'<tr><td colspan="7">No hay equipos con datos suficientes para calcular disponibilidad en la unidad y período seleccionados.</td></tr>';
+  panel.classList.toggle('ranking-minimized',rankingMinimizado);
+  $('btnToggleRanking').textContent=rankingMinimizado?'Mostrar ranking':'Minimizar ranking';
+  document.querySelectorAll('.ranking-sort-btn').forEach(boton=>boton.classList.toggle('active',boton.dataset.campo===rankingCampoOrden&&boton.dataset.direccion===rankingDireccionOrden));
   panel.classList.remove('hidden');
+}
+
+function cambiarOrdenRanking(campo,direccion){
+  rankingCampoOrden=campo;
+  rankingDireccionOrden=direccion;
+  rankingMinimizado=false;
+  renderRankingUnidad();
+}
+
+function toggleRanking(){
+  rankingMinimizado=!rankingMinimizado;
+  const panel=$('rankingUnidad');
+  panel.classList.toggle('ranking-minimized',rankingMinimizado);
+  $('btnToggleRanking').textContent=rankingMinimizado?'Mostrar ranking':'Minimizar ranking';
+}
+
+function editarClasificacionRanking(boton){
+  const equipo=boton.dataset.equipo,actual=boton.dataset.unidad,celda=boton.closest('td'),selector=document.createElement('select');
+  selector.className='ranking-classification-select';
+  const unidades=[...new Set([...obtenerListaUnidades(),actual,'Sin clasificar'])].sort((a,b)=>a.localeCompare(b,'es'));
+  selector.innerHTML=unidades.map(unidad=>`<option value="${escapeHtml(unidad)}">${escapeHtml(unidad)}</option>`).join('');
+  selector.value=actual;
+  selector.onclick=evento=>evento.stopPropagation();
+  selector.onkeydown=evento=>evento.stopPropagation();
+  selector.onchange=()=>guardarClasificacionRanking(equipo,selector.value);
+  celda.innerHTML='';celda.appendChild(selector);selector.focus();
+}
+
+function guardarClasificacionRanking(equipo,nuevaUnidad){
+  const claveEquipo=normalizarFrase(equipo),registrosEquipo=construirDatosBase(datosOriginales).filter(r=>normalizar(r.denominacionUbicacionTecnica||r.ubicacionTecnica)===normalizar(equipo));
+  unidadesDenominacion[claveEquipo]=nuevaUnidad;
+  registrosEquipo.forEach(r=>{if(r.aviso)delete unidadesAviso[r.aviso];});
+  if(nuevaUnidad!=='Sin clasificar'&&!unidadesUsuario.includes(nuevaUnidad))unidadesUsuario.push(nuevaUnidad);
+  localStorage.setItem(KEY_DEN_UNIDADES,JSON.stringify(unidadesDenominacion));
+  localStorage.setItem(KEY_AVISO_UNIDADES,JSON.stringify(unidadesAviso));
+  localStorage.setItem(KEY_UNIDADES,JSON.stringify([...new Set(unidadesUsuario)]));
+  cargarFiltroUnidades();
+  aplicarFiltros();
+  analizarConfiabilidadAutomaticamente();
+  renderRankingUnidad();
 }
 
 function seleccionarEquipoRanking(equipo){
   $('confBuscarEquipo').value=equipo;
   analizarConfiabilidad({silencioso:true});
+  rankingMinimizado=true;
+  $('rankingUnidad').classList.add('ranking-minimized');
+  $('btnToggleRanking').textContent='Mostrar ranking';
   const detalle=$('detalleEquipo');
   if(detalle)detalle.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -554,6 +676,123 @@ function calcularMttr(registros){
 function calcularDisponibilidad(mtbf,mttr){
   if(!Number.isFinite(mtbf)||!Number.isFinite(mttr)||mtbf+mttr<=0)return null;
   return mtbf/(mtbf+mttr)*100;
+}
+
+function construirDisponibilidadAcumulada(filas,periodoActual=null){
+  const puntos=[];
+  let horasOperativas=0,horasReparacion=0,intervalosOperativos=0,reparaciones=0;
+  filas.forEach(f=>{
+    if(Number.isFinite(f.horasOperativas)){horasOperativas+=f.horasOperativas;intervalosOperativos++;}
+    if(f.inicioAveriaFecha&&f.finAveriaFecha&&f.finAveriaFecha>=f.inicioAveriaFecha){horasReparacion+=(f.finAveriaFecha-f.inicioAveriaFecha)/3600000;reparaciones++;}
+    if(intervalosOperativos&&reparaciones){
+      const mtbf=horasOperativas/intervalosOperativos,mttr=horasReparacion/reparaciones,disponibilidad=calcularDisponibilidad(mtbf,mttr);
+      if(Number.isFinite(disponibilidad))puntos.push({fecha:f.finAveriaFecha||f.inicioAveriaFecha,disponibilidad,aviso:f.aviso});
+    }
+  });
+  if(periodoActual&&Number.isFinite(periodoActual.horasOperativas)&&reparaciones){
+    const mtbf=(horasOperativas+periodoActual.horasOperativas)/(intervalosOperativos+1),mttr=horasReparacion/reparaciones,disponibilidad=calcularDisponibilidad(mtbf,mttr);
+    if(Number.isFinite(disponibilidad))puntos.push({fecha:periodoActual.fin,disponibilidad,aviso:'Actual'});
+  }
+  return puntos.filter(p=>p.fecha instanceof Date&&!isNaN(p.fecha));
+}
+
+function renderGraficoDisponibilidadAcumulada(filas,periodoActual,equipo){
+  renderGraficoDisponibilidadPuntos(construirDisponibilidadAcumulada(filas,periodoActual),equipo);
+}
+
+function construirDisponibilidadAcumuladaTotal(base,fechaCorte=new Date()){
+  const grupos=new Map(),eventos=[];
+  base.filter(tieneClasificacionConfiabilidad).forEach(r=>{
+    const equipo=r.denominacionUbicacionTecnica||r.ubicacionTecnica;
+    if(!equipo)return;
+    if(!grupos.has(equipo))grupos.set(equipo,[]);
+    grupos.get(equipo).push(r);
+  });
+  grupos.forEach((registrosEquipo,equipo)=>{
+    const registros=registrosEquipo.filter(r=>normalizar(r.claseAviso)==='z2'&&r.inicioAveriaFecha).sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
+    const periodosZ1=registrosEquipo.filter(esPeriodoZ1FueraOperacion),kpis=calcularKpisConfiabilidad(registros,periodosZ1,fechaCorte);
+    if(!Number.isFinite(kpis.disponibilidad))return;
+    kpis.filas.forEach(f=>{
+      const reparacion=f.inicioAveriaFecha&&f.finAveriaFecha&&f.finAveriaFecha>=f.inicioAveriaFecha?(f.finAveriaFecha-f.inicioAveriaFecha)/3600000:null;
+      eventos.push({fecha:f.finAveriaFecha||f.inicioAveriaFecha,horasOperativas:Number.isFinite(f.horasOperativas)?f.horasOperativas:0,intervalos:Number.isFinite(f.horasOperativas)?1:0,horasReparacion:Number.isFinite(reparacion)?reparacion:0,reparaciones:Number.isFinite(reparacion)?1:0,aviso:f.aviso,equipo});
+    });
+    if(kpis.periodoActual&&Number.isFinite(kpis.periodoActual.horasOperativas))eventos.push({fecha:kpis.periodoActual.fin,horasOperativas:kpis.periodoActual.horasOperativas,intervalos:1,horasReparacion:0,reparaciones:0,aviso:'Actual',equipo});
+  });
+  eventos.sort((a,b)=>a.fecha-b.fecha);
+  const puntos=[];
+  let horasOperativas=0,horasReparacion=0,intervalos=0,reparaciones=0;
+  eventos.forEach(e=>{
+    horasOperativas+=e.horasOperativas;horasReparacion+=e.horasReparacion;intervalos+=e.intervalos;reparaciones+=e.reparaciones;
+    if(intervalos&&reparaciones){
+      const disponibilidad=calcularDisponibilidad(horasOperativas/intervalos,horasReparacion/reparaciones);
+      if(Number.isFinite(disponibilidad))puntos.push({fecha:e.fecha,disponibilidad,aviso:e.aviso,equipo:e.equipo});
+    }
+  });
+  return puntos.filter(p=>p.fecha instanceof Date&&!isNaN(p.fecha));
+}
+
+function resumirPuntosMensuales(puntos){
+  const meses=new Map();
+  puntos.forEach(p=>meses.set(`${p.fecha.getFullYear()}-${String(p.fecha.getMonth()+1).padStart(2,'0')}`,p));
+  return [...meses.values()].sort((a,b)=>a.fecha-b.fecha);
+}
+
+function crearCaminoSuave(coordenadas){
+  if(!coordenadas.length)return'';
+  if(coordenadas.length===1)return`M ${coordenadas[0][0]} ${coordenadas[0][1]}`;
+  let camino=`M ${coordenadas[0][0]} ${coordenadas[0][1]}`;
+  for(let i=0;i<coordenadas.length-1;i++){
+    const [x1,y1]=coordenadas[i],[x2,y2]=coordenadas[i+1],medio=((x1+x2)/2).toFixed(1);
+    camino+=` C ${medio} ${y1}, ${medio} ${y2}, ${x2} ${y2}`;
+  }
+  return camino;
+}
+
+function claseSemaforoDisponibilidad(valor){
+  if(valor<=60)return'semaforo-rojo';
+  if(valor<90)return'semaforo-amarillo';
+  return'semaforo-verde';
+}
+
+function etiquetaMesConfiabilidad(fecha){
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${meses[fecha.getMonth()]}${String(fecha.getFullYear()).slice(-2)}`;
+}
+
+function renderGraficoDisponibilidadPuntos(puntos,equipo){
+  const panel=$('graficoDisponibilidad'),contenedor=$('graficoDisponibilidadSvg');
+  const esTotal=normalizar(equipo).startsWith('todoslosequipos');
+  if(esTotal)puntos=resumirPuntosMensuales(puntos);
+  if(!puntos.length){panel.classList.add('hidden');contenedor.innerHTML='';return;}
+  const ancho=900,alto=290,margen={izq:62,der:24,arr:22,abajo:66},w=ancho-margen.izq-margen.der,h=alto-margen.arr-margen.abajo;
+  const valores=puntos.map(p=>p.disponibilidad),minReal=Math.min(...valores),maxReal=Math.max(...valores);
+  let minY=Math.max(0,Math.floor((minReal-1)*10)/10),maxY=Math.min(100,Math.ceil((maxReal+1)*10)/10);
+  if(maxY-minY<1){const centro=(maxY+minY)/2;minY=Math.max(0,centro-.5);maxY=Math.min(100,centro+.5);}
+  const fechas=puntos.map(p=>p.fecha.getTime()),minX=FECHA_INICIO_CONFIABILIDAD.getTime(),maxX=Math.max(...fechas),rangoX=Math.max(1,maxX-minX),rangoY=Math.max(.1,maxY-minY);
+  const x=p=>margen.izq+(p.fecha.getTime()-minX)/rangoX*w,y=p=>margen.arr+(maxY-p.disponibilidad)/rangoY*h;
+  const coordenadas=puntos.map(p=>[x(p),y(p)]),camino=crearCaminoSuave(coordenadas);
+  const marcasY=[maxY,(maxY+minY)/2,minY];
+  const mesesX=[];
+  const cursorMes=new Date(FECHA_INICIO_CONFIABILIDAD.getFullYear(),FECHA_INICIO_CONFIABILIDAD.getMonth(),1);
+  const limiteMes=new Date(maxX);
+  while(cursorMes<=limiteMes){mesesX.push(new Date(cursorMes));cursorMes.setMonth(cursorMes.getMonth()+1);}
+  const grilla=marcasY.map(v=>`<line x1="${margen.izq}" y1="${(margen.arr+(maxY-v)/rangoY*h).toFixed(1)}" x2="${ancho-margen.der}" y2="${(margen.arr+(maxY-v)/rangoY*h).toFixed(1)}" class="conf-chart-grid"/><text x="${margen.izq-10}" y="${(margen.arr+(maxY-v)/rangoY*h+4).toFixed(1)}" text-anchor="end" class="conf-chart-axis">${fmtN(v)}%</text>`).join('');
+  const etiquetasX=mesesX.map(fecha=>{const posicion=x({fecha}).toFixed(1);return`<text x="${posicion}" y="${alto-15}" text-anchor="end" transform="rotate(-45 ${posicion} ${alto-15})" class="conf-chart-axis conf-chart-month">${escapeHtml(etiquetaMesConfiabilidad(fecha))}</text>`;}).join('');
+  const segmentos=coordenadas.slice(0,-1).map(([x1,y1],i)=>{const[x2,y2]=coordenadas[i+1],medio=((x1+x2)/2).toFixed(1),clase=claseSemaforoDisponibilidad((puntos[i].disponibilidad+puntos[i+1].disponibilidad)/2);return`<path d="M ${x1} ${y1} C ${medio} ${y1}, ${medio} ${y2}, ${x2} ${y2}" class="conf-chart-line ${clase}"/>`;}).join('');
+  const marcadores=puntos.map(p=>`<circle cx="${x(p).toFixed(1)}" cy="${y(p).toFixed(1)}" r="3.5" class="conf-chart-point ${claseSemaforoDisponibilidad(p.disponibilidad)}" data-fecha="${escapeHtml(fmtF(p.fecha))}" data-valor="${escapeHtml(fmtN(p.disponibilidad))}" data-equipo="${escapeHtml(p.equipo||equipo)}"><title>${escapeHtml(fmtF(p.fecha))} · ${p.equipo?`${escapeHtml(p.equipo)} · `:''}${escapeHtml(p.aviso)} · ${fmtN(p.disponibilidad)}%</title></circle>`).join('');
+  const baseY=(margen.arr+h).toFixed(1),area=`${camino} L ${coordenadas.at(-1)[0]} ${baseY} L ${coordenadas[0][0]} ${baseY} Z`;
+  contenedor.innerHTML=`<svg viewBox="0 0 ${ancho} ${alto}" role="img" aria-label="Disponibilidad acumulada de ${escapeHtml(equipo)}"><defs><linearGradient id="confAreaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#64748b" stop-opacity=".16"/><stop offset="100%" stop-color="#64748b" stop-opacity=".02"/></linearGradient></defs>${grilla}<path d="${area}" class="conf-chart-area"/>${segmentos}${marcadores}${etiquetasX}</svg><div id="tooltipDisponibilidad" class="conf-chart-tooltip hidden"></div>`;
+  const tooltip=$('tooltipDisponibilidad');
+  contenedor.querySelectorAll('.conf-chart-point').forEach(punto=>{
+    punto.addEventListener('mouseenter',()=>{tooltip.innerHTML=`<strong>${escapeHtml(punto.dataset.valor)}%</strong><span>${escapeHtml(punto.dataset.fecha)}</span>${esTotal?`<small>${escapeHtml(punto.dataset.equipo)}</small>`:''}`;tooltip.classList.remove('hidden');});
+    punto.addEventListener('mousemove',evento=>{const caja=contenedor.getBoundingClientRect();tooltip.style.left=`${evento.clientX-caja.left+12}px`;tooltip.style.top=`${evento.clientY-caja.top-52}px`;});
+    punto.addEventListener('mouseleave',()=>tooltip.classList.add('hidden'));
+  });
+  $('subtituloGraficoDisponibilidad').textContent=`${equipo} · ${puntos.length.toLocaleString('es-CL')} ${esTotal?'puntos mensuales acumulados':'puntos acumulados'} · Desde 01-01-2025`;
+  const ultimo=$('ultimoValorDisponibilidad');
+  ultimo.textContent=`${fmtN(puntos.at(-1).disponibilidad)} %`;
+  ultimo.className=`conf-chart-value ${claseSemaforoDisponibilidad(puntos.at(-1).disponibilidad)}`;
+  panel.classList.remove('hidden');
 }
 
 function calcularHorasNoOperativas(inicio,fin,unidad,periodosZ1=[]){
@@ -771,7 +1010,8 @@ function configurarBuscadorEquipos(inputId,sugerenciasId,botonId,acciones={}){
   };
   const mostrar=texto=>{
     const clave=normalizar(texto);
-    estado.resultados=(clave?listaEquipos.filter(e=>normalizar(e).includes(clave)):listaEquipos).slice(0,100);
+    const opciones=acciones.incluirTodos?['Todos',...listaEquipos]:listaEquipos;
+    estado.resultados=(clave?opciones.filter(e=>normalizar(e).includes(clave)):opciones).slice(0,100);
     estado.seleccion=estado.resultados.length?0:-1;
     contenedor.innerHTML='';
     if(!estado.resultados.length){
@@ -843,6 +1083,7 @@ function renderEquiposSeleccionados(){
 function renderTablaBase(base){
   $('tablaBase').querySelector('thead').innerHTML=`
     <tr>
+      <th class="seleccionar-col">Seleccionar <input type="checkbox" id="seleccionarTodosBase" aria-label="Seleccionar todas las filas visibles"></th>
       <th>Fecha aviso</th>
       <th>Clase aviso</th>
       <th>Aviso</th>
@@ -861,6 +1102,7 @@ function renderTablaBase(base){
   $('tablaBase').querySelector('tbody').innerHTML=base.length
     ? base.map(r=>`
       <tr class="${r.unidad==='Sin clasificar'?'fila-sin-clasificar':''} ${r.tipoEquipo==='Sin clasificar'?'fila-tipo-sin-clasificar':''}">
+        <td class="seleccionar-col"><input type="checkbox" class="seleccionar-registro" data-clave="${escapeHtml(claveRegistroBase(r))}" aria-label="Seleccionar orden ${escapeHtml(r.orden||'-')}" ${registrosSeleccionados.has(claveRegistroBase(r))?'checked':''}></td>
         <td>${fmtF(r.fechaAviso)}</td>
         <td>${r.claseAviso}</td>
         <td><span class="copyable" onclick="copiarTexto(this,'${r.aviso}')">${r.aviso}</span></td>
@@ -885,7 +1127,23 @@ function renderTablaBase(base){
         <td>${fmtN(r.duracionParada)}</td>
       </tr>
     `).join('')
-    : '<tr><td colspan="12">No hay datos</td></tr>';
+    : '<tr><td colspan="13">No hay datos</td></tr>';
+  const porClave=new Map(base.map(r=>[claveRegistroBase(r),r]));
+  const checks=[...$('tablaBase').querySelectorAll('.seleccionar-registro')];
+  checks.forEach(check=>check.onchange=()=>{
+    const registro=porClave.get(check.dataset.clave);
+    if(check.checked&&registro)registrosSeleccionados.set(check.dataset.clave,registro);else registrosSeleccionados.delete(check.dataset.clave);
+    const todos=$('seleccionarTodosBase');
+    if(todos){todos.checked=checks.length>0&&checks.every(x=>x.checked);todos.indeterminate=checks.some(x=>x.checked)&&!todos.checked;}
+    actualizarBotonSeleccionados();
+  });
+  const todos=$('seleccionarTodosBase');
+  if(todos){
+    todos.checked=checks.length>0&&checks.every(x=>x.checked);
+    todos.indeterminate=checks.some(x=>x.checked)&&!todos.checked;
+    todos.onchange=()=>checks.forEach(check=>{if(check.checked!==todos.checked){check.checked=todos.checked;check.onchange();}});
+  }
+  actualizarBotonSeleccionados();
 }
 
 function editarTipoAviso(boton){

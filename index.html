@@ -86,13 +86,16 @@
       <section class="dashboard-grid">
         <article class="panel full">
           <div class="panel-title">
-            <h3>DATOS BASE PARA CÁLCULO DE KPI</h3>
+            <div class="panel-title-copy">
+              <h3>DATOS BASE PARA CÁLCULO DE KPI</h3>
+              <button type="button" id="btnCopiarSeleccionados" class="copy-selected-btn" disabled>Copiar seleccionados (0)</button>
+            </div>
             <div class="table-title-actions">
               <button id="btnOrdenAsc" class="sort-btn active" title="Orden ascendente" aria-label="Orden ascendente">
-                <span class="sort-lines asc">▱</span>
+                <span class="sort-lines asc" aria-hidden="true">↑</span>
               </button>
               <button id="btnOrdenDesc" class="sort-btn" title="Orden descendente" aria-label="Orden descendente">
-                <span class="sort-lines desc">▱</span>
+                <span class="sort-lines desc" aria-hidden="true">↓</span>
               </button>
               <span id="filasBase">0 filas</span>
             </div>
@@ -106,7 +109,7 @@
     </section>
 <section id="viewConfiabilidad" class="view hidden">
 <h2>ANÁLISIS DE CONFIABILIDAD</h2>
-<div class="filters" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;align-items:end;margin-bottom:16px">
+<div class="filters" style="display:grid;grid-template-columns:2fr 1fr;gap:12px;align-items:end;margin-bottom:16px">
 <div class="field search-field equipo-combo">
 <label>Equipo</label>
 <div class="combo-wrapper">
@@ -116,19 +119,36 @@
 <div id="sugerenciasEquipoConf" class="suggestions"></div>
 </div>
 <div><label>Unidad</label><select id="confUnidadFiltro"><option>Todas</option></select></div>
-<div><label>Fecha desde</label><input type="date" id="confDesde"></div>
-<div><label>Fecha hasta</label><input type="date" id="confHasta"></div>
 </div>
 <div id="detalleEquipo" class="card"><p><strong>Equipo:</strong> <span id="confEquipo">-</span></p><p><strong>Unidad:</strong> <span id="confUnidad">-</span></p><p><strong>Fallas:</strong> <span id="confFallas">0</span></p><p><strong>MTBF:</strong> <span id="confMtbf">--</span></p><p><strong>MTTR:</strong> <span id="confMttr">--</span></p><p><strong>Disponibilidad:</strong> <span id="confDisponibilidad">--</span></p></div>
-<table class="tabla"><thead><tr><th>Aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD / Z1</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr></tbody></table>
 <section id="rankingUnidad" class="panel full hidden">
-  <div class="panel-title"><h3 id="rankingTitulo">Ranking de disponibilidad</h3><span id="rankingCantidad">0 equipos</span></div>
-  <div class="table-wrap unidades-wrap">
+  <div class="panel-title ranking-panel-title">
+    <h3 id="rankingTitulo">Ranking de disponibilidad</h3>
+    <div class="ranking-title-actions"><span id="rankingCantidad">0 equipos</span><button type="button" id="btnToggleRanking" class="ranking-toggle-btn">Minimizar ranking</button></div>
+  </div>
+  <div id="rankingContenido" class="ranking-content table-wrap unidades-wrap">
     <table id="tablaRankingUnidad">
-      <thead><tr><th>Posición</th><th>Equipo</th><th>Fallas</th><th>MTBF</th><th>MTTR</th><th>Disponibilidad</th></tr></thead>
+      <thead><tr><th>Posición</th><th>Equipo</th><th>Clasificación</th><th>Fallas</th>
+        <th><span class="ranking-sort-label"><span><button type="button" class="ranking-sort-btn" data-campo="mtbf" data-direccion="asc" title="Ordenar MTBF ascendente">↑</button><button type="button" class="ranking-sort-btn" data-campo="mtbf" data-direccion="desc" title="Ordenar MTBF descendente">↓</button></span> MTBF</span></th>
+        <th><span class="ranking-sort-label"><span><button type="button" class="ranking-sort-btn" data-campo="mttr" data-direccion="asc" title="Ordenar MTTR ascendente">↑</button><button type="button" class="ranking-sort-btn" data-campo="mttr" data-direccion="desc" title="Ordenar MTTR descendente">↓</button></span> MTTR</span></th>
+        <th><span class="ranking-sort-label"><span><button type="button" class="ranking-sort-btn" data-campo="disponibilidad" data-direccion="asc" title="Ordenar disponibilidad ascendente">↑</button><button type="button" class="ranking-sort-btn active" data-campo="disponibilidad" data-direccion="desc" title="Ordenar disponibilidad descendente">↓</button></span> Disponibilidad</span></th>
+      </tr></thead>
       <tbody id="rankingBody"></tbody>
     </table>
   </div>
+</section>
+<section id="historialConfiabilidad" class="conf-history-section">
+  <div class="conf-section-heading"><h3>Historial de fallas y horas operativas</h3><p>Detalle utilizado para calcular MTBF, MTTR y disponibilidad.</p></div>
+  <div class="table-wrap conf-history-wrap">
+    <table class="tabla"><thead><tr><th>Aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD / Z1</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr></tbody></table>
+  </div>
+</section>
+<section id="graficoDisponibilidad" class="conf-chart-card hidden" aria-labelledby="tituloGraficoDisponibilidad">
+  <div class="conf-chart-heading">
+    <div><h3 id="tituloGraficoDisponibilidad">Disponibilidad acumulada</h3><p id="subtituloGraficoDisponibilidad">Evolución del equipo seleccionado</p><div class="conf-semaforo-legend"><span><i class="rojo"></i>0–60%</span><span><i class="amarillo"></i>61–89%</span><span><i class="verde"></i>90–100%</span></div></div>
+    <strong id="ultimoValorDisponibilidad" class="conf-chart-value">--</strong>
+  </div>
+  <div id="graficoDisponibilidadSvg" class="conf-chart-wrap"></div>
 </section>
 </section>
 <section id="viewGantt" class="view hidden gantt-view">

@@ -130,6 +130,8 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
   align-items:center;
   gap:6px;
 }
+.copy-selected-btn{width:auto;height:30px;padding:0 11px;background:#0b5cab;font-size:11px}.copy-selected-btn:disabled{opacity:.5;cursor:not-allowed}.seleccionar-col{width:105px;min-width:105px;text-align:center!important}.seleccionar-col input{width:16px;height:16px;accent-color:#0b5cab;cursor:pointer}.seleccionar-col th{white-space:nowrap}
+.panel-title-copy{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.panel-title-copy .copy-selected-btn{min-width:175px}
 .sort-btn{
   width:30px;
   height:28px;
@@ -152,10 +154,8 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 .sort-lines{
   display:inline-block;
   line-height:1;
-  transform:rotate(0deg);
-}
-.sort-lines.desc{
-  transform:rotate(180deg);
+  font-size:21px;
+  font-weight:900;
 }
 
 .copyable{display:inline-block;cursor:pointer!important;user-select:text}.copyable:hover,.copyable:focus{color:#0b5cab;text-decoration:underline;font-weight:600;outline:none}
@@ -165,7 +165,11 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 .periodo-operacion-actual td{color:#075c3b;vertical-align:middle}
 .periodo-operacion-actual small{display:block;color:#47705f;font-size:10px;font-weight:700;margin-bottom:3px}
 #rankingUnidad{margin-top:16px}
-#tablaRankingUnidad{min-width:760px}
+#detalleEquipo{display:grid;grid-template-columns:minmax(220px,2fr) minmax(130px,1.2fr) repeat(4,minmax(100px,1fr));gap:0;margin:0 0 14px;border:1px solid #c8d7eb;border-radius:9px;background:#fff;overflow:hidden}#detalleEquipo p{margin:0;padding:12px 14px;border-right:1px solid #e1eaf5;white-space:nowrap}#detalleEquipo p:last-child{border-right:0}#detalleEquipo strong{display:block;margin-bottom:4px;color:#526b8b;font-size:10px;text-transform:uppercase}#detalleEquipo span{color:#002b66;font-size:13px;font-weight:800}@media(max-width:1100px){#detalleEquipo{grid-template-columns:repeat(2,minmax(0,1fr))}#detalleEquipo p{border-bottom:1px solid #e1eaf5}}
+.ranking-panel-title{gap:12px}.ranking-title-actions{display:flex;align-items:center;gap:9px}.ranking-toggle-btn{width:auto;height:29px;padding:0 10px;font-size:11px;background:#64748b}.ranking-minimized{min-height:0;padding-bottom:8px}.ranking-minimized .ranking-content{display:none}.ranking-minimized .panel-title{margin-bottom:0}.ranking-sort-label{display:flex;align-items:center;justify-content:flex-start;gap:7px}.ranking-sort-label>span{display:inline-flex;gap:3px}.ranking-sort-btn{width:24px;height:23px;padding:0;border:1px solid #8da9ca;border-radius:4px;background:#fff;color:#0b5cab;font-size:15px;font-weight:900;line-height:1}.ranking-sort-btn:hover{background:#edf5ff}.ranking-sort-btn.active{background:#0b5cab;color:#fff;border-color:#0b5cab}.ranking-classification{display:flex;align-items:center;justify-content:space-between;gap:7px;min-width:150px}.ranking-classification span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ranking-edit-classification{flex:0 0 28px;width:28px;height:25px;padding:0;border-radius:13px;font-size:12px}.ranking-classification-select{width:100%;min-width:155px;height:29px;font-size:11px}
+.conf-history-section{margin-top:16px}.conf-section-heading{margin:0 0 9px 2px}.conf-section-heading h3{margin:0;color:#002b66;font-size:18px}.conf-section-heading p{margin:4px 0 0;color:#64748b;font-size:11px}.conf-history-wrap{max-height:420px;background:#fff}.conf-history-wrap table{margin:0}
+.conf-chart-card{margin:16px 0;padding:15px;border:1px solid #c8d7eb;border-radius:10px;background:linear-gradient(180deg,#fff,#f8fbff);box-shadow:0 3px 10px rgba(8,47,102,.07)}.conf-chart-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:8px}.conf-chart-heading h3{margin:0;color:#002b66;font-size:18px}.conf-chart-heading p{margin:4px 0 0;color:#64748b;font-size:11px}.conf-chart-value{padding:7px 11px;border-radius:18px;font-size:16px}.conf-semaforo-legend{display:flex;gap:12px;margin-top:8px;color:#526b8b;font-size:10px;font-weight:800}.conf-semaforo-legend span{display:flex;align-items:center;gap:5px}.conf-semaforo-legend i{width:9px;height:9px;border-radius:50%}.conf-semaforo-legend i.rojo{background:#dc2626}.conf-semaforo-legend i.amarillo{background:#eab308}.conf-semaforo-legend i.verde{background:#16a34a}.conf-chart-wrap{position:relative;width:100%;min-height:230px}.conf-chart-wrap svg{display:block;width:100%;height:auto;max-height:310px;overflow:visible}.conf-chart-tooltip{position:absolute;z-index:20;min-width:105px;padding:8px 10px;border-radius:7px;background:#0f2747;color:#fff;box-shadow:0 8px 20px rgba(15,39,71,.25);pointer-events:none;transform:translateY(-4px)}.conf-chart-tooltip strong,.conf-chart-tooltip span,.conf-chart-tooltip small{display:block}.conf-chart-tooltip strong{font-size:15px}.conf-chart-tooltip span{margin-top:2px;font-size:10px}.conf-chart-tooltip small{margin-top:3px;max-width:190px;font-size:9px;opacity:.8}.conf-chart-grid{stroke:#d8e3f2;stroke-width:1;stroke-dasharray:4 4}.conf-chart-axis{fill:#526b8b;font-size:11px;font-weight:700}.conf-chart-area{fill:url(#confAreaGradient);stroke:none}.conf-chart-line{fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 2px rgba(15,23,42,.12))}.conf-chart-line.semaforo-rojo{stroke:#dc2626}.conf-chart-line.semaforo-amarillo{stroke:#eab308}.conf-chart-line.semaforo-verde{stroke:#16a34a}.conf-chart-point{fill:#fff;stroke-width:2.5;transition:r .15s,fill .15s}.conf-chart-point.semaforo-rojo{stroke:#dc2626;color:#dc2626}.conf-chart-point.semaforo-amarillo{stroke:#eab308;color:#eab308}.conf-chart-point.semaforo-verde{stroke:#16a34a;color:#16a34a}.conf-chart-point:hover{r:5px;fill:currentColor;stroke-width:3}.conf-chart-value.semaforo-rojo{background:#fee2e2;color:#b91c1c}.conf-chart-value.semaforo-amarillo{background:#fef3c7;color:#a16207}.conf-chart-value.semaforo-verde{background:#dcfce7;color:#15803d}
+#tablaRankingUnidad{min-width:940px}
 .ranking-equipo-row{cursor:pointer}
 .ranking-equipo-row:hover,.ranking-equipo-row:focus{background:#e8f0fb;outline:none}
 .aviso-unidad{display:flex;align-items:center;justify-content:space-between;gap:6px}
