@@ -334,7 +334,7 @@ function normalizarFrase(texto){return String(texto??'').toLowerCase().normalize
 function contieneFraseCompleta(texto,frase){const base=` ${normalizarFrase(texto)} `,busqueda=normalizarFrase(frase);return Boolean(busqueda)&&base.includes(` ${busqueda} `);}
 function normalizarNombreTipo(tipo){const nombre=String(tipo||'').trim(),clave=normalizarFrase(nombre);if(clave==='no aplica')return 'NO APLICA';if(clave.startsWith('estanque'))return 'ESTANQUE';if(clave.startsWith('bomba'))return 'BOMBA';return nombre;}
 function migrarTiposAgrupados(){tiposUsuario=[...new Set(tiposUsuario.map(normalizarNombreTipo))].filter(tipo=>tipo&&!['ESTANQUE','BOMBA'].includes(tipo));reglasTipoUsuario=reglasTipoUsuario.map(r=>({...r,tipo:normalizarNombreTipo(r.tipo)}));tiposAviso=Object.fromEntries(Object.entries(tiposAviso).map(([aviso,tipo])=>[aviso,normalizarNombreTipo(tipo)]));localStorage.setItem(KEY_TIPOS,JSON.stringify(tiposUsuario));localStorage.setItem(KEY_REGLAS_TIPO,JSON.stringify(reglasTipoUsuario));localStorage.setItem(KEY_AVISO_TIPOS,JSON.stringify(tiposAviso));}
-function obtenerTipoEquipo(denominacion,tipoManual=''){const frase=normalizarFrase(denominacion),manual=normalizarNombreTipo(tipoManual);if(!frase)return manual||'Sin clasificar';if(contieneFraseCompleta(frase,'ESTANQUE'))return 'ESTANQUE';if(contieneFraseCompleta(frase,'BOMBA'))return 'BOMBA';if(manual)return manual;for(const tipo of [...TIPOS_BASE,...tiposUsuario])if(contieneFraseCompleta(frase,tipo))return normalizarNombreTipo(tipo);for(const r of reglasTipoUsuario)if(normalizarFrase(r.buscar)===frase)return normalizarNombreTipo(r.tipo);return 'Sin clasificar';}
+function obtenerTipoEquipo(denominacion,tipoManual=''){const frase=normalizarFrase(denominacion),manual=normalizarNombreTipo(tipoManual);if(!frase)return manual||'Sin clasificar';if(manual)return manual;const reglaExacta=reglasTipoUsuario.find(r=>normalizarFrase(r.buscar)===frase);if(reglaExacta)return normalizarNombreTipo(reglaExacta.tipo);if(contieneFraseCompleta(frase,'ESTANQUE'))return 'ESTANQUE';if(contieneFraseCompleta(frase,'BOMBA'))return 'BOMBA';for(const tipo of [...TIPOS_BASE,...tiposUsuario])if(contieneFraseCompleta(frase,tipo))return normalizarNombreTipo(tipo);return 'Sin clasificar';}
 function nombreUnidad(u){return normalizarUnidadGantt(u);}
 function actualizarKPIs(base=datosBase){
   const avisosUnicos=estado=>new Set(base.filter(r=>!estado||r.estadoAviso===estado).map(r=>r.aviso).filter(Boolean)).size;
@@ -373,7 +373,7 @@ function abrirWizardTipo(){tiposOmitidosSesion.clear();pendientesTipo=getPendien
 function cerrarWizardTipo(){$('wizardTipo').classList.add('hidden');cargarFiltroTipos();aplicarFiltros();}
 function renderWizardTipo(){pendientesTipo=getPendientesTipo({incluirOmitidos:false});if(!pendientesTipo.length){$('wizardTipoContenido').classList.add('hidden');$('wizardTipoFinalizado').classList.remove('hidden');$('wizardTipoProgreso').textContent='Revisión finalizada';return;}$('wizardTipoContenido').classList.remove('hidden');$('wizardTipoFinalizado').classList.add('hidden');if(pendienteTipoIndex>=pendientesTipo.length)pendienteTipoIndex=pendientesTipo.length-1;const p=pendientesTipo[pendienteTipoIndex];$('wizardTipoProgreso').textContent=`${pendienteTipoIndex+1} de ${pendientesTipo.length}`;$('wizardTipoEquipo').textContent=p.equipo;$('wizardTipoUbicacion').textContent=p.ubicacion||'-';$('wizardTipoDescripcion').textContent=p.descripcion||'-';$('wizardTipoCantidad').textContent=p.cantidad;llenarTipos();$('boxNuevoTipo').classList.add('hidden');$('wizardNuevoTipo').value='';}
 function llenarTipos(){const select=$('wizardTipoSelect'),tipos=[...new Set(['NO APLICA',...obtenerListaTipos()])];select.innerHTML='<option value="">Seleccionar tipo</option>'+tipos.map(tipo=>`<option value="${escapeHtml(tipo)}">${escapeHtml(tipo)}</option>`).join('')+'<option value="__NUEVO__">➕ Nuevo tipo...</option>';}
-function guardarWizardTipo(){const p=pendientesTipo[pendienteTipoIndex];if(!p)return alert('No hay un tipo pendiente para guardar.');const selector=$('wizardTipoSelect');let tipo=selector.value;if(tipo==='__NUEVO__'){tipo=normalizarNombreTipo($('wizardNuevoTipo').value.trim().toUpperCase());if(!tipo)return alert('Escribe el nombre del nuevo tipo de equipo.');if(!TIPOS_BASE.includes(tipo)&&!tiposUsuario.includes(tipo))tiposUsuario.push(tipo);}if(!tipo)return alert('Selecciona un tipo de equipo.');tipo=normalizarNombreTipo(tipo);selector.disabled=true;$('btnGuardarSiguienteTipo').disabled=true;try{const denominacion=normalizarFrase(p.equipo);reglasTipoUsuario=reglasTipoUsuario.filter(r=>normalizarFrase(r.buscar)!==denominacion);reglasTipoUsuario.unshift({buscar:p.equipo,tipo});for(const aviso of p.avisos||[])tiposAviso[aviso]=tipo;localStorage.setItem(KEY_TIPOS,JSON.stringify(tiposUsuario));localStorage.setItem(KEY_REGLAS_TIPO,JSON.stringify(reglasTipoUsuario));localStorage.setItem(KEY_AVISO_TIPOS,JSON.stringify(tiposAviso));cargarFiltroTipos();aplicarFiltros();pendientesTipo=getPendientesTipo({incluirOmitidos:false});if(pendienteTipoIndex>=pendientesTipo.length)pendienteTipoIndex=Math.max(0,pendientesTipo.length-1);renderWizardTipo();}catch(error){console.error(error);alert('No fue posible guardar el tipo de equipo. Intenta nuevamente.');}finally{selector.disabled=false;$('btnGuardarSiguienteTipo').disabled=false;}}
+function guardarWizardTipo(){const p=pendientesTipo[pendienteTipoIndex];if(!p)return alert('No hay un tipo pendiente para guardar.');const selector=$('wizardTipoSelect');let tipo=selector.value;if(tipo==='__NUEVO__'){tipo=normalizarNombreTipo($('wizardNuevoTipo').value.trim().toUpperCase());if(!tipo)return alert('Escribe el nombre del nuevo tipo de equipo.');if(!TIPOS_BASE.includes(tipo)&&!tiposUsuario.includes(tipo))tiposUsuario.push(tipo);}if(!tipo)return alert('Selecciona un tipo de equipo.');tipo=normalizarNombreTipo(tipo);selector.disabled=true;$('btnGuardarSiguienteTipo').disabled=true;try{const denominacion=normalizarFrase(p.equipo);reglasTipoUsuario=reglasTipoUsuario.filter(r=>normalizarFrase(r.buscar)!==denominacion);reglasTipoUsuario.unshift({buscar:p.equipo,tipo});for(const aviso of p.avisos||[])tiposAviso[aviso]=tipo;localStorage.setItem(KEY_TIPOS,JSON.stringify(tiposUsuario));localStorage.setItem(KEY_REGLAS_TIPO,JSON.stringify(reglasTipoUsuario));localStorage.setItem(KEY_AVISO_TIPOS,JSON.stringify(tiposAviso));cargarFiltroTipos();aplicarFiltros();analizarConfiabilidadAutomaticamente();renderRankingUnidad();pendientesTipo=getPendientesTipo({incluirOmitidos:false});if(pendienteTipoIndex>=pendientesTipo.length)pendienteTipoIndex=Math.max(0,pendientesTipo.length-1);renderWizardTipo();}catch(error){console.error(error);alert('No fue posible guardar el tipo de equipo. Intenta nuevamente.');}finally{selector.disabled=false;$('btnGuardarSiguienteTipo').disabled=false;}}
 function omitirWizardTipo(){const p=pendientesTipo[pendienteTipoIndex];if(!p)return;tiposOmitidosSesion.add(p.equipo);renderWizardTipo();}
 
 function obtenerListaUnidades(){
@@ -411,7 +411,7 @@ function analizarConfiabilidadAutomaticamente(){
 
 function fechaRegistroConfiabilidad(registro){return registro.inicioAveriaFecha||registro.fechaAviso||null;}
 function dentroPeriodoConfiabilidad(registro){const fecha=fechaRegistroConfiabilidad(registro);return Boolean(fecha&&fecha>=FECHA_INICIO_CONFIABILIDAD);}
-function tieneClasificacionConfiabilidad(registro){return Boolean(registro&&registro.unidad&&registro.unidad!=='Sin clasificar');}
+function tieneClasificacionConfiabilidad(registro){return Boolean(registro&&registro.tipoEquipo&&registro.tipoEquipo!=='Sin clasificar');}
 
 function calcularConfiabilidadTotal(base,fechaCorte=new Date()){
   const grupos=new Map();
@@ -581,10 +581,10 @@ function renderRankingUnidad(){
       .sort((a,b)=>a.inicioAveriaFecha-b.inicioAveriaFecha);
     const periodosZ1=registrosEquipo.filter(esPeriodoZ1FueraOperacion);
     const kpis=calcularKpisConfiabilidad(fallas,periodosZ1,fechaCorte);
-    const conteoUnidades=new Map();
-    registrosEquipo.forEach(r=>conteoUnidades.set(r.unidad,(conteoUnidades.get(r.unidad)||0)+1));
-    const unidadClasificada=[...conteoUnidades].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'es'))[0]?.[0]||'Sin clasificar';
-    return{equipo,unidadClasificada,fallas:new Set(fallas.map(r=>r.aviso).filter(Boolean)).size,...kpis};
+    const conteoTipos=new Map();
+    registrosEquipo.forEach(r=>conteoTipos.set(r.tipoEquipo,(conteoTipos.get(r.tipoEquipo)||0)+1));
+    const tipoClasificado=[...conteoTipos].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'es'))[0]?.[0]||'Sin clasificar';
+    return{equipo,tipoClasificado,fallas:new Set(fallas.map(r=>r.aviso).filter(Boolean)).size,...kpis};
   }).filter(r=>r.fallas>0&&Number.isFinite(r.mtbf)&&Number.isFinite(r.mttr)&&Number.isFinite(r.disponibilidad)).sort((a,b)=>{
     const diferencia=rankingDireccionOrden==='asc'?a[rankingCampoOrden]-b[rankingCampoOrden]:b[rankingCampoOrden]-a[rankingCampoOrden];
     return diferencia||a.equipo.localeCompare(b.equipo,'es');
@@ -595,7 +595,7 @@ function renderRankingUnidad(){
     <tr class="ranking-equipo-row" role="button" tabindex="0" title="Ver detalle de ${escapeHtml(r.equipo)}" data-equipo="${escapeHtml(r.equipo)}" onclick="seleccionarEquipoRanking(this.dataset.equipo)" onkeydown="if(event.key==='Enter')seleccionarEquipoRanking(this.dataset.equipo)">
       <td>${i+1}</td>
       <td>${escapeHtml(r.equipo)}</td>
-      <td class="ranking-classification-cell"><div class="ranking-classification"><span>${escapeHtml(r.unidadClasificada)}</span><button type="button" class="ranking-edit-classification" title="Modificar clasificación" aria-label="Modificar clasificación de ${escapeHtml(r.equipo)}" data-equipo="${escapeHtml(r.equipo)}" data-unidad="${escapeHtml(r.unidadClasificada)}" onclick="event.stopPropagation();editarClasificacionRanking(this)">✏️</button></div></td>
+      <td class="ranking-classification-cell"><div class="ranking-classification"><span>${escapeHtml(r.tipoClasificado)}</span><button type="button" class="ranking-edit-classification" title="Modificar tipo de equipo" aria-label="Modificar tipo de equipo de ${escapeHtml(r.equipo)}" data-equipo="${escapeHtml(r.equipo)}" data-tipo="${escapeHtml(r.tipoClasificado)}" onclick="event.stopPropagation();editarClasificacionRanking(this)">✏️</button></div></td>
       <td>${r.fallas.toLocaleString('es-CL')}</td>
       <td>${r.mtbf==null?'--':`${fmtN(r.mtbf)} h`}</td>
       <td>${r.mttr==null?'--':`${fmtN(r.mttr)} h`}</td>
@@ -623,10 +623,10 @@ function toggleRanking(){
 }
 
 function editarClasificacionRanking(boton){
-  const equipo=boton.dataset.equipo,actual=boton.dataset.unidad,celda=boton.closest('td'),selector=document.createElement('select');
+  const equipo=boton.dataset.equipo,actual=boton.dataset.tipo,celda=boton.closest('td'),selector=document.createElement('select');
   selector.className='ranking-classification-select';
-  const unidades=[...new Set([...obtenerListaUnidades(),actual,'Sin clasificar'])].sort((a,b)=>a.localeCompare(b,'es'));
-  selector.innerHTML=unidades.map(unidad=>`<option value="${escapeHtml(unidad)}">${escapeHtml(unidad)}</option>`).join('');
+  const tipos=[...new Set([...obtenerListaTipos(),actual,'Sin clasificar'])].sort((a,b)=>a.localeCompare(b,'es'));
+  selector.innerHTML=tipos.map(tipo=>`<option value="${escapeHtml(tipo)}">${escapeHtml(tipo)}</option>`).join('');
   selector.value=actual;
   selector.onclick=evento=>evento.stopPropagation();
   selector.onkeydown=evento=>evento.stopPropagation();
@@ -634,15 +634,16 @@ function editarClasificacionRanking(boton){
   celda.innerHTML='';celda.appendChild(selector);selector.focus();
 }
 
-function guardarClasificacionRanking(equipo,nuevaUnidad){
+function guardarClasificacionRanking(equipo,nuevoTipo){
   const claveEquipo=normalizarFrase(equipo),registrosEquipo=construirDatosBase(datosOriginales).filter(r=>normalizar(r.denominacionUbicacionTecnica||r.ubicacionTecnica)===normalizar(equipo));
-  unidadesDenominacion[claveEquipo]=nuevaUnidad;
-  registrosEquipo.forEach(r=>{if(r.aviso)delete unidadesAviso[r.aviso];});
-  if(nuevaUnidad!=='Sin clasificar'&&!unidadesUsuario.includes(nuevaUnidad))unidadesUsuario.push(nuevaUnidad);
-  localStorage.setItem(KEY_DEN_UNIDADES,JSON.stringify(unidadesDenominacion));
-  localStorage.setItem(KEY_AVISO_UNIDADES,JSON.stringify(unidadesAviso));
-  localStorage.setItem(KEY_UNIDADES,JSON.stringify([...new Set(unidadesUsuario)]));
-  cargarFiltroUnidades();
+  reglasTipoUsuario=reglasTipoUsuario.filter(r=>normalizarFrase(r.buscar)!==claveEquipo);
+  reglasTipoUsuario.unshift({buscar:equipo,tipo:nuevoTipo});
+  registrosEquipo.forEach(r=>{if(r.aviso)delete tiposAviso[r.aviso];});
+  if(nuevoTipo!=='Sin clasificar'&&!TIPOS_BASE.includes(nuevoTipo)&&!tiposUsuario.includes(nuevoTipo))tiposUsuario.push(nuevoTipo);
+  localStorage.setItem(KEY_REGLAS_TIPO,JSON.stringify(reglasTipoUsuario));
+  localStorage.setItem(KEY_AVISO_TIPOS,JSON.stringify(tiposAviso));
+  localStorage.setItem(KEY_TIPOS,JSON.stringify([...new Set(tiposUsuario)]));
+  cargarFiltroTipos();
   aplicarFiltros();
   analizarConfiabilidadAutomaticamente();
   renderRankingUnidad();
@@ -1159,6 +1160,8 @@ function editarTipoAviso(boton){
     localStorage.setItem(KEY_AVISO_TIPOS,JSON.stringify(tiposAviso));
     cargarFiltroTipos();
     aplicarFiltros();
+    analizarConfiabilidadAutomaticamente();
+    renderRankingUnidad();
   };
   celda.innerHTML='';
   celda.appendChild(selector);
