@@ -44,6 +44,7 @@ let reglasTipoUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS_TIPO)||'[]');
 let tiposAviso=JSON.parse(localStorage.getItem(KEY_AVISO_TIPOS)||'{}');
 let datosOriginales=[], datosBase=[], bloquesLYD=[], planAnual=[], archivoPlanAnual='', mapaColumnas={}, ordenesZ1PorPlan=new Map(), listaEquipos=[], palabrasDescripcion=[], pendientes=[], pendienteIndex=0;
 const registrosSeleccionados=new Map();
+const actividadesPlanSeleccionadas=new Map();
 let pendientesTipo=[], pendienteTipoIndex=0;
 const tiposOmitidosSesion=new Set();
 const equiposSeleccionados=new Set();
@@ -70,6 +71,7 @@ function setupEventos(){
   document.querySelectorAll('.menu-item').forEach(a=>a.onclick=e=>{e.preventDefault();cambiarVista(a.dataset.view);});
   $('btnActualizar').onclick=cargarDesdeGitHub;
   $('btnCopiarSeleccionados').onclick=copiarRegistrosSeleccionados;
+  $('btnCopiarPlanSeleccionados').onclick=copiarPlanSeleccionados;
   $('cardSinClasificar').onclick=abrirWizard;
   $('cardTiposSinClasificar').onclick=abrirWizardTipo;
   configurarMacroAvisos('cardAvisos','');
@@ -227,7 +229,17 @@ function renderPlanAnual(){
   const filtradas=planVigente.filter(x=>(!texto||[x.equipo,x.ubicacion,x.plan,x.operacion,x.orden].some(v=>normalizar(v).includes(texto)))&&(!mes||`${x.fecha?.getFullYear()}-${String((x.fecha?.getMonth()??-1)+1).padStart(2,'0')}`===mes)&&(!estado||x.estado===estado)).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
   $('planFilas').textContent=`${filtradas.length.toLocaleString('es-CL')} filas`;$('planContexto').textContent=(texto||mes||estado)?'Resultados según los filtros aplicados':'Todas las actividades del plan anual';
   const tbody=$('tablaPlan').querySelector('tbody');
-  tbody.innerHTML=filtradas.length?filtradas.map(x=>`<tr><td>${fmtF(x.fecha)}</td><td><span class="plan-status ${normalizar(x.estado)}">${x.estado}</span></td><td>${celdaCopiable(x.equipo)}</td><td>${celdaCopiable(x.ubicacion)}</td><td class="descripcion">${escapeHtml(x.plan||'-')}</td><td class="descripcion">${escapeHtml(x.operacion||'-')}</td><td>${celdaCopiable(x.orden)}</td><td>${x.trabajo?`${fmtN(x.trabajo)} ${escapeHtml(x.unidadTrabajo)}`:'-'}</td></tr>`).join(''):'<tr><td colspan="8">No hay actividades que coincidan con la búsqueda.</td></tr>';
+  tbody.innerHTML=filtradas.length?filtradas.map(x=>`<tr><td class="seleccionar-col"><input type="checkbox" class="seleccionar-plan" data-clave="${escapeHtml(claveActividadPlan(x))}" aria-label="Seleccionar actividad ${escapeHtml(x.equipo||x.plan||'-')}" ${actividadesPlanSeleccionadas.has(claveActividadPlan(x))?'checked':''}></td><td>${fmtF(x.fecha)}</td><td><span class="plan-status ${normalizar(x.estado)}">${x.estado}</span></td><td>${celdaCopiable(x.equipo)}</td><td>${celdaCopiable(x.ubicacion)}</td><td class="descripcion">${escapeHtml(x.plan||'-')}</td><td class="descripcion">${escapeHtml(x.operacion||'-')}</td><td>${celdaCopiable(x.orden)}</td><td>${x.trabajo?`${fmtN(x.trabajo)} ${escapeHtml(x.unidadTrabajo)}`:'-'}</td></tr>`).join(''):'<tr><td colspan="9">No hay actividades que coincidan con la búsqueda.</td></tr>';
+  const porClavePlan=new Map(filtradas.map(x=>[claveActividadPlan(x),x]));
+  const checksPlan=[...tbody.querySelectorAll('.seleccionar-plan')];
+  checksPlan.forEach(check=>check.onchange=()=>{
+    const actividad=porClavePlan.get(check.dataset.clave);
+    if(check.checked&&actividad)actividadesPlanSeleccionadas.set(check.dataset.clave,actividad);else actividadesPlanSeleccionadas.delete(check.dataset.clave);
+    actualizarSeleccionPlan(checksPlan);
+  });
+  const seleccionarTodosPlan=$('seleccionarTodosPlan');
+  if(seleccionarTodosPlan)seleccionarTodosPlan.onchange=()=>checksPlan.forEach(check=>{if(check.checked!==seleccionarTodosPlan.checked){check.checked=seleccionarTodosPlan.checked;check.onchange();}});
+  actualizarSeleccionPlan(checksPlan);
   tbody.querySelectorAll('.copyable').forEach(el=>{
     const copiar=()=>copiarTexto(el,el.dataset.copy);
     el.onclick=copiar;
@@ -307,6 +319,28 @@ function aplicarFiltros(){
   renderTablaBase(base.slice(0,300));
   renderTablaUnidades();
   $('filasBase').textContent=`${base.length.toLocaleString('es-CL')} filas`;
+}
+
+function claveActividadPlan(x){return `${x.fecha?.getTime()||''}|${x.equipo||''}|${x.ubicacion||''}|${x.plan||''}|${x.operacion||''}|${x.orden||''}`;}
+function actualizarSeleccionPlan(checks=[...document.querySelectorAll('.seleccionar-plan')]){
+  const todos=$('seleccionarTodosPlan');
+  if(todos){todos.checked=checks.length>0&&checks.every(x=>x.checked);todos.indeterminate=checks.some(x=>x.checked)&&!todos.checked;}
+  const boton=$('btnCopiarPlanSeleccionados'),cantidad=actividadesPlanSeleccionadas.size;
+  boton.textContent=`Copiar seleccionados (${cantidad.toLocaleString('es-CL')})`;
+  boton.disabled=!cantidad;
+}
+async function copiarPlanSeleccionados(){
+  const seleccionadas=[...actividadesPlanSeleccionadas.values()];
+  if(!seleccionadas.length)return;
+  const limpiar=v=>String(v??'').replace(/[\t\r\n]+/g,' ').trim();
+  const filas=[['Fecha','Estado','Equipo','Ubicación técnica','Plan de mantención','Operación','Orden','Trabajo'],...seleccionadas.map(x=>[fmtF(x.fecha),x.estado,x.equipo,x.ubicacion,x.plan,x.operacion,x.orden,x.trabajo?`${fmtN(x.trabajo)} ${x.unidadTrabajo||''}`:'-'])];
+  const texto=filas.map(f=>f.map(limpiar).join('\t')).join('\n');
+  let copiado=false;
+  if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(texto);copiado=true;}catch(error){}}
+  if(!copiado){const auxiliar=document.createElement('textarea');auxiliar.value=texto;auxiliar.style.position='fixed';auxiliar.style.opacity='0';document.body.appendChild(auxiliar);auxiliar.select();try{copiado=document.execCommand('copy');}catch(error){}auxiliar.remove();}
+  const boton=$('btnCopiarPlanSeleccionados'),original=boton.textContent;
+  boton.textContent=copiado?'Copiado para Excel':'No se pudo copiar';
+  setTimeout(()=>{boton.textContent=original;},1200);
 }
 function claveRegistroBase(r){return `${r.aviso}|${r.orden}|${r.descripcion}|${r.fechaAviso?.getTime()||''}`;}
 function actualizarBotonSeleccionados(){

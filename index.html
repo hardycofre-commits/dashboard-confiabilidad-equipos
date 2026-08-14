@@ -26,7 +26,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong id="kDisponibilidad">--</strong>
-        <small>Versión 4.12</small>
+        <small>Versión 4.13</small>
       </div>
     </header>
 
@@ -34,7 +34,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v4.12</strong></div>
+      <div><span>Versión</span><strong>v4.13</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -192,8 +192,8 @@
     <article class="plan-kpi-filter risk" role="button" tabindex="0" data-estado="Vencido" aria-pressed="false"><span>Vencido</span><strong id="planVencido">0</strong><small>fecha cumplida sin cierre</small></article>
   </section>
   <article class="panel plan-panel">
-    <div class="panel-title"><div><h3>DETALLE DEL PLAN</h3><p id="planContexto">Todas las actividades</p></div><span id="planFilas">0 filas</span></div>
-    <div class="table-wrap plan-table-wrap"><table id="tablaPlan"><thead><tr><th>Fecha</th><th>Estado</th><th>Equipo</th><th>Ubicación técnica</th><th>Plan de mantención</th><th>Operación</th><th>Orden</th><th>Trabajo</th></tr></thead><tbody></tbody></table></div>
+    <div class="panel-title"><div class="panel-title-copy"><h3>DETALLE DEL PLAN</h3><p id="planContexto">Todas las actividades</p><button type="button" id="btnCopiarPlanSeleccionados" class="copy-selected-btn" disabled>Copiar seleccionados (0)</button></div><span id="planFilas">0 filas</span></div>
+    <div class="table-wrap plan-table-wrap"><table id="tablaPlan"><thead><tr><th class="seleccionar-col"><input type="checkbox" id="seleccionarTodosPlan" aria-label="Seleccionar todas las actividades visibles"></th><th>Fecha</th><th>Estado</th><th>Equipo</th><th>Ubicación técnica</th><th>Plan de mantención</th><th>Operación</th><th>Orden</th><th>Trabajo</th></tr></thead><tbody></tbody></table></div>
   </article>
 </section>
 <section id="viewUnidades" class="view hidden">
@@ -302,6 +302,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.36"></script>
+  <script src="app.js?v=4.37"></script>
 </body>
 </html>
