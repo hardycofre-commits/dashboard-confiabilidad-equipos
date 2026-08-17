@@ -1144,11 +1144,11 @@ function renderTablaBase(base){
         <td class="seleccionar-col"><input type="checkbox" class="seleccionar-registro" data-clave="${escapeHtml(claveRegistroBase(r))}" aria-label="Seleccionar orden ${escapeHtml(r.orden||'-')}" ${registrosSeleccionados.has(claveRegistroBase(r))?'checked':''}></td>
         <td>${fmtF(r.fechaAviso)}</td>
         <td>${r.claseAviso}</td>
-        <td><span class="copyable" onclick="copiarTexto(this,'${r.aviso}')">${r.aviso}</span></td>
+        <td>${celdaCopiable(r.aviso)}</td>
         <td><span class="estado-aviso ${r.estadoAviso==='CERRADO'?'cerrado':'tratamiento'}" title="Status SAP: ${escapeHtml(r.statusSistema||'-')}">${r.estadoAviso}</span></td>
-        <td class="descripcion">${escapeHtml(r.descripcion)}</td>
-        <td>${r.ubicacionTecnica}</td>
-        <td>${r.denominacionUbicacionTecnica}</td>
+        <td class="descripcion">${celdaCopiable(r.descripcion)}</td>
+        <td>${celdaCopiable(r.ubicacionTecnica)}</td>
+        <td>${celdaCopiable(r.denominacionUbicacionTecnica)}</td>
         <td>
           <div class="aviso-unidad">
             <span class="tipo-badge ${r.tipoEquipo==='Sin clasificar'?'pending':''}">${escapeHtml(r.tipoEquipo)}</span>
@@ -1182,6 +1182,11 @@ function renderTablaBase(base){
     todos.indeterminate=checks.some(x=>x.checked)&&!todos.checked;
     todos.onchange=()=>checks.forEach(check=>{if(check.checked!==todos.checked){check.checked=todos.checked;check.onchange();}});
   }
+  $('tablaBase').querySelectorAll('.copyable').forEach(el=>{
+    const copiar=()=>copiarTexto(el,el.dataset.copy);
+    el.onclick=copiar;
+    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();copiar();}};
+  });
   actualizarBotonSeleccionados();
 }
 
