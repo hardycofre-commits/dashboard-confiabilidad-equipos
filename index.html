@@ -54,6 +54,10 @@
           <div id="sugerenciasEquipo" class="suggestions"></div>
         </div>
         <div class="field">
+          <label>Ubicación técnica</label>
+          <input type="search" id="busquedaUbicacion" placeholder="Ej: 1001-FILT-01..." autocomplete="off" />
+        </div>
+        <div class="field">
           <label>Tipo de equipo</label>
           <select id="tipoFiltro"><option value="">Todos</option></select>
         </div>
@@ -109,7 +113,7 @@
     </section>
 <section id="viewConfiabilidad" class="view hidden">
 <h2>ANÁLISIS DE CONFIABILIDAD</h2>
-<div class="filters" style="display:grid;grid-template-columns:2fr 1fr;gap:12px;align-items:end;margin-bottom:16px">
+<div class="filters conf-filters">
 <div class="field search-field equipo-combo">
 <label>Equipo</label>
 <div class="combo-wrapper">
@@ -117,6 +121,10 @@
 <button type="button" id="btnAbrirEquiposConf" class="combo-arrow">▼</button>
 </div>
 <div id="sugerenciasEquipoConf" class="suggestions"></div>
+</div>
+<div class="field">
+<label>Ubicación técnica</label>
+<input type="search" id="confBuscarUbicacion" placeholder="Escriba la ubicación técnica..." autocomplete="off"/>
 </div>
 <div><label>Unidad</label><select id="confUnidadFiltro"><option>Todas</option></select></div>
 </div>
@@ -179,8 +187,12 @@
   </div>
   <section class="filters plan-filters">
     <div class="field search-field">
-      <label>Buscar equipo o mantención</label>
-      <input type="search" id="planBuscar" placeholder="Equipo, ubicación, plan, operación u orden..." autocomplete="off" />
+      <label>Equipo o mantención</label>
+      <input type="search" id="planBuscar" placeholder="Equipo, plan, operación u orden..." autocomplete="off" />
+    </div>
+    <div class="field search-field">
+      <label>Ubicación técnica</label>
+      <input type="search" id="planUbicacion" placeholder="Escriba la ubicación técnica..." autocomplete="off" />
     </div>
     <div class="field"><label>Mes planificado</label><select id="planMes"><option value="">Todos los meses</option></select></div>
     <button id="btnLimpiarPlan" type="button">Limpiar filtros</button>

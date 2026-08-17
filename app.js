@@ -94,11 +94,13 @@ function setupEventos(){
     seleccionMultiple:true
   });
   configurarBuscadorDescripcion();
+  $('busquedaUbicacion').oninput=()=>{completarEquipoDesdeUbicacionResumen();aplicarFiltros();};
   configurarBuscadorEquipos('confBuscarEquipo','sugerenciasEquipoConf','btnAbrirEquiposConf',{
     alEscribir:analizarConfiabilidadAutomaticamente,
     alSeleccionar:analizarConfiabilidadAutomaticamente,
     incluirTodos:true
   });
+  $('confBuscarUbicacion').oninput=()=>{completarEquipoDesdeUbicacionConfiabilidad();analizarConfiabilidadAutomaticamente();};
   document.addEventListener('click',e=>{if(!e.target.closest('.search-field'))ocultarBuscadoresEquipos();});
   if($('confUnidadFiltro'))$('confUnidadFiltro').onchange=()=>{
     rankingMinimizado=true;
@@ -120,12 +122,13 @@ function setupEventos(){
   $('tipoFiltro').onchange=aplicarFiltros;
   $('btnGuardarUnidades').onclick=guardarTodosNombresUnidades;
   if($('planBuscar'))$('planBuscar').oninput=renderPlanAnual;
+  if($('planUbicacion'))$('planUbicacion').oninput=()=>{completarEquipoDesdeUbicacionPlan();renderPlanAnual();};
   if($('planMes'))$('planMes').onchange=renderPlanAnual;
   document.querySelectorAll('.plan-kpi-filter').forEach(kpi=>{
     kpi.onclick=()=>cambiarFiltroEstadoPlan(kpi.dataset.estado);
     kpi.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();cambiarFiltroEstadoPlan(kpi.dataset.estado);}};
   });
-  if($('btnLimpiarPlan'))$('btnLimpiarPlan').onclick=()=>{$('planBuscar').value='';$('planMes').value='';estadoPlanSeleccionado='';renderPlanAnual();};
+  if($('btnLimpiarPlan'))$('btnLimpiarPlan').onclick=()=>{$('planBuscar').value='';$('planUbicacion').value='';$('planMes').value='';estadoPlanSeleccionado='';renderPlanAnual();};
 }
 function cambiarVista(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));
@@ -225,9 +228,9 @@ function renderPlanAnual(){
   const avance=total?Math.round(completados/total*100):0;
   $('planAvance').textContent=$('planAvanceCabecera').textContent=`${avance}%`;$('planCompletado').textContent=completados.toLocaleString('es-CL');$('planPendiente').textContent=pendientes.toLocaleString('es-CL');$('planVencido').textContent=vencidos.toLocaleString('es-CL');$('planConteoAvance').textContent=`${completados.toLocaleString('es-CL')} de ${total.toLocaleString('es-CL')} actividades`;$('planProgressBar').style.width=`${avance}%`;$('planFuente').textContent=archivoPlanAnual?`Fuente: ${archivoPlanAnual}. ${actualizadasSAP.toLocaleString('es-CL')} actividades marcadas como realizadas según el SAP de Resumen.`:'No se encontró un archivo de plan anual en datos/.';
   document.querySelectorAll('.plan-kpi-filter').forEach(b=>{const activo=b.dataset.estado===estadoPlanSeleccionado;b.classList.toggle('active',activo);b.setAttribute('aria-pressed',String(activo));});
-  const texto=normalizar($('planBuscar').value),mes=$('planMes').value,estado=estadoPlanSeleccionado;
-  const filtradas=planVigente.filter(x=>(!texto||[x.equipo,x.ubicacion,x.plan,x.operacion,x.orden].some(v=>normalizar(v).includes(texto)))&&(!mes||`${x.fecha?.getFullYear()}-${String((x.fecha?.getMonth()??-1)+1).padStart(2,'0')}`===mes)&&(!estado||x.estado===estado)).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
-  $('planFilas').textContent=`${filtradas.length.toLocaleString('es-CL')} filas`;$('planContexto').textContent=(texto||mes||estado)?'Resultados según los filtros aplicados':'Todas las actividades del plan anual';
+  const texto=normalizar($('planBuscar').value),ubicacion=normalizar($('planUbicacion').value),mes=$('planMes').value,estado=estadoPlanSeleccionado;
+  const filtradas=planVigente.filter(x=>(!texto||[x.equipo,x.plan,x.operacion,x.orden].some(v=>normalizar(v).includes(texto)))&&(!ubicacion||normalizar(x.ubicacion).includes(ubicacion))&&(!mes||`${x.fecha?.getFullYear()}-${String((x.fecha?.getMonth()??-1)+1).padStart(2,'0')}`===mes)&&(!estado||x.estado===estado)).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
+  $('planFilas').textContent=`${filtradas.length.toLocaleString('es-CL')} filas`;$('planContexto').textContent=(texto||ubicacion||mes||estado)?'Resultados según los filtros aplicados':'Todas las actividades del plan anual';
   const tbody=$('tablaPlan').querySelector('tbody');
   tbody.innerHTML=filtradas.length?filtradas.map(x=>`<tr><td class="seleccionar-col"><input type="checkbox" class="seleccionar-plan" data-clave="${escapeHtml(claveActividadPlan(x))}" aria-label="Seleccionar actividad ${escapeHtml(x.equipo||x.plan||'-')}" ${actividadesPlanSeleccionadas.has(claveActividadPlan(x))?'checked':''}></td><td>${fmtF(x.fecha)}</td><td><span class="plan-status ${normalizar(x.estado)}">${x.estado}</span></td><td>${celdaCopiable(x.orden)}</td><td>${celdaCopiable(x.equipo)}</td><td class="descripcion">${escapeHtml(x.plan||'-')}</td><td class="descripcion">${escapeHtml(x.operacion||'-')}</td><td>${celdaCopiable(x.ubicacion)}</td></tr>`).join(''):'<tr><td colspan="8">No hay actividades que coincidan con la búsqueda.</td></tr>';
   const porClavePlan=new Map(filtradas.map(x=>[claveActividadPlan(x),x]));
@@ -280,6 +283,7 @@ function aplicarFiltros(){
   }
 
   const txt=normalizar($('busquedaEquipo').value);
+  const ubicacionBuscada=normalizar($('busquedaUbicacion').value);
   const seleccionadosNormalizados=new Set([...equiposSeleccionados].map(normalizar));
   if(seleccionadosNormalizados.size){
     base=base.filter(r=>seleccionadosNormalizados.has(normalizar(r.denominacionUbicacionTecnica||r.ubicacionTecnica)));
@@ -293,6 +297,10 @@ function aplicarFiltros(){
     $('txtFiltro').textContent='Equipo: '+$('busquedaEquipo').value;
   }else{
     $('txtFiltro').textContent='Todos los equipos';
+  }
+  if(ubicacionBuscada){
+    base=base.filter(r=>normalizar(r.ubicacionTecnica).includes(ubicacionBuscada));
+    $('txtFiltro').textContent='Ubicación técnica: '+$('busquedaUbicacion').value;
   }
 
   const unidadSeleccionada=$('unidadFiltro').value;
@@ -442,8 +450,10 @@ function cargarFiltroUnidades(){
 
 function analizarConfiabilidadAutomaticamente(){
   const equipo=$('confBuscarEquipo').value.trim();
+  const ubicacion=$('confBuscarUbicacion').value.trim();
   const coincidenciaExacta=listaEquipos.some(e=>normalizar(e)===normalizar(equipo));
-  if(coincidenciaExacta)analizarConfiabilidad({silencioso:true});
+  const ubicacionExacta=construirDatosBase(datosOriginales).some(r=>normalizar(r.ubicacionTecnica)===normalizar(ubicacion));
+  if(coincidenciaExacta||ubicacionExacta)analizarConfiabilidad({silencioso:true});
   else mostrarConfiabilidadTotal();
 }
 
@@ -495,7 +505,8 @@ function mostrarConfiabilidadTotal(){
 
 function analizarConfiabilidad({silencioso=false}={}){
   const equipo=$('confBuscarEquipo').value.trim();
-  if(!equipo){limpiarResultadosConfiabilidad();return;}
+  const ubicacion=$('confBuscarUbicacion').value.trim();
+  if(!equipo&&!ubicacion){limpiarResultadosConfiabilidad();return;}
   if(!datosOriginales.length){
     if(!silencioso)alert('Los datos SAP todavía no están disponibles.');
     return;
@@ -503,10 +514,11 @@ function analizarConfiabilidad({silencioso=false}={}){
   const desde=FECHA_INICIO_CONFIABILIDAD,hasta=null;
   const unidad=$('confUnidadFiltro').value;
   const equipoNormalizado=normalizar(equipo);
+  const ubicacionNormalizada=normalizar(ubicacion);
   const registrosEquipo=construirDatosBase(datosOriginales).filter(r=>{
     const equipoRegistro=r.denominacionUbicacionTecnica||r.ubicacionTecnica;
     const fecha=r.inicioAveriaFecha||r.fechaAviso;
-    return tieneClasificacionConfiabilidad(r)&&normalizar(equipoRegistro)===equipoNormalizado && fecha&&
+    return tieneClasificacionConfiabilidad(r)&&(!equipoNormalizado||normalizar(equipoRegistro)===equipoNormalizado)&&(!ubicacionNormalizada||normalizar(r.ubicacionTecnica)===ubicacionNormalizada) && fecha&&
       (!unidad||r.unidad===unidad) &&
       fecha>=desde &&
       (!hasta||!fecha||fecha<=hasta);
@@ -519,7 +531,8 @@ function analizarConfiabilidad({silencioso=false}={}){
   const kpis=calcularKpisConfiabilidad(registros,periodosZ1,fechaCorte);
   window.datosConfiabilidad=kpis.filas;
   window.periodosZ1Confiabilidad=periodosZ1;
-  $('confEquipo').textContent=equipo;
+  const etiqueta=equipo||ubicacion;
+  $('confEquipo').textContent=etiqueta;
   $('confUnidad').textContent=unidad||([...new Set(registros.map(r=>r.unidad))].join(', ')||'-');
   $('confFallas').textContent=new Set(registros.map(r=>r.aviso).filter(Boolean)).size.toLocaleString('es-CL');
   $('confMtbf').textContent=kpis.mtbf==null?'--':`${fmtN(kpis.mtbf)} h`;
@@ -527,7 +540,7 @@ function analizarConfiabilidad({silencioso=false}={}){
   $('confDisponibilidad').textContent=kpis.disponibilidad==null?'--':`${fmtN(kpis.disponibilidad)} %`;
   $('kDisponibilidad').textContent=kpis.disponibilidad==null?'--':`${fmtN(kpis.disponibilidad)} %`;
   $('historialConfiabilidad').classList.remove('hidden');
-  renderGraficoDisponibilidadAcumulada(kpis.filas,kpis.periodoActual,equipo);
+  renderGraficoDisponibilidadAcumulada(kpis.filas,kpis.periodoActual,etiqueta);
   renderCronologiaConfiabilidad(kpis.filas,kpis.periodoActual);
 }
 
@@ -689,6 +702,7 @@ function guardarClasificacionRanking(equipo,nuevoTipo){
 
 function seleccionarEquipoRanking(equipo){
   $('confBuscarEquipo').value=equipo;
+  $('confBuscarUbicacion').value='';
   analizarConfiabilidad({silencioso:true});
   rankingMinimizado=true;
   $('rankingUnidad').classList.add('ranking-minimized');
@@ -993,6 +1007,28 @@ function escapeHtml(texto){
 function detectarColumnas(cols){const c=cols.map(x=>({original:x,key:normalizar(x)}));return{fechaAviso:buscar(c,['fechadeaviso','fechaaviso']),claseAviso:buscar(c,['clasedeaviso','claseaviso']),statusSistema:buscar(c,['statusdelsistema','estatusdelsistema','statussistema','estatussistema']),aviso:buscarExact(c,['aviso']),orden:buscar(c,['orden','numeroorden','ordensap']),descripcion:buscar(c,['descripcion','descripciondelaviso','textoaviso']),ubicacionTecnica:buscarExact(c,['ubicaciontecnica']),denominacionUbicacionTecnica:buscar(c,['denominaciondelaubicaciontecnica','denominacionubicaciontecnica','denominaciondelubicaciontecnica']),inicioFecha:buscarExact(c,['iniciodeaveria','inicioaveria']),inicioHora:buscar(c,['iniciodeaveriahora','inicioaveriahora','hora inicio averia']),finFecha:buscarExact(c,['findeaveria','finaveria']),finHora:buscar(c,['findelaaveriahora','findeaveriahora','finaveriahora','hora fin averia']),duracionParada:buscar(c,['duraciondeparada','duracionparada'])};}
 function buscar(cols,ps){for(const p0 of ps){const p=normalizar(p0);const e=cols.find(c=>c.key.includes(p)||p.includes(c.key));if(e)return e.original;}return null;}
 function buscarExact(cols,ps){for(const p0 of ps){const p=normalizar(p0),e=cols.find(c=>c.key===p);if(e)return e.original;}return buscar(cols,ps);}
+function buscarEquipoPorUbicacion(ubicacion){
+  const clave=normalizar(ubicacion);
+  if(!clave)return null;
+  return construirDatosBase(datosOriginales).find(r=>normalizar(r.ubicacionTecnica)===clave)||null;
+}
+function completarEquipoDesdeUbicacionResumen(){
+  const registro=buscarEquipoPorUbicacion($('busquedaUbicacion').value);
+  if(!registro)return;
+  $('busquedaEquipo').value=registro.denominacionUbicacionTecnica||registro.ubicacionTecnica;
+  equiposSeleccionados.clear();
+  renderEquiposSeleccionados();
+}
+function completarEquipoDesdeUbicacionConfiabilidad(){
+  const registro=buscarEquipoPorUbicacion($('confBuscarUbicacion').value);
+  if(registro)$('confBuscarEquipo').value=registro.denominacionUbicacionTecnica||registro.ubicacionTecnica;
+}
+function completarEquipoDesdeUbicacionPlan(){
+  const clave=normalizar($('planUbicacion').value);
+  if(!clave)return;
+  const actividad=planAnual.find(x=>normalizar(x.ubicacion)===clave);
+  if(actividad)$('planBuscar').value=actividad.equipo||'';
+}
 function cargarListaEquipos(rows){
   const base=construirDatosBase(rows);
   listaEquipos=[...new Set(
