@@ -352,7 +352,11 @@ async function copiarRegistrosSeleccionados(){
   const seleccionados=[...registrosSeleccionados.values()];
   if(!seleccionados.length)return;
   const limpiar=v=>String(v??'').replace(/[\t\r\n]+/g,' ').trim();
-  const filas=[['Fecha aviso','Orden','Descripción'],...seleccionados.map(r=>[fmtF(r.fechaAviso),r.orden,r.descripcion])];
+  const filas=seleccionados.map(r=>[
+    fmtF(r.fechaAviso),r.claseAviso,r.aviso,r.statusSistema,r.estadoAviso,r.orden,r.descripcion,
+    r.ubicacionTecnica,r.denominacionUbicacionTecnica,r.tipoEquipo,r.unidad,
+    r.estadoUnidad,r.estadoTipo,r.inicioAveria,r.finAveria,r.duracionParada
+  ]);
   const texto=filas.map(f=>f.map(limpiar).join('\t')).join('\n');
   let copiado=false;
   if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(texto);copiado=true;}catch(error){}}
