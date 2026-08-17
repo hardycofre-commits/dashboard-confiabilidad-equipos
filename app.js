@@ -333,7 +333,7 @@ async function copiarPlanSeleccionados(){
   const seleccionadas=[...actividadesPlanSeleccionadas.values()];
   if(!seleccionadas.length)return;
   const limpiar=v=>String(v??'').replace(/[\t\r\n]+/g,' ').trim();
-  const filas=[['Fecha','Estado','Orden','Equipo','Plan de mantención','Operación','Ubicación técnica'],...seleccionadas.map(x=>[fmtF(x.fecha),x.estado,x.orden,x.equipo,x.plan,x.operacion,x.ubicacion])];
+  const filas=seleccionadas.map(x=>[fmtF(x.fecha),x.estado,x.orden,x.equipo,x.plan,x.operacion,x.ubicacion]);
   const texto=filas.map(f=>f.map(limpiar).join('\t')).join('\n');
   let copiado=false;
   if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(texto);copiado=true;}catch(error){}}
