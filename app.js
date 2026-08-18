@@ -120,6 +120,7 @@ function setupEventos(){
   $('btnOrdenDesc').onclick=()=>cambiarOrdenFecha('desc');
   $('unidadFiltro').onchange=aplicarFiltros;
   $('tipoFiltro').onchange=aplicarFiltros;
+  $('claseAvisoFiltro').onchange=aplicarFiltros;
   $('btnGuardarUnidades').onclick=guardarTodosNombresUnidades;
   if($('planBuscar'))$('planBuscar').oninput=renderPlanAnual;
   if($('planUbicacion'))$('planUbicacion').oninput=()=>{completarEquipoDesdeUbicacionPlan();renderPlanAnual();};
@@ -313,6 +314,11 @@ function aplicarFiltros(){
   if(tipoBuscado){
     base=base.filter(r=>normalizar(r.tipoEquipo).includes(tipoBuscado));
     $('txtFiltro').textContent=`Tipo: ${$('tipoFiltro').value}`;
+  }
+  const claseAviso=normalizar($('claseAvisoFiltro').value);
+  if(claseAviso){
+    base=base.filter(r=>normalizar(r.claseAviso)===claseAviso);
+    $('txtFiltro').textContent=`Clase de aviso: ${claseAviso.toLocaleUpperCase('es-CL')}`;
   }
   if(descripcionBuscada)$('txtFiltro').textContent=`Descripción: ${$('busquedaDescripcion').value}`;
 
@@ -652,7 +658,7 @@ function renderRankingUnidad(){
       <td>${r.mttr==null?'--':`${fmtN(r.mttr)} h`}</td>
       <td>${r.disponibilidad==null?'--':`${fmtN(r.disponibilidad)} %`}</td>
     </tr>
-  `).join(''):'<tr><td colspan="7">No hay equipos con datos suficientes para calcular disponibilidad en la unidad y período seleccionados.</td></tr>';
+  `).join(''):'<tr><td colspan="7">No hay equipos que coincidan con los filtros y tengan datos suficientes para calcular disponibilidad.</td></tr>';
   panel.classList.toggle('ranking-minimized',rankingMinimizado);
   $('btnToggleRanking').textContent=rankingMinimizado?'Mostrar ranking':'Minimizar ranking';
   document.querySelectorAll('.ranking-sort-btn').forEach(boton=>boton.classList.toggle('active',boton.dataset.campo===rankingCampoOrden&&boton.dataset.direccion===rankingDireccionOrden));

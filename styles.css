@@ -133,6 +133,7 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 }
 .copy-selected-btn{width:auto;height:30px;padding:0 11px;background:#0b5cab;font-size:11px}.copy-selected-btn:disabled{opacity:.5;cursor:not-allowed}.seleccionar-col{width:105px;min-width:105px;text-align:center!important}.seleccionar-col input{width:16px;height:16px;accent-color:#0b5cab;cursor:pointer}.seleccionar-col th{white-space:nowrap}
 .panel-title-copy{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.panel-title-copy .copy-selected-btn{min-width:175px}
+.summary-table-controls{display:flex;align-items:center;gap:9px}.summary-table-controls label{margin:0 0 0 4px;white-space:nowrap}.summary-table-controls select{width:105px;height:30px;font-size:11px}
 .sort-btn{
   width:30px;
   height:28px;
