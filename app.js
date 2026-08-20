@@ -56,15 +56,25 @@ let estadoPlanSeleccionado='';
 let estadoAvisoSeleccionado='';
 const $=id=>document.getElementById(id);
 
-document.addEventListener('DOMContentLoaded',async()=>{
+document.addEventListener('DOMContentLoaded',()=>{
   migrarTiposAgrupados();
   configurarFechas();
   setupEventos();
-  const servicioDisponible=await cargarClasificacionesRemotas();
-  if(servicioDisponible)await migrarClasificacionesLocalesRemotas();
   cargarDesdeGitHub();
+  sincronizarClasificacionesEnSegundoPlano();
   setInterval(actualizarConfiabilidadPorTiempo,60000);
 });
+
+async function sincronizarClasificacionesEnSegundoPlano(){
+  const servicioDisponible=await cargarClasificacionesRemotas();
+  if(servicioDisponible)await migrarClasificacionesLocalesRemotas();
+  if(datosOriginales.length){
+    cargarFiltroTipos();
+    aplicarFiltros();
+    analizarConfiabilidadAutomaticamente();
+    renderRankingUnidad();
+  }
+}
 
 function actualizarConfiabilidadPorTiempo(){
   if($('viewConfiabilidad')?.classList.contains('hidden'))return;
@@ -399,7 +409,7 @@ function buscarClasificacionRemota(equipo,ubicacion=''){
 }
 async function cargarClasificacionesRemotas(){
   try{
-    const respuesta=await fetch(`${CLASIFICACIONES_API_URL}?t=${Date.now()}`,{cache:'no-store',redirect:'follow'});
+    const respuesta=await fetchConTimeout(`${CLASIFICACIONES_API_URL}?t=${Date.now()}`,{cache:'no-store',redirect:'follow'},8000);
     const data=await respuesta.json();
     if(!data.ok)throw new Error(data.error||'No fue posible leer las clasificaciones.');
     clasificacionesRemotas=Array.isArray(data.clasificaciones)?data.clasificaciones:[];
@@ -426,7 +436,7 @@ async function migrarClasificacionesLocalesRemotas(){
   try{
     for(let inicio=0;inicio<items.length;inicio+=50){
       const body=new URLSearchParams({action:'importarClasificaciones',items:JSON.stringify(items.slice(inicio,inicio+50))});
-      const respuesta=await fetch(CLASIFICACIONES_API_URL,{method:'POST',body,redirect:'follow'});
+      const respuesta=await fetchConTimeout(CLASIFICACIONES_API_URL,{method:'POST',body,redirect:'follow'},15000);
       const data=await respuesta.json();
       if(!data.ok)throw new Error(data.error||'No fue posible completar la migración.');
     }
@@ -439,7 +449,7 @@ async function migrarClasificacionesLocalesRemotas(){
 }
 async function enviarClasificacionRemota({equipo='',ubicacion='',tipo,observacion=''}){
   const body=new URLSearchParams({action:'guardarClasificacion',equipo,ubicacion_tecnica:ubicacion,tipo,observacion,origen:'DASHBOARD'});
-  const respuesta=await fetch(CLASIFICACIONES_API_URL,{method:'POST',body,redirect:'follow'});
+  const respuesta=await fetchConTimeout(CLASIFICACIONES_API_URL,{method:'POST',body,redirect:'follow'},15000);
   const data=await respuesta.json();
   if(!data.ok)throw new Error(data.error||'No fue posible guardar en Google Sheets.');
   clasificacionesRemotas=clasificacionesRemotas.filter(r=>!(normalizarFrase(r.equipo)===normalizarFrase(equipo)&&normalizarFrase(r.ubicacion_tecnica)===normalizarFrase(ubicacion)));
@@ -448,10 +458,15 @@ async function enviarClasificacionRemota({equipo='',ubicacion='',tipo,observacio
 }
 async function enviarTipoRemoto(tipo){
   const body=new URLSearchParams({action:'guardarTipo',tipo});
-  const respuesta=await fetch(CLASIFICACIONES_API_URL,{method:'POST',body,redirect:'follow'});
+  const respuesta=await fetchConTimeout(CLASIFICACIONES_API_URL,{method:'POST',body,redirect:'follow'},15000);
   const data=await respuesta.json();
   if(!data.ok)throw new Error(data.error||'No fue posible guardar el tipo en Google Sheets.');
   return data;
+}
+async function fetchConTimeout(url,opciones={},milisegundos=10000){
+  const controller=new AbortController(),temporizador=setTimeout(()=>controller.abort(),milisegundos);
+  try{return await fetch(url,{...opciones,signal:controller.signal});}
+  finally{clearTimeout(temporizador);}
 }
 function nombreUnidad(u){return normalizarUnidadGantt(u);}
 function actualizarKPIs(base=datosBase){
