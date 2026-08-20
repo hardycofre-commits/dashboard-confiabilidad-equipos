@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=5.3" />
+  <link rel="stylesheet" href="styles.css?v=5.4" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -27,7 +27,7 @@
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong id="kDisponibilidad">--</strong>
-        <small>Versión 5.3</small>
+        <small>Versión 5.4</small>
       </div>
     </header>
 
@@ -35,7 +35,7 @@
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
       <div><span>Gantt Uso de Salas</span><strong id="kArchivoGantt">Buscando archivo...</strong></div>
-      <div><span>Versión</span><strong>v5.3</strong></div>
+      <div><span>Versión</span><strong>v5.4</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -119,11 +119,11 @@
 <section id="viewConfiabilidad" class="view hidden">
 <h2>ANÁLISIS DE CONFIABILIDAD</h2>
 <section class="period-selector panel" aria-labelledby="tituloPeriodoConfiabilidad">
-  <div class="period-selector-heading">
-    <div><h3 id="tituloPeriodoConfiabilidad">Consultar por</h3><div class="period-mode" role="group" aria-label="Tipo de período"><button type="button" id="periodoModoMensual" class="active">Mensual</button><button type="button" id="periodoModoAnual">Anual</button></div></div>
-    <label class="period-value"><span id="periodoValorLabel">Mes analizado</span><span id="periodoValorControl"></span></label>
+  <div class="period-selector-title"><div><h3 id="tituloPeriodoConfiabilidad">Período de análisis</h3><p id="resumenPeriodoConfiabilidad">Cargando períodos disponibles...</p></div><button type="button" id="btnTogglePeriodo" class="period-toggle">Minimizar</button></div>
+  <div id="periodoSelectorContenido" class="period-selector-heading">
+    <div><h4>Consultar por</h4><div class="period-mode" role="group" aria-label="Tipo de período"><button type="button" id="periodoModoMensual" class="active">Mensual</button><button type="button" id="periodoModoAnual">Anual</button></div></div>
+    <label class="period-value"><span id="periodoValorLabel">Meses analizados</span><small>Seleccione uno o varios</small><span id="periodoValorControl"></span></label>
   </div>
-  <p id="resumenPeriodoConfiabilidad">Cargando períodos disponibles...</p>
 </section>
 <div class="filters conf-filters">
 <div class="field search-field equipo-combo">
@@ -333,6 +333,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=5.3"></script>
+  <script src="app.js?v=5.4"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# Dashboard Confiabilidad Equipos - v5.3
+# Dashboard Confiabilidad Equipos - v5.4
 
 Aplicación estática que lee las fuentes Excel desde GitHub y clasifica los equipos mediante el maestro oficial de ubicaciones técnicas.
 

@@ -1498,6 +1498,14 @@ function configurarEventosPeriodo(){
   if(!$('periodoModoAnual'))return;
   $('periodoModoAnual').onclick=()=>cambiarModoPeriodo('anual');
   $('periodoModoMensual').onclick=()=>cambiarModoPeriodo('mensual');
+  $('btnTogglePeriodo').onclick=togglePeriodoSelector;
+  document.addEventListener('click',evento=>{if(!evento.target.closest('.period-multi'))document.querySelectorAll('.period-multi[open]').forEach(x=>x.removeAttribute('open'));});
+}
+
+function togglePeriodoSelector(){
+  const panel=$('periodoSelectorContenido'),boton=$('btnTogglePeriodo'),minimizado=!panel.classList.contains('hidden');
+  panel.classList.toggle('hidden',minimizado);boton.textContent=minimizado?'Mostrar selector':'Minimizar';boton.setAttribute('aria-expanded',String(!minimizado));
+  document.querySelectorAll('.period-multi[open]').forEach(x=>x.removeAttribute('open'));
 }
 
 function obtenerAniosDisponibles(){
