@@ -28,12 +28,13 @@ function celdaCopiable(valor){
 }
 
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main',folder:'datos'};
+const CLASIFICACIONES_API_URL='https://script.google.com/macros/s/AKfycbyNePqS57eitvNVv4_x_b8f34IQilGvNd7yDMRpyts-g-b7EeE-yoiCEsf05ke4qb-c/exec';
 const FECHA_INICIO_CONFIABILIDAD=new Date(2025,0,1);
 const UNIDADES_BASE=['HATCHERY','FF2','ALEVINAJE','PRE SMOLT','RILES','FILTRADO','GENERADORES','OTROS'];
 const MAPEO_BASE=[['HATCHERY','HATCHERY'],['HAT','HATCHERY'],['FF2','FF2'],['FF','FF2'],['ALEVINAJE','ALEVINAJE'],['ALEV','ALEVINAJE'],['PRE-SMOLT','PRE SMOLT'],['PRE SMOLT','PRE SMOLT'],['PRESMOLT','PRE SMOLT'],['RILES','RILES'],['FILTRADO','FILTRADO'],['FILTRO','FILTRADO'],['GEN','GENERADORES'],['GENERADOR','GENERADORES']];
 const TIPOS_BASE=['BOMBA','ESTANQUE','TRICKING'];
 const KEY_REGLAS='confEq_reglas_v21', KEY_UNIDADES='confEq_unidades_v21', KEY_NOMBRES='confEq_nombresUnidades_v23', KEY_AVISO_UNIDADES='confEq_avisoUnidades_v44', KEY_DEN_UNIDADES='confEq_denominacionUnidades_v1';
-const KEY_TIPOS='confEq_tipos_v1', KEY_REGLAS_TIPO='confEq_reglasTipos_v2', KEY_AVISO_TIPOS='confEq_avisoTipos_v1';
+const KEY_TIPOS='confEq_tipos_v1', KEY_REGLAS_TIPO='confEq_reglasTipos_v2', KEY_AVISO_TIPOS='confEq_avisoTipos_v1', KEY_MIGRACION_TIPOS_REMOTOS='confEq_migracionTiposRemotos_v1';
 let reglasUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS)||'[]');
 let unidadesUsuario=JSON.parse(localStorage.getItem(KEY_UNIDADES)||'[]');
 let nombresUnidades=JSON.parse(localStorage.getItem(KEY_NOMBRES)||'{"Hat":"Hatchery","Hatchery":"Hatchery","FF":"FF2","FF2":"FF2","Pre":"Pre Smolt","Pre Smolt":"Pre Smolt","Alev":"Alevinaje","Alevinaje":"Alevinaje"}');
@@ -42,6 +43,7 @@ let unidadesDenominacion=JSON.parse(localStorage.getItem(KEY_DEN_UNIDADES)||'{}'
 let tiposUsuario=JSON.parse(localStorage.getItem(KEY_TIPOS)||'[]');
 let reglasTipoUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS_TIPO)||'[]');
 let tiposAviso=JSON.parse(localStorage.getItem(KEY_AVISO_TIPOS)||'{}');
+let clasificacionesRemotas=[];
 let datosOriginales=[], datosBase=[], bloquesLYD=[], planAnual=[], archivoPlanAnual='', mapaColumnas={}, ordenesZ1PorPlan=new Map(), listaEquipos=[], palabrasDescripcion=[], pendientes=[], pendienteIndex=0;
 const registrosSeleccionados=new Map();
 const actividadesPlanSeleccionadas=new Map();
@@ -54,10 +56,12 @@ let estadoPlanSeleccionado='';
 let estadoAvisoSeleccionado='';
 const $=id=>document.getElementById(id);
 
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
   migrarTiposAgrupados();
   configurarFechas();
   setupEventos();
+  const servicioDisponible=await cargarClasificacionesRemotas();
+  if(servicioDisponible)await migrarClasificacionesLocalesRemotas();
   cargarDesdeGitHub();
   setInterval(actualizarConfiabilidadPorTiempo,60000);
 });
@@ -379,14 +383,76 @@ async function copiarRegistrosSeleccionados(){
   boton.textContent=copiado?'Copiado para Excel':'No se pudo copiar';
   setTimeout(()=>{boton.textContent=original;},1200);
 }
-function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]).toLocaleUpperCase('es-CL'), aviso=valor(r[mapaColumnas.aviso]), statusSistema=valor(r[mapaColumnas.statusSistema]);const texto=`${den} ${ubi} ${des}`;const unidad=unidadesAviso[aviso]||unidadesDenominacion[normalizarFrase(den)]||obtenerUnidad(texto);const tipoEquipo=obtenerTipoEquipo(den,tiposAviso[aviso]);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:aviso,statusSistema,estadoAviso:obtenerEstadoAviso(statusSistema),orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:tipoEquipo,estadoTipo:tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||convertirFecha(r[mapaColumnas.fechaAviso]),duracionParada:numero(r[mapaColumnas.duracionParada])};});}
+function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const ini=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]), fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]);const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]), ubi=valor(r[mapaColumnas.ubicacionTecnica]), des=valor(r[mapaColumnas.descripcion]).toLocaleUpperCase('es-CL'), aviso=valor(r[mapaColumnas.aviso]), statusSistema=valor(r[mapaColumnas.statusSistema]);const texto=`${den} ${ubi} ${des}`;const unidad=unidadesAviso[aviso]||unidadesDenominacion[normalizarFrase(den)]||obtenerUnidad(texto);const tipoEquipo=obtenerTipoEquipo(den,tiposAviso[aviso],ubi);return{fechaAviso:convertirFecha(r[mapaColumnas.fechaAviso]),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso:aviso,statusSistema,estadoAviso:obtenerEstadoAviso(statusSistema),orden:valor(r[mapaColumnas.orden]),descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:texto,unidad:unidad,estadoUnidad:unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:tipoEquipo,estadoTipo:tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||convertirFecha(r[mapaColumnas.fechaAviso]),duracionParada:numero(r[mapaColumnas.duracionParada])};});}
 function obtenerEstadoAviso(statusSistema){const codigos=normalizarFrase(statusSistema).split(' ');return codigos.includes('mece')?'CERRADO':'EN TRATAMIENTO';}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
 function normalizarFrase(texto){return String(texto??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
 function contieneFraseCompleta(texto,frase){const base=` ${normalizarFrase(texto)} `,busqueda=normalizarFrase(frase);return Boolean(busqueda)&&base.includes(` ${busqueda} `);}
-function normalizarNombreTipo(tipo){const nombre=String(tipo||'').trim(),clave=normalizarFrase(nombre);if(clave==='no aplica')return 'NO APLICA';if(clave.startsWith('estanque'))return 'ESTANQUE';if(clave.startsWith('bomba'))return 'BOMBA';return nombre;}
+function normalizarNombreTipo(tipo){const nombre=String(tipo||'').trim(),clave=normalizarFrase(nombre);if(clave==='no aplica')return 'NO APLICA';if(clave==='estanque')return 'ESTANQUE';if(clave==='bomba')return 'BOMBA';return nombre;}
 function migrarTiposAgrupados(){tiposUsuario=[...new Set(tiposUsuario.map(normalizarNombreTipo))].filter(tipo=>tipo&&!['ESTANQUE','BOMBA'].includes(tipo));reglasTipoUsuario=reglasTipoUsuario.map(r=>({...r,tipo:normalizarNombreTipo(r.tipo)}));tiposAviso=Object.fromEntries(Object.entries(tiposAviso).map(([aviso,tipo])=>[aviso,normalizarNombreTipo(tipo)]));localStorage.setItem(KEY_TIPOS,JSON.stringify(tiposUsuario));localStorage.setItem(KEY_REGLAS_TIPO,JSON.stringify(reglasTipoUsuario));localStorage.setItem(KEY_AVISO_TIPOS,JSON.stringify(tiposAviso));}
-function obtenerTipoEquipo(denominacion,tipoManual=''){const frase=normalizarFrase(denominacion),manual=normalizarNombreTipo(tipoManual);if(!frase)return manual||'Sin clasificar';if(manual)return manual;const reglaExacta=reglasTipoUsuario.find(r=>normalizarFrase(r.buscar)===frase);if(reglaExacta)return normalizarNombreTipo(reglaExacta.tipo);if(contieneFraseCompleta(frase,'ESTANQUE'))return 'ESTANQUE';if(contieneFraseCompleta(frase,'BOMBA'))return 'BOMBA';for(const tipo of [...TIPOS_BASE,...tiposUsuario])if(contieneFraseCompleta(frase,tipo))return normalizarNombreTipo(tipo);return 'Sin clasificar';}
+function obtenerTipoEquipo(denominacion,tipoManual='',ubicacion=''){const frase=normalizarFrase(denominacion),manual=normalizarNombreTipo(tipoManual);if(!frase&&!ubicacion)return manual||'Sin clasificar';if(manual)return manual;const remota=buscarClasificacionRemota(denominacion,ubicacion);if(remota)return normalizarNombreTipo(remota.tipo);const reglaExacta=reglasTipoUsuario.find(r=>normalizarFrase(r.buscar)===frase);if(reglaExacta)return normalizarNombreTipo(reglaExacta.tipo);const tipos=[...new Set([...tiposUsuario,...TIPOS_BASE])].filter(Boolean).sort((a,b)=>normalizarFrase(b).length-normalizarFrase(a).length);for(const tipo of tipos)if(contieneFraseCompleta(frase,tipo))return normalizarNombreTipo(tipo);return 'Sin clasificar';}
+function buscarClasificacionRemota(equipo,ubicacion=''){
+  const equipoClave=normalizarFrase(equipo),ubicacionClave=normalizarFrase(ubicacion);
+  return clasificacionesRemotas.find(r=>normalizarFrase(r.equipo)===equipoClave&&normalizarFrase(r.ubicacion_tecnica)===ubicacionClave)
+    ||clasificacionesRemotas.find(r=>normalizarFrase(r.equipo)===equipoClave&&!normalizarFrase(r.ubicacion_tecnica))
+    ||clasificacionesRemotas.find(r=>ubicacionClave&&normalizarFrase(r.ubicacion_tecnica)===ubicacionClave&&!normalizarFrase(r.equipo));
+}
+async function cargarClasificacionesRemotas(){
+  try{
+    const respuesta=await fetch(`${CLASIFICACIONES_API_URL}?t=${Date.now()}`,{cache:'no-store',redirect:'follow'});
+    const data=await respuesta.json();
+    if(!data.ok)throw new Error(data.error||'No fue posible leer las clasificaciones.');
+    clasificacionesRemotas=Array.isArray(data.clasificaciones)?data.clasificaciones:[];
+    const tiposRemotos=(data.tipos||[]).map(r=>normalizarNombreTipo(r.tipo)).filter(Boolean);
+    tiposUsuario=[...new Set([...tiposUsuario,...tiposRemotos])];
+    cargarFiltroTipos();
+    return true;
+  }catch(error){
+    console.warn('Clasificaciones remotas no disponibles; se usará el respaldo local.',error);
+    return false;
+  }
+}
+async function migrarClasificacionesLocalesRemotas(){
+  if(localStorage.getItem(KEY_MIGRACION_TIPOS_REMOTOS)==='ok')return;
+  const unicas=new Map();
+  for(const regla of reglasTipoUsuario){
+    const equipo=String(regla.buscar||'').trim(),tipo=normalizarNombreTipo(regla.tipo);
+    const clave=normalizarFrase(equipo);
+    if(!clave||!tipo||tipo==='Sin clasificar'||unicas.has(clave))continue;
+    unicas.set(clave,{equipo,ubicacion_tecnica:'',tipo,observacion:'Migración inicial desde almacenamiento del navegador'});
+  }
+  const items=[...unicas.values()];
+  if(!items.length){localStorage.setItem(KEY_MIGRACION_TIPOS_REMOTOS,'ok');return;}
+  try{
+    for(let inicio=0;inicio<items.length;inicio+=50){
+      const body=new URLSearchParams({action:'importarClasificaciones',items:JSON.stringify(items.slice(inicio,inicio+50))});
+      const respuesta=await fetch(CLASIFICACIONES_API_URL,{method:'POST',body,redirect:'follow'});
+      const data=await respuesta.json();
+      if(!data.ok)throw new Error(data.error||'No fue posible completar la migración.');
+    }
+    localStorage.setItem(KEY_MIGRACION_TIPOS_REMOTOS,'ok');
+    await cargarClasificacionesRemotas();
+    console.info(`${items.length} clasificaciones locales migradas a Google Sheets.`);
+  }catch(error){
+    console.warn('La migración quedó pendiente y se reintentará en la próxima carga.',error);
+  }
+}
+async function enviarClasificacionRemota({equipo='',ubicacion='',tipo,observacion=''}){
+  const body=new URLSearchParams({action:'guardarClasificacion',equipo,ubicacion_tecnica:ubicacion,tipo,observacion,origen:'DASHBOARD'});
+  const respuesta=await fetch(CLASIFICACIONES_API_URL,{method:'POST',body,redirect:'follow'});
+  const data=await respuesta.json();
+  if(!data.ok)throw new Error(data.error||'No fue posible guardar en Google Sheets.');
+  clasificacionesRemotas=clasificacionesRemotas.filter(r=>!(normalizarFrase(r.equipo)===normalizarFrase(equipo)&&normalizarFrase(r.ubicacion_tecnica)===normalizarFrase(ubicacion)));
+  clasificacionesRemotas.unshift({equipo,ubicacion_tecnica:ubicacion,tipo,activo:true});
+  return data;
+}
+async function enviarTipoRemoto(tipo){
+  const body=new URLSearchParams({action:'guardarTipo',tipo});
+  const respuesta=await fetch(CLASIFICACIONES_API_URL,{method:'POST',body,redirect:'follow'});
+  const data=await respuesta.json();
+  if(!data.ok)throw new Error(data.error||'No fue posible guardar el tipo en Google Sheets.');
+  return data;
+}
 function nombreUnidad(u){return normalizarUnidadGantt(u);}
 function actualizarKPIs(base=datosBase){
   const avisosUnicos=estado=>new Set(base.filter(r=>!estado||r.estadoAviso===estado).map(r=>r.aviso).filter(Boolean)).size;
@@ -425,7 +491,7 @@ function abrirWizardTipo(){tiposOmitidosSesion.clear();pendientesTipo=getPendien
 function cerrarWizardTipo(){$('wizardTipo').classList.add('hidden');cargarFiltroTipos();aplicarFiltros();}
 function renderWizardTipo(){pendientesTipo=getPendientesTipo({incluirOmitidos:false});if(!pendientesTipo.length){$('wizardTipoContenido').classList.add('hidden');$('wizardTipoFinalizado').classList.remove('hidden');$('wizardTipoProgreso').textContent='Revisión finalizada';return;}$('wizardTipoContenido').classList.remove('hidden');$('wizardTipoFinalizado').classList.add('hidden');if(pendienteTipoIndex>=pendientesTipo.length)pendienteTipoIndex=pendientesTipo.length-1;const p=pendientesTipo[pendienteTipoIndex];$('wizardTipoProgreso').textContent=`${pendienteTipoIndex+1} de ${pendientesTipo.length}`;$('wizardTipoEquipo').textContent=p.equipo;$('wizardTipoUbicacion').textContent=p.ubicacion||'-';$('wizardTipoDescripcion').textContent=p.descripcion||'-';$('wizardTipoCantidad').textContent=p.cantidad;llenarTipos();$('boxNuevoTipo').classList.add('hidden');$('wizardNuevoTipo').value='';}
 function llenarTipos(){const select=$('wizardTipoSelect'),tipos=[...new Set(['NO APLICA',...obtenerListaTipos()])];select.innerHTML='<option value="">Seleccionar tipo</option>'+tipos.map(tipo=>`<option value="${escapeHtml(tipo)}">${escapeHtml(tipo)}</option>`).join('')+'<option value="__NUEVO__">➕ Nuevo tipo...</option>';}
-function guardarWizardTipo(){const p=pendientesTipo[pendienteTipoIndex];if(!p)return alert('No hay un tipo pendiente para guardar.');const selector=$('wizardTipoSelect');let tipo=selector.value;if(tipo==='__NUEVO__'){tipo=normalizarNombreTipo($('wizardNuevoTipo').value.trim().toUpperCase());if(!tipo)return alert('Escribe el nombre del nuevo tipo de equipo.');if(!TIPOS_BASE.includes(tipo)&&!tiposUsuario.includes(tipo))tiposUsuario.push(tipo);}if(!tipo)return alert('Selecciona un tipo de equipo.');tipo=normalizarNombreTipo(tipo);selector.disabled=true;$('btnGuardarSiguienteTipo').disabled=true;try{const denominacion=normalizarFrase(p.equipo);reglasTipoUsuario=reglasTipoUsuario.filter(r=>normalizarFrase(r.buscar)!==denominacion);reglasTipoUsuario.unshift({buscar:p.equipo,tipo});for(const aviso of p.avisos||[])tiposAviso[aviso]=tipo;localStorage.setItem(KEY_TIPOS,JSON.stringify(tiposUsuario));localStorage.setItem(KEY_REGLAS_TIPO,JSON.stringify(reglasTipoUsuario));localStorage.setItem(KEY_AVISO_TIPOS,JSON.stringify(tiposAviso));cargarFiltroTipos();aplicarFiltros();analizarConfiabilidadAutomaticamente();renderRankingUnidad();pendientesTipo=getPendientesTipo({incluirOmitidos:false});if(pendienteTipoIndex>=pendientesTipo.length)pendienteTipoIndex=Math.max(0,pendientesTipo.length-1);renderWizardTipo();}catch(error){console.error(error);alert('No fue posible guardar el tipo de equipo. Intenta nuevamente.');}finally{selector.disabled=false;$('btnGuardarSiguienteTipo').disabled=false;}}
+async function guardarWizardTipo(){const p=pendientesTipo[pendienteTipoIndex];if(!p)return alert('No hay un tipo pendiente para guardar.');const selector=$('wizardTipoSelect');let tipo=selector.value,nuevo=false;if(tipo==='__NUEVO__'){tipo=normalizarNombreTipo($('wizardNuevoTipo').value.trim().toUpperCase());if(!tipo)return alert('Escribe el nombre del nuevo tipo de equipo.');nuevo=!TIPOS_BASE.includes(tipo)&&!tiposUsuario.includes(tipo);if(nuevo)tiposUsuario.push(tipo);}if(!tipo)return alert('Selecciona un tipo de equipo.');tipo=normalizarNombreTipo(tipo);selector.disabled=true;$('btnGuardarSiguienteTipo').disabled=true;try{if(nuevo)await enviarTipoRemoto(tipo);await enviarClasificacionRemota({equipo:p.equipo,ubicacion:p.ubicacion,tipo});const denominacion=normalizarFrase(p.equipo);reglasTipoUsuario=reglasTipoUsuario.filter(r=>normalizarFrase(r.buscar)!==denominacion);reglasTipoUsuario.unshift({buscar:p.equipo,tipo});for(const aviso of p.avisos||[])tiposAviso[aviso]=tipo;localStorage.setItem(KEY_TIPOS,JSON.stringify(tiposUsuario));localStorage.setItem(KEY_REGLAS_TIPO,JSON.stringify(reglasTipoUsuario));localStorage.setItem(KEY_AVISO_TIPOS,JSON.stringify(tiposAviso));cargarFiltroTipos();aplicarFiltros();analizarConfiabilidadAutomaticamente();renderRankingUnidad();pendientesTipo=getPendientesTipo({incluirOmitidos:false});if(pendienteTipoIndex>=pendientesTipo.length)pendienteTipoIndex=Math.max(0,pendientesTipo.length-1);renderWizardTipo();}catch(error){console.error(error);alert('No fue posible guardar en Google Sheets. Revisa la conexión e intenta nuevamente.');}finally{selector.disabled=false;$('btnGuardarSiguienteTipo').disabled=false;}}
 function omitirWizardTipo(){const p=pendientesTipo[pendienteTipoIndex];if(!p)return;tiposOmitidosSesion.add(p.equipo);renderWizardTipo();}
 
 function obtenerListaUnidades(){
@@ -691,8 +757,11 @@ function editarClasificacionRanking(boton){
   celda.innerHTML='';celda.appendChild(selector);selector.focus();
 }
 
-function guardarClasificacionRanking(equipo,nuevoTipo){
+async function guardarClasificacionRanking(equipo,nuevoTipo){
   const claveEquipo=normalizarFrase(equipo),registrosEquipo=construirDatosBase(datosOriginales).filter(r=>normalizar(r.denominacionUbicacionTecnica||r.ubicacionTecnica)===normalizar(equipo));
+  const ubicacion=registrosEquipo[0]?.ubicacionTecnica||'';
+  try{await enviarClasificacionRemota({equipo,ubicacion,tipo:nuevoTipo});}
+  catch(error){console.error(error);alert('No fue posible guardar en Google Sheets. La clasificación no fue modificada.');renderRankingUnidad();return;}
   reglasTipoUsuario=reglasTipoUsuario.filter(r=>normalizarFrase(r.buscar)!==claveEquipo);
   reglasTipoUsuario.unshift({buscar:equipo,tipo:nuevoTipo});
   registrosEquipo.forEach(r=>{if(r.aviso)delete tiposAviso[r.aviso];});
