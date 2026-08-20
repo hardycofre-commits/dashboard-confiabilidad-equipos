@@ -4,15 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.35" />
+  <link rel="stylesheet" href="styles.css?v=5.3" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <aside class="sidebar">
     <a class="menu-item active" href="#" data-view="resumen">📊 Resumen</a>
     <a class="menu-item" href="#" data-view="confiabilidad">📈 Confiabilidad</a>
-    <a class="menu-item" href="#" data-view="gantt">📅 Carta Gantt</a>
-    <a class="menu-item" href="#" data-view="plan-anual">🛠️ Plan anual</a>
+    <a class="menu-item" href="#" data-view="plan-anual">🛠️ Plan Anual</a>
+    <a class="menu-item" href="#" data-view="gantt-plan">📅 Carta Gantt Plan Anual</a>
+    <a class="menu-item" href="#" data-view="gantt-salas">📅 Carta Gantt Uso de Salas</a>
   </aside>
 
   <main class="content">
@@ -21,20 +22,20 @@
       <div class="title-box">
         <h1>DASHBOARD CONFIABILIDAD EQUIPOS</h1>
         <h2>Piscicultura Lago Verde</h2>
-        <p>⏱ Período por defecto: 01-01-2025 al 31-12-2026</p>
+        <p>⏱ Período configurable: selección anual o mensual</p>
       </div>
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong id="kDisponibilidad">--</strong>
-        <small>Versión 4.15</small>
+        <small>Versión 5.3</small>
       </div>
     </header>
 
     <section class="info-bar">
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
-      <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v4.15</strong></div>
+      <div><span>Gantt Uso de Salas</span><strong id="kArchivoGantt">Buscando archivo...</strong></div>
+      <div><span>Versión</span><strong>v5.3</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -71,7 +72,7 @@
         <strong>Gantt:</strong> <span class="pill purple" id="txtGantt">Sin archivo Gantt</span>
         <strong>Última lectura:</strong> <span class="pill green" id="txtLectura">--</span>
         <span class="pill blue" id="txtFiltro">Todos los equipos</span>
-        <p>Fuente de datos: últimos archivos <b>SAP/EXPORT</b> y <b>GANTT</b> detectados automáticamente en la carpeta <b>datos/</b>.</p>
+        <p>Fuentes: SAP/EXPORT y Plan Anual desde <b>datos/</b>, Gantt <b>Gantt Uso Salas [AÑO].xlsx</b> y maestro oficial por ubicación técnica.</p>
       </section>
 
       <section class="kpi-grid">
@@ -79,11 +80,11 @@
         <article class="kpi-card kpi-macro clickable active" id="cardAvisos" role="button" tabindex="0" aria-pressed="true" title="Mostrar todos los avisos"><div class="icon">📋</div><div><span>Avisos</span><strong id="kAvisos">0</strong><small>Click para mostrar todos</small></div></article>
         <article class="kpi-card kpi-macro clickable cerrado" id="cardAvisosCerrados" role="button" tabindex="0" aria-pressed="false" title="Filtrar avisos cerrados"><div class="icon">✅</div><div><span>Avisos cerrados</span><strong id="kAvisosCerrados">0</strong><small>Click para filtrar</small></div></article>
         <article class="kpi-card kpi-macro clickable tratamiento" id="cardAvisosTratamiento" role="button" tabindex="0" aria-pressed="false" title="Filtrar avisos en tratamiento"><div class="icon">🛠️</div><div><span>En tratamiento</span><strong id="kAvisosTratamiento">0</strong><small>Click para filtrar</small></div></article>
-        <article class="kpi-card clickable" id="cardSinClasificar" title="Abrir asistente de clasificación">
-          <div class="icon">🧭</div><div><span>Unidades pendientes</span><strong id="kSinClasificar">0</strong><small>Click para clasificar</small></div>
+        <article class="kpi-card" id="cardSinClasificar">
+          <div class="icon">🧭</div><div><span>Unidades pendientes</span><strong id="kSinClasificar">0</strong><small>Según maestro de ubicaciones</small></div>
         </article>
-        <article class="kpi-card clickable" id="cardTiposSinClasificar" title="Clasificar tipos de equipo pendientes">
-          <div class="icon">🏷️</div><div><span>Tipos pendientes</span><strong id="kTiposSinClasificar">0</strong><small>Click para clasificar</small></div>
+        <article class="kpi-card" id="cardTiposSinClasificar">
+          <div class="icon">🏷️</div><div><span>Tipos pendientes</span><strong id="kTiposSinClasificar">0</strong><small>Según maestro de ubicaciones</small></div>
         </article>
       </section>
 
@@ -117,6 +118,13 @@
     </section>
 <section id="viewConfiabilidad" class="view hidden">
 <h2>ANÁLISIS DE CONFIABILIDAD</h2>
+<section class="period-selector panel" aria-labelledby="tituloPeriodoConfiabilidad">
+  <div class="period-selector-heading">
+    <div><h3 id="tituloPeriodoConfiabilidad">Consultar por</h3><div class="period-mode" role="group" aria-label="Tipo de período"><button type="button" id="periodoModoMensual" class="active">Mensual</button><button type="button" id="periodoModoAnual">Anual</button></div></div>
+    <label class="period-value"><span id="periodoValorLabel">Mes analizado</span><span id="periodoValorControl"></span></label>
+  </div>
+  <p id="resumenPeriodoConfiabilidad">Cargando períodos disponibles...</p>
+</section>
 <div class="filters conf-filters">
 <div class="field search-field equipo-combo">
 <label>Equipo</label>
@@ -152,7 +160,7 @@
 <section id="historialConfiabilidad" class="conf-history-section">
   <div class="conf-section-heading"><h3>Historial de fallas y horas operativas</h3><p>Detalle utilizado para calcular MTBF, MTTR y disponibilidad.</p></div>
   <div class="table-wrap conf-history-wrap">
-    <table class="tabla"><thead><tr><th>Aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD / Z1</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr></tbody></table>
+    <table class="tabla"><thead><tr><th>Aviso</th><th>Descripción del aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Horas falla en período</th><th>LYD / Z1 superpuesto</th><th>Indisponibilidad efectiva</th></tr></thead><tbody id="confBody"><tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr></tbody></table>
   </div>
 </section>
 <section id="graficoDisponibilidad" class="conf-chart-card hidden" aria-labelledby="tituloGraficoDisponibilidad">
@@ -163,11 +171,18 @@
   <div id="graficoDisponibilidadSvg" class="conf-chart-wrap"></div>
 </section>
 </section>
-<section id="viewGantt" class="view hidden gantt-view">
+<section id="viewGanttPlan" class="view hidden gantt-view">
+  <div class="gantt-page-heading">
+    <div><span class="section-kicker">MANTENCIÓN PREVENTIVA</span><h2>CARTA GANTT PLAN ANUAL</h2><p id="ganttPlanFuente">Actividades vencidas y próximas con Orden de Trabajo.</p></div>
+    <div class="gantt-page-count"><strong id="filasGanttPlan">0</strong><span>actividades pendientes</span></div>
+  </div>
+  <article class="panel gantt-page-panel"><div class="gantt-legend"><span><i class="legend-line"></i> Fecha actual</span><span>Solo vencidas o próximas; realizadas y sin Orden quedan excluidas</span></div><div id="ganttPlanAnual" class="gantt-lyd" aria-label="Carta Gantt del Plan Anual"></div></article>
+</section>
+<section id="viewGanttSalas" class="view hidden gantt-view">
   <div class="gantt-page-heading">
     <div>
       <span class="section-kicker">PLANIFICACIÓN OPERACIONAL</span>
-      <h2>CARTA GANTT — PERÍODOS L&amp;D</h2>
+      <h2>CARTA GANTT USO DE SALAS</h2>
       <p>Vista completa de los períodos de lavado y desinfección detectados.</p>
     </div>
     <div class="gantt-page-count"><strong id="filasLYD">0</strong><span>bloques programados</span></div>
@@ -318,6 +333,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4.43"></script>
+  <script src="app.js?v=5.3"></script>
 </body>
 </html>
