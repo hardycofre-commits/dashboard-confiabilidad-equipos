@@ -144,7 +144,8 @@ function configurarFechas(){if($('confDesde'))$('confDesde').value='2025-01-01';
 async function cargarDesdeGitHub(){
  try{
   setEstado('Buscando','warning','Consultando las carpetas de fuentes en GitHub...');
-  const [sap,plan,gantt]=await Promise.all([
+  const manifiesto=await cargarManifestFuentes();
+  const [sap,plan,gantt]=manifiesto?[manifiesto.sap,manifiesto.plan,manifiesto.gantt]:await Promise.all([
     seleccionarExcelMasReciente(CARPETAS_FUENTE.sap),
     seleccionarExcelMasReciente(CARPETAS_FUENTE.plan),
     seleccionarExcelMasReciente(CARPETAS_FUENTE.gantt)
@@ -160,6 +161,7 @@ async function cargarDesdeGitHub(){
  }catch(e){mostrarError(e.message);console.error(e);}
 }
 async function listarArchivosCarpeta(carpeta){const r=await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${carpeta}?ref=${CONFIG.branch}&t=${Date.now()}`);if(r.status===404)return[];if(!r.ok)throw new Error(`No fue posible leer ${carpeta}/ desde GitHub.`);return r.json();}
+async function cargarManifestFuentes(){try{const r=await fetch(`fuentes.json?v=${Date.now()}`,{cache:'no-store'});if(!r.ok)return null;const datos=await r.json(),crear=entrada=>entrada?.ruta&&entrada?.nombre?{name:entrada.nombre,download_url:entrada.ruta}:null;return{sap:crear(datos.sap),plan:crear(datos.plan),gantt:crear(datos.gantt)};}catch(error){return null;}}
 async function fechaUltimaModificacion(archivo){try{const ruta=archivo.path.split('/').map(encodeURIComponent).join('/'),r=await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/commits?path=${ruta}&sha=${CONFIG.branch}&per_page=1&t=${Date.now()}`);if(!r.ok)return 0;const [commit]=await r.json();return Date.parse(commit?.commit?.committer?.date||commit?.commit?.author?.date||'')||0;}catch(error){return 0;}}
 async function seleccionarExcelMasReciente(carpeta){const archivos=(await listarArchivosCarpeta(carpeta)).filter(i=>i.type==='file'&&/\.xlsx$/i.test(i.name));if(!archivos.length)return null;await Promise.all(archivos.map(async archivo=>{archivo.fechaModificacion=await fechaUltimaModificacion(archivo);}));return archivos.sort((a,b)=>b.fechaModificacion-a.fechaModificacion||b.name.localeCompare(a.name,'es',{numeric:true}))[0];}
 async function listarArchivosRaiz(){const r=await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents?ref=${CONFIG.branch}&t=${Date.now()}`);if(!r.ok)throw new Error('No fue posible leer la raíz del proyecto desde GitHub.');return r.json();}

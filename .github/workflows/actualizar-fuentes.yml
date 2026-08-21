@@ -1,0 +1,67 @@
+name: Actualizar manifiesto de fuentes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'datos/*.xlsx'
+      - 'datos/*.XLSX'
+      - 'plan_anual/*.xlsx'
+      - 'plan_anual/*.XLSX'
+      - 'gantt_uso_salas/*.xlsx'
+      - 'gantt_uso_salas/*.XLSX'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Seleccionar Excel más recientes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, subprocess
+
+          fuentes = {
+              'sap': pathlib.Path('datos'),
+              'plan': pathlib.Path('plan_anual'),
+              'gantt': pathlib.Path('gantt_uso_salas'),
+          }
+
+          def fecha_git(ruta):
+              salida = subprocess.run(
+                  ['git', 'log', '-1', '--format=%ct', '--', ruta.as_posix()],
+                  check=False, capture_output=True, text=True
+              ).stdout.strip()
+              return int(salida or 0)
+
+          manifiesto = {}
+          for tipo, carpeta in fuentes.items():
+              archivos = [p for p in carpeta.iterdir() if p.is_file() and p.suffix.lower() == '.xlsx']
+              if archivos:
+                  elegido = max(archivos, key=lambda p: (fecha_git(p), p.name.casefold()))
+                  manifiesto[tipo] = {'nombre': elegido.name, 'ruta': elegido.as_posix()}
+              else:
+                  manifiesto[tipo] = None
+
+          pathlib.Path('fuentes.json').write_text(
+              json.dumps(manifiesto, ensure_ascii=False, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+      - name: Publicar manifiesto actualizado
+        shell: bash
+        run: |
+          if git diff --quiet -- fuentes.json; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add fuentes.json
+          git commit -m 'Actualiza manifiesto de fuentes'
+          git push

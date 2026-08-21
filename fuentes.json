@@ -1,0 +1,14 @@
+{
+  "sap": {
+    "nombre": "EXPORT - 2026-08-21T142006.927.xlsx",
+    "ruta": "datos/EXPORT - 2026-08-21T142006.927.xlsx"
+  },
+  "plan": {
+    "nombre": "Plan Anual Mantencion 2026.xlsx",
+    "ruta": "plan_anual/Plan Anual Mantencion 2026.xlsx"
+  },
+  "gantt": {
+    "nombre": "Gantt Uso Salas 2026.xlsx",
+    "ruta": "gantt_uso_salas/Gantt Uso Salas 2026.xlsx"
+  }
+}
