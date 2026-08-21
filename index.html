@@ -4,15 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Confiabilidad Equipos</title>
-  <link rel="stylesheet" href="styles.css?v=4.35" />
+  <link rel="stylesheet" href="styles.css?v=5.4" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <aside class="sidebar">
     <a class="menu-item active" href="#" data-view="resumen">📊 Resumen</a>
     <a class="menu-item" href="#" data-view="confiabilidad">📈 Confiabilidad</a>
-    <a class="menu-item" href="#" data-view="gantt">📅 Carta Gantt</a>
-    <a class="menu-item" href="#" data-view="plan-anual">🛠️ Plan anual</a>
+    <a class="menu-item" href="#" data-view="plan-anual">🛠️ Plan Anual</a>
+    <a class="menu-item" href="#" data-view="gantt-plan">📅 Carta Gantt Plan Anual</a>
+    <a class="menu-item" href="#" data-view="gantt-salas">📅 Carta Gantt Uso de Salas</a>
   </aside>
 
   <main class="content">
@@ -21,20 +22,20 @@
       <div class="title-box">
         <h1>DASHBOARD CONFIABILIDAD EQUIPOS</h1>
         <h2>Piscicultura Lago Verde</h2>
-        <p>⏱ Período por defecto: 01-01-2025 al 31-12-2026</p>
+        <p>⏱ Período configurable: selección anual o mensual</p>
       </div>
       <div class="score-box">
         <span>DISPONIBILIDAD</span>
         <strong id="kDisponibilidad">--</strong>
-        <small>Versión 4.14</small>
+        <small>Versión 5.4</small>
       </div>
     </header>
 
     <section class="info-bar">
       <div><span>Unidad</span><strong>Piscicultura Lago Verde</strong></div>
       <div><span>Archivo SAP</span><strong id="kArchivo">Buscando archivo...</strong></div>
-      <div><span>Archivo Gantt</span><strong id="kArchivoGantt">Buscando gantt...</strong></div>
-      <div><span>Versión</span><strong>v4.14</strong></div>
+      <div><span>Gantt Uso de Salas</span><strong id="kArchivoGantt">Buscando archivo...</strong></div>
+      <div><span>Versión</span><strong>v5.4</strong></div>
     </section>
 
     <section id="viewResumen" class="view">
@@ -54,6 +55,10 @@
           <div id="sugerenciasEquipo" class="suggestions"></div>
         </div>
         <div class="field">
+          <label>Ubicación técnica</label>
+          <input type="search" id="busquedaUbicacion" placeholder="Ej: 1001-FILT-01..." autocomplete="off" />
+        </div>
+        <div class="field">
           <label>Tipo de equipo</label>
           <select id="tipoFiltro"><option value="">Todos</option></select>
         </div>
@@ -67,7 +72,7 @@
         <strong>Gantt:</strong> <span class="pill purple" id="txtGantt">Sin archivo Gantt</span>
         <strong>Última lectura:</strong> <span class="pill green" id="txtLectura">--</span>
         <span class="pill blue" id="txtFiltro">Todos los equipos</span>
-        <p>Fuente de datos: últimos archivos <b>SAP/EXPORT</b> y <b>GANTT</b> detectados automáticamente en la carpeta <b>datos/</b>.</p>
+        <p>Fuentes: SAP desde <b>datos/</b>, Plan Anual desde <b>plan_anual/</b>, Uso de Salas desde <b>gantt_uso_salas/</b> y maestro oficial por ubicación técnica.</p>
       </section>
 
       <section class="kpi-grid">
@@ -75,12 +80,6 @@
         <article class="kpi-card kpi-macro clickable active" id="cardAvisos" role="button" tabindex="0" aria-pressed="true" title="Mostrar todos los avisos"><div class="icon">📋</div><div><span>Avisos</span><strong id="kAvisos">0</strong><small>Click para mostrar todos</small></div></article>
         <article class="kpi-card kpi-macro clickable cerrado" id="cardAvisosCerrados" role="button" tabindex="0" aria-pressed="false" title="Filtrar avisos cerrados"><div class="icon">✅</div><div><span>Avisos cerrados</span><strong id="kAvisosCerrados">0</strong><small>Click para filtrar</small></div></article>
         <article class="kpi-card kpi-macro clickable tratamiento" id="cardAvisosTratamiento" role="button" tabindex="0" aria-pressed="false" title="Filtrar avisos en tratamiento"><div class="icon">🛠️</div><div><span>En tratamiento</span><strong id="kAvisosTratamiento">0</strong><small>Click para filtrar</small></div></article>
-        <article class="kpi-card clickable" id="cardSinClasificar" title="Abrir asistente de clasificación">
-          <div class="icon">🧭</div><div><span>Unidades pendientes</span><strong id="kSinClasificar">0</strong><small>Click para clasificar</small></div>
-        </article>
-        <article class="kpi-card clickable" id="cardTiposSinClasificar" title="Clasificar tipos de equipo pendientes">
-          <div class="icon">🏷️</div><div><span>Tipos pendientes</span><strong id="kTiposSinClasificar">0</strong><small>Click para clasificar</small></div>
-        </article>
       </section>
 
       <section class="dashboard-grid">
@@ -88,7 +87,11 @@
           <div class="panel-title">
             <div class="panel-title-copy">
               <h3>DATOS BASE PARA CÁLCULO DE KPI</h3>
-              <button type="button" id="btnCopiarSeleccionados" class="copy-selected-btn" disabled>Copiar seleccionados (0)</button>
+              <div class="summary-table-controls">
+                <button type="button" id="btnCopiarSeleccionados" class="copy-selected-btn" disabled>Copiar seleccionados (0)</button>
+                <label for="claseAvisoFiltro">Clase de aviso</label>
+                <select id="claseAvisoFiltro" aria-label="Filtrar por clase de aviso"><option value="">Z1 y Z2</option><option value="z1">Z1</option><option value="z2">Z2</option></select>
+              </div>
             </div>
             <div class="table-title-actions">
               <button id="btnOrdenAsc" class="sort-btn active" title="Orden ascendente" aria-label="Orden ascendente">
@@ -109,7 +112,14 @@
     </section>
 <section id="viewConfiabilidad" class="view hidden">
 <h2>ANÁLISIS DE CONFIABILIDAD</h2>
-<div class="filters" style="display:grid;grid-template-columns:2fr 1fr;gap:12px;align-items:end;margin-bottom:16px">
+<section class="period-selector panel" aria-labelledby="tituloPeriodoConfiabilidad">
+  <div class="period-selector-title"><div><h3 id="tituloPeriodoConfiabilidad">Período de análisis</h3><p id="resumenPeriodoConfiabilidad">Cargando períodos disponibles...</p></div><button type="button" id="btnTogglePeriodo" class="period-toggle">Minimizar</button></div>
+  <div id="periodoSelectorContenido" class="period-selector-heading">
+    <div><h4>Consultar por</h4><div class="period-mode" role="group" aria-label="Tipo de período"><button type="button" id="periodoModoMensual">Mensual</button><button type="button" id="periodoModoAnual" class="active">Anual</button></div></div>
+    <label class="period-value"><span id="periodoValorLabel">Años analizados</span><small>Seleccione uno o varios</small><span id="periodoValorControl"></span></label>
+  </div>
+</section>
+<div class="filters conf-filters">
 <div class="field search-field equipo-combo">
 <label>Equipo</label>
 <div class="combo-wrapper">
@@ -117,6 +127,10 @@
 <button type="button" id="btnAbrirEquiposConf" class="combo-arrow">▼</button>
 </div>
 <div id="sugerenciasEquipoConf" class="suggestions"></div>
+</div>
+<div class="field">
+<label>Ubicación técnica</label>
+<input type="search" id="confBuscarUbicacion" placeholder="Escriba la ubicación técnica..." autocomplete="off"/>
 </div>
 <div><label>Unidad</label><select id="confUnidadFiltro"><option>Todas</option></select></div>
 </div>
@@ -128,7 +142,7 @@
   </div>
   <div id="rankingContenido" class="ranking-content table-wrap unidades-wrap">
     <table id="tablaRankingUnidad">
-      <thead><tr><th>Posición</th><th>Equipo</th><th>Clasificación</th><th>Fallas</th>
+      <thead><tr><th>Posición</th><th>Equipo</th><th>Clasificación</th><th><span class="ranking-sort-label"><span><button type="button" class="ranking-sort-btn" data-campo="fallas" data-direccion="asc" title="Ordenar fallas ascendente">↑</button><button type="button" class="ranking-sort-btn" data-campo="fallas" data-direccion="desc" title="Ordenar fallas descendente">↓</button></span> Fallas</span></th>
         <th><span class="ranking-sort-label"><span><button type="button" class="ranking-sort-btn" data-campo="mtbf" data-direccion="asc" title="Ordenar MTBF ascendente">↑</button><button type="button" class="ranking-sort-btn" data-campo="mtbf" data-direccion="desc" title="Ordenar MTBF descendente">↓</button></span> MTBF</span></th>
         <th><span class="ranking-sort-label"><span><button type="button" class="ranking-sort-btn" data-campo="mttr" data-direccion="asc" title="Ordenar MTTR ascendente">↑</button><button type="button" class="ranking-sort-btn" data-campo="mttr" data-direccion="desc" title="Ordenar MTTR descendente">↓</button></span> MTTR</span></th>
         <th><span class="ranking-sort-label"><span><button type="button" class="ranking-sort-btn" data-campo="disponibilidad" data-direccion="asc" title="Ordenar disponibilidad ascendente">↑</button><button type="button" class="ranking-sort-btn active" data-campo="disponibilidad" data-direccion="desc" title="Ordenar disponibilidad descendente">↓</button></span> Disponibilidad</span></th>
@@ -140,7 +154,7 @@
 <section id="historialConfiabilidad" class="conf-history-section">
   <div class="conf-section-heading"><h3>Historial de fallas y horas operativas</h3><p>Detalle utilizado para calcular MTBF, MTTR y disponibilidad.</p></div>
   <div class="table-wrap conf-history-wrap">
-    <table class="tabla"><thead><tr><th>Aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Fin avería anterior</th><th>Horas calendario</th><th>LYD / Z1</th><th>Horas operativas</th></tr></thead><tbody id="confBody"><tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr></tbody></table>
+    <table class="tabla"><thead><tr><th>Aviso</th><th>Descripción del aviso</th><th>Inicio avería</th><th>Fin avería</th><th>Horas falla en período</th><th>LYD / Z1 superpuesto</th><th>Indisponibilidad efectiva</th></tr></thead><tbody id="confBody"><tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr></tbody></table>
   </div>
 </section>
 <section id="graficoDisponibilidad" class="conf-chart-card hidden" aria-labelledby="tituloGraficoDisponibilidad">
@@ -151,11 +165,18 @@
   <div id="graficoDisponibilidadSvg" class="conf-chart-wrap"></div>
 </section>
 </section>
-<section id="viewGantt" class="view hidden gantt-view">
+<section id="viewGanttPlan" class="view hidden gantt-view">
+  <div class="gantt-page-heading">
+    <div><span class="section-kicker">MANTENCIÓN PREVENTIVA</span><h2>CARTA GANTT PLAN ANUAL</h2><p id="ganttPlanFuente">Actividades vencidas y próximas con Orden de Trabajo.</p></div>
+    <div class="gantt-page-count"><strong id="filasGanttPlan">0</strong><span>actividades pendientes</span></div>
+  </div>
+  <article class="panel gantt-page-panel"><div class="gantt-legend"><span><i class="legend-line"></i> Fecha actual</span><span>Solo vencidas o próximas; realizadas y sin Orden quedan excluidas</span></div><div id="ganttPlanAnual" class="gantt-lyd" aria-label="Carta Gantt del Plan Anual"></div></article>
+</section>
+<section id="viewGanttSalas" class="view hidden gantt-view">
   <div class="gantt-page-heading">
     <div>
       <span class="section-kicker">PLANIFICACIÓN OPERACIONAL</span>
-      <h2>CARTA GANTT — PERÍODOS L&amp;D</h2>
+      <h2>CARTA GANTT USO DE SALAS</h2>
       <p>Vista completa de los períodos de lavado y desinfección detectados.</p>
     </div>
     <div class="gantt-page-count"><strong id="filasLYD">0</strong><span>bloques programados</span></div>
@@ -179,8 +200,12 @@
   </div>
   <section class="filters plan-filters">
     <div class="field search-field">
-      <label>Buscar equipo o mantención</label>
-      <input type="search" id="planBuscar" placeholder="Equipo, ubicación, plan, operación u orden..." autocomplete="off" />
+      <label>Equipo o mantención</label>
+      <input type="search" id="planBuscar" placeholder="Equipo, plan, operación u orden..." autocomplete="off" />
+    </div>
+    <div class="field search-field">
+      <label>Ubicación técnica</label>
+      <input type="search" id="planUbicacion" placeholder="Escriba la ubicación técnica..." autocomplete="off" />
     </div>
     <div class="field"><label>Mes planificado</label><select id="planMes"><option value="">Todos los meses</option></select></div>
     <button id="btnLimpiarPlan" type="button">Limpiar filtros</button>
@@ -218,90 +243,6 @@
     </section>
   </main>
 
-  <div id="wizardClasificacion" class="modal hidden">
-    <div class="wizard-card">
-      <div class="wizard-header">
-        <div>
-          <h3>Clasificar equipo</h3>
-          <span id="wizardProgreso">0 de 0</span>
-        </div>
-        <button id="btnCerrarWizard" class="icon-btn">×</button>
-      </div>
-
-      <div id="wizardContenido">
-        <p class="modal-label">Denominación</p>
-        <div id="wizardEquipo" class="modal-equipo"></div>
-
-        <div class="context-grid">
-          <div><span>Ubicación técnica</span><strong id="wizardUbicacion">-</strong></div>
-          <div><span>Última descripción</span><strong id="wizardDescripcion">-</strong></div>
-          <div><span>Cantidad registros</span><strong id="wizardCantidad">0</strong></div>
-        </div>
-
-        <label>Unidad</label>
-        <select id="wizardUnidad"></select>
-
-        <div id="boxNuevaUnidad" class="hidden">
-          <label>Nueva unidad</label>
-          <input type="text" id="wizardNuevaUnidad" placeholder="Ej: Efluentes, Pozos, Casino..." />
-        </div>
-
-        <div class="modal-actions">
-          <button id="btnAnterior" class="btn-secondary">Anterior</button>
-          <button id="btnGuardarSiguiente">Guardar y siguiente</button>
-        </div>
-      </div>
-
-      <div id="wizardFinalizado" class="hidden final-box">
-        <h3>✔ Clasificación finalizada</h3>
-        <p>No quedan equipos pendientes por clasificar.</p>
-        <button id="btnFinalizarWizard">Cerrar</button>
-      </div>
-
-      <small>Las clasificaciones quedan guardadas en este navegador y se aplican automáticamente en futuras cargas.</small>
-    </div>
-  </div>
-
-  <div id="wizardTipo" class="modal hidden">
-    <div class="wizard-card">
-      <div class="wizard-header">
-        <div>
-          <h3>Clasificar tipo de equipo</h3>
-          <span id="wizardTipoProgreso">0 de 0</span>
-        </div>
-        <button id="btnCerrarWizardTipo" class="icon-btn" aria-label="Cerrar">×</button>
-      </div>
-
-      <div id="wizardTipoContenido">
-        <p class="modal-label">Denominación de la ubicación técnica</p>
-        <div id="wizardTipoEquipo" class="modal-equipo"></div>
-        <div class="context-grid">
-          <div><span>Ubicación técnica</span><strong id="wizardTipoUbicacion">-</strong></div>
-          <div><span>Última descripción</span><strong id="wizardTipoDescripcion">-</strong></div>
-          <div><span>Cantidad registros</span><strong id="wizardTipoCantidad">0</strong></div>
-        </div>
-        <label>Tipo de equipo</label>
-        <select id="wizardTipoSelect"></select>
-        <div id="boxNuevoTipo" class="hidden">
-          <label>Nuevo tipo de equipo</label>
-          <input type="text" id="wizardNuevoTipo" placeholder="Ej: BOMBA, TRICKING, FILTRO..." />
-        </div>
-        <div class="modal-actions">
-          <button id="btnAnteriorTipo" class="btn-secondary">Anterior</button>
-          <button id="btnOmitirTipo" class="btn-secondary">Omitir / siguiente</button>
-          <button id="btnGuardarSiguienteTipo">Guardar y siguiente</button>
-        </div>
-      </div>
-
-      <div id="wizardTipoFinalizado" class="hidden final-box">
-        <h3>✔ Revisión finalizada</h3>
-        <p>Se revisaron todos los registros de esta sesión. Los omitidos permanecen sin clasificar.</p>
-        <button id="btnFinalizarWizardTipo">Cerrar</button>
-      </div>
-      <small>Seleccione NO APLICA para resolverlo definitivamente, u Omitir / siguiente para saltarlo sólo durante esta revisión.</small>
-    </div>
-  </div>
-
-  <script src="app.js?v=4.40"></script>
+  <script src="app.js?v=5.5"></script>
 </body>
 </html>
