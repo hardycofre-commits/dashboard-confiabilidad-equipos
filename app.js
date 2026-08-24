@@ -1575,8 +1575,8 @@ function analizarConfiabilidad({silencioso=false}={}){
 }
 
 function renderCronologiaConfiabilidad(filas){
-  if(!filas.length){$('confBody').innerHTML='<tr><td colspan="7">No se encontraron fallas Z2 cerradas, con Orden y fechas válidas en el período seleccionado.</td></tr>';return;}
-  $('confBody').innerHTML=filas.map(f=>`<tr><td>${celdaCopiable(f.aviso||'-')}</td><td class="descripcion">${escapeHtml(f.descripcion||'-')}</td><td>${escapeHtml(f.inicioAveria||'-')}</td><td>${escapeHtml(f.finAveria||'-')}</td><td>${fmtN(f.horasFallaPeriodo)}</td><td>${fmtN(f.horasProgramadasSuperpuestas)}</td><td><strong>${fmtN(f.horasIndisponibles)}</strong></td></tr>`).join('');
+  if(!filas.length){$('confBody').innerHTML='<tr><td colspan="8">No se encontraron fallas Z2 cerradas, con Orden y fechas válidas en el período seleccionado.</td></tr>';return;}
+  $('confBody').innerHTML=filas.map(f=>`<tr><td>${celdaCopiable(f.aviso||'-')}</td><td>${celdaCopiable(f.ubicacionTecnica||'-')}</td><td class="descripcion">${escapeHtml(f.descripcion||'-')}</td><td>${escapeHtml(f.inicioAveria||'-')}</td><td>${escapeHtml(f.finAveria||'-')}</td><td>${fmtN(f.horasFallaPeriodo)}</td><td>${fmtN(f.horasProgramadasSuperpuestas)}</td><td><strong>${fmtN(f.horasIndisponibles)}</strong></td></tr>`).join('');
   $('confBody').querySelectorAll('.copyable').forEach(el=>{el.onclick=()=>copiarTexto(el,el.dataset.copy);});
 }
 
