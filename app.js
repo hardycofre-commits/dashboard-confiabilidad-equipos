@@ -39,6 +39,7 @@ let maestroUbicaciones=[], mapaMaestroUbicaciones=new Map(), conflictosMaestro=n
 let estadoPeriodo={modo:'anual',anios:new Set([2025,2026]),anioMensual:2026,meses:new Set()};
 const registrosSeleccionados=new Map();
 const actividadesPlanSeleccionadas=new Map();
+const equiposRankingSeleccionados=new Map();
 const equiposSeleccionados=new Set();
 let ordenFecha='asc';
 let rankingCampoOrden='disponibilidad',rankingDireccionOrden='desc',rankingMinimizado=true;
@@ -72,6 +73,7 @@ function setupEventos(){
   $('btnActualizar').onclick=cargarDesdeGitHub;
   $('btnCopiarSeleccionados').onclick=copiarRegistrosSeleccionados;
   $('btnCopiarPlanSeleccionados').onclick=copiarPlanSeleccionados;
+  $('btnCopiarRankingSeleccionados').onclick=copiarRankingSeleccionados;
   configurarMacroAvisos('cardAvisos','');
   configurarMacroAvisos('cardAvisosCerrados','CERRADO');
   configurarMacroAvisos('cardAvisosTratamiento','EN TRATAMIENTO');
@@ -1580,10 +1582,28 @@ function renderCronologiaConfiabilidad(filas){
   $('confBody').querySelectorAll('.copyable').forEach(el=>{el.onclick=()=>copiarTexto(el,el.dataset.copy);});
 }
 
+function claveEquipoRanking(r){return `${r.equipo}|${r.ubicacionTecnica}`;}
+function actualizarSeleccionRanking(checks=[...document.querySelectorAll('.seleccionar-ranking')]){
+  const todos=$('seleccionarTodosRanking');
+  if(todos){todos.checked=checks.length>0&&checks.every(x=>x.checked);todos.indeterminate=checks.some(x=>x.checked)&&!todos.checked;}
+  const boton=$('btnCopiarRankingSeleccionados'),cantidad=equiposRankingSeleccionados.size;
+  boton.textContent=`Copiar seleccionados (${cantidad.toLocaleString('es-CL')})`;boton.disabled=!cantidad;
+}
+async function copiarRankingSeleccionados(){
+  const seleccionados=[...equiposRankingSeleccionados.values()];if(!seleccionados.length)return;
+  const limpiar=v=>String(v??'').replace(/[\t\r\n]+/g,' ').trim();
+  const filas=seleccionados.map(r=>[r.equipo,r.ubicacionTecnica,r.tipoClasificado,r.fallas,r.avisosEnTratamiento,textoMtbf(r),textoMttr(r),`${fmtN(r.disponibilidad)} %`]);
+  const texto=filas.map(f=>f.map(limpiar).join('\t')).join('\n');let copiado=false;
+  if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(texto);copiado=true;}catch(error){}}
+  if(!copiado){const auxiliar=document.createElement('textarea');auxiliar.value=texto;auxiliar.style.position='fixed';auxiliar.style.opacity='0';document.body.appendChild(auxiliar);auxiliar.select();try{copiado=document.execCommand('copy');}catch(error){}auxiliar.remove();}
+  const boton=$('btnCopiarRankingSeleccionados'),original=boton.textContent;boton.textContent=copiado?'Copiado para Excel':'No se pudo copiar';setTimeout(()=>{boton.textContent=original;},1200);
+}
+
 function renderRankingUnidad(){
   const panel=$('rankingUnidad'),unidad=$('confUnidadFiltro').value;if(!panel||!datosOriginales.length)return;const base=construirDatosBase(datosOriginales).filter(r=>tieneClasificacionConfiabilidad(r)&&(!unidad||r.unidad===unidad)),{metricas}=calcularMetricasAgregadas(base);
-  const ranking=metricas.map(m=>{const avisosEnTratamiento=new Set(m.registros.filter(r=>r.estadoAviso==='EN TRATAMIENTO').map(r=>r.aviso||r.orden).filter(Boolean)).size;return{equipo:m.equipo,tipoClasificado:m.registros[0]?.tipoEquipo||'Sin clasificar',avisosEnTratamiento,...m};}).filter(r=>Number.isFinite(r.disponibilidad)).sort((a,b)=>{const av=a[rankingCampoOrden],bv=b[rankingCampoOrden];if(av==null&&bv==null)return a.equipo.localeCompare(b.equipo,'es');if(av==null)return 1;if(bv==null)return-1;const d=rankingDireccionOrden==='asc'?av-bv:bv-av;return d||a.equipo.localeCompare(b.equipo,'es');});
-  $('rankingTitulo').textContent=`Ranking de disponibilidad — ${unidad||'TODOS LOS EQUIPOS'}`;$('rankingCantidad').textContent=`${ranking.length.toLocaleString('es-CL')} equipos`;$('rankingBody').innerHTML=ranking.length?ranking.map((r,i)=>`<tr class="ranking-equipo-row" role="button" tabindex="0" data-equipo="${escapeHtml(r.equipo)}" onclick="seleccionarEquipoRanking(this.dataset.equipo)" onkeydown="if(event.key==='Enter')seleccionarEquipoRanking(this.dataset.equipo)"><td>${i+1}</td><td>${escapeHtml(r.equipo)}</td><td>${escapeHtml(r.tipoClasificado)}</td><td>${r.fallas}</td><td><span class="ranking-tratamiento ${r.avisosEnTratamiento?'activo':'sin-avisos'}" title="Avisos actualmente en tratamiento, sin filtro de período">${r.avisosEnTratamiento?r.avisosEnTratamiento.toLocaleString('es-CL'):'No'}</span></td><td>${textoMtbf(r)}</td><td>${textoMttr(r)}</td><td>${fmtN(r.disponibilidad)} %</td></tr>`).join(''):'<tr><td colspan="8">No hay equipos clasificables para el período.</td></tr>';
+  const ranking=metricas.map(m=>{const avisosEnTratamiento=new Set(m.registros.filter(r=>r.estadoAviso==='EN TRATAMIENTO').map(r=>r.aviso||r.orden).filter(Boolean)).size;return{equipo:m.equipo,ubicacionTecnica:m.registros[0]?.ubicacionTecnica||'-',tipoClasificado:m.registros[0]?.tipoEquipo||'Sin clasificar',avisosEnTratamiento,...m};}).filter(r=>Number.isFinite(r.disponibilidad)).sort((a,b)=>{const av=a[rankingCampoOrden],bv=b[rankingCampoOrden];if(av==null&&bv==null)return a.equipo.localeCompare(b.equipo,'es');if(av==null)return 1;if(bv==null)return-1;const d=rankingDireccionOrden==='asc'?av-bv:bv-av;return d||a.equipo.localeCompare(b.equipo,'es');});
+  $('rankingTitulo').textContent=`Ranking de disponibilidad — ${unidad||'TODOS LOS EQUIPOS'}`;$('rankingCantidad').textContent=`${ranking.length.toLocaleString('es-CL')} equipos`;$('rankingBody').innerHTML=ranking.length?ranking.map((r,i)=>`<tr class="ranking-equipo-row" role="button" tabindex="0" data-equipo="${escapeHtml(r.equipo)}" onclick="seleccionarEquipoRanking(this.dataset.equipo)" onkeydown="if(event.key==='Enter')seleccionarEquipoRanking(this.dataset.equipo)"><td class="seleccionar-col"><input type="checkbox" class="seleccionar-ranking" data-clave="${escapeHtml(claveEquipoRanking(r))}" aria-label="Seleccionar ${escapeHtml(r.equipo)}" ${equiposRankingSeleccionados.has(claveEquipoRanking(r))?'checked':''} onclick="event.stopPropagation()"></td><td>${i+1}</td><td>${escapeHtml(r.equipo)}</td><td>${celdaCopiable(r.ubicacionTecnica)}</td><td>${escapeHtml(r.tipoClasificado)}</td><td>${r.fallas}</td><td><span class="ranking-tratamiento ${r.avisosEnTratamiento?'activo':'sin-avisos'}" title="Avisos actualmente en tratamiento, sin filtro de período">${r.avisosEnTratamiento?r.avisosEnTratamiento.toLocaleString('es-CL'):'No'}</span></td><td>${textoMtbf(r)}</td><td>${textoMttr(r)}</td><td>${fmtN(r.disponibilidad)} %</td></tr>`).join(''):'<tr><td colspan="10">No hay equipos clasificables para el período.</td></tr>';
+  const porClave=new Map(ranking.map(r=>[claveEquipoRanking(r),r])),checks=[...$('rankingBody').querySelectorAll('.seleccionar-ranking')];checks.forEach(check=>check.onchange=()=>{const registro=porClave.get(check.dataset.clave);if(check.checked&&registro)equiposRankingSeleccionados.set(check.dataset.clave,registro);else equiposRankingSeleccionados.delete(check.dataset.clave);actualizarSeleccionRanking(checks);});const todos=$('seleccionarTodosRanking');if(todos)todos.onchange=()=>checks.forEach(check=>{if(check.checked!==todos.checked){check.checked=todos.checked;check.onchange();}});actualizarSeleccionRanking(checks);$('rankingBody').querySelectorAll('.copyable').forEach(el=>{el.onclick=event=>{event.stopPropagation();copiarTexto(el,el.dataset.copy);};el.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();copiarTexto(el,el.dataset.copy);}};});
   panel.classList.toggle('ranking-minimized',rankingMinimizado);$('btnToggleRanking').textContent=rankingMinimizado?'Mostrar ranking':'Minimizar ranking';document.querySelectorAll('.ranking-sort-btn').forEach(b=>b.classList.toggle('active',b.dataset.campo===rankingCampoOrden&&b.dataset.direccion===rankingDireccionOrden));panel.classList.remove('hidden');
 }
 
