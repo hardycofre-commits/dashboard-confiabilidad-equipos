@@ -1592,7 +1592,8 @@ function actualizarSeleccionRanking(checks=[...document.querySelectorAll('.selec
 async function copiarRankingSeleccionados(){
   const seleccionados=[...equiposRankingSeleccionados.values()];if(!seleccionados.length)return;
   const limpiar=v=>String(v??'').replace(/[\t\r\n]+/g,' ').trim();
-  const filas=seleccionados.map(r=>[r.equipo,r.ubicacionTecnica,r.tipoClasificado,r.fallas,r.avisosEnTratamiento,textoMtbf(r),textoMttr(r),`${fmtN(r.disponibilidad)} %`]);
+  const encabezados=['Equipo','Ubicación técnica','Clasificación','Fallas','En tratamiento','MTBF','MTTR','Disponibilidad'];
+  const filas=[encabezados,...seleccionados.map(r=>[r.equipo,r.ubicacionTecnica,r.tipoClasificado,r.fallas,r.avisosEnTratamiento,textoMtbf(r),textoMttr(r),`${fmtN(r.disponibilidad)} %`])];
   const texto=filas.map(f=>f.map(limpiar).join('\t')).join('\n');let copiado=false;
   if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(texto);copiado=true;}catch(error){}}
   if(!copiado){const auxiliar=document.createElement('textarea');auxiliar.value=texto;auxiliar.style.position='fixed';auxiliar.style.opacity='0';document.body.appendChild(auxiliar);auxiliar.select();try{copiado=document.execCommand('copy');}catch(error){}auxiliar.remove();}
