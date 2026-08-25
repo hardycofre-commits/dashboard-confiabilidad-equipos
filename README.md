@@ -10,6 +10,12 @@ Aplicación estática que lee las fuentes Excel desde GitHub y clasifica los equ
 - El nombre del archivo no determina su tipo; lo determina exclusivamente la carpeta.
 - Maestro: `lista_ubicaciones_tecnicas.xlsx` ubicado en la raíz del proyecto. Google no es necesario.
 
+## Publicación en GitHub Pages
+
+El workflow `.github/workflows/actualizar-fuentes.yml` genera `fuentes.json` dentro del sitio y realiza una sola publicación, sin crear un segundo commit automático.
+
+Configuración requerida una sola vez en GitHub: **Settings → Pages → Build and deployment → Source → GitHub Actions**.
+
 ## Confiabilidad
 
 - Selector Anual/Mensual con multiselección.
