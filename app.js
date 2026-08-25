@@ -96,6 +96,11 @@ function setupEventos(){
     analizarConfiabilidadAutomaticamente();
     renderRankingUnidad();
   };
+  if($('confTipoFiltro'))$('confTipoFiltro').onchange=()=>{
+    rankingMinimizado=true;
+    analizarConfiabilidadAutomaticamente();
+    renderRankingUnidad();
+  };
   if($('btnToggleRanking'))$('btnToggleRanking').onclick=toggleRanking;
   document.querySelectorAll('.ranking-sort-btn').forEach(boton=>boton.onclick=()=>cambiarOrdenRanking(boton.dataset.campo,boton.dataset.direccion));
   ['confDesde','confHasta'].forEach(id=>{
@@ -503,12 +508,13 @@ function actualizarKPIs(base=datosBase){
 
 function obtenerListaTipos(){return [...new Set(maestroUbicaciones.map(r=>r.tipoEquipo).filter(x=>x&&x!=='Sin clasificar'))].sort((a,b)=>a.localeCompare(b,'es'));}
 function cargarFiltroTipos(){
-  const select=$('tipoFiltro');
-  if(!select)return;
-  const actual=select.value;
   const tipos=['Sin clasificar',...obtenerListaTipos()];
-  select.innerHTML='<option value="">Todos</option>'+tipos.map(tipo=>`<option value="${escapeHtml(tipo)}">${escapeHtml(tipo)}</option>`).join('');
-  if(tipos.includes(actual))select.value=actual;
+  ['tipoFiltro','confTipoFiltro'].forEach(id=>{
+    const select=$(id);if(!select)return;
+    const actual=select.value;
+    select.innerHTML='<option value="">Todos</option>'+tipos.map(tipo=>`<option value="${escapeHtml(tipo)}">${escapeHtml(tipo)}</option>`).join('');
+    if(tipos.includes(actual))select.value=actual;
+  });
 }
 function getPendientesTipo({incluirOmitidos=true}={}){const all=construirDatosBase(datosOriginales).filter(r=>r.tipoEquipo==='Sin clasificar');const m=new Map();for(const r of all){const key=r.denominacionUbicacionTecnica||r.ubicacionTecnica||r.descripcion;if(!incluirOmitidos&&tiposOmitidosSesion.has(key))continue;if(!m.has(key))m.set(key,{equipo:key,ubicacion:r.ubicacionTecnica,descripcion:r.descripcion,cantidad:0,avisos:[]});const pendiente=m.get(key);pendiente.cantidad++;if(r.aviso&&!pendiente.avisos.includes(r.aviso))pendiente.avisos.push(r.aviso);}return [...m.values()].sort((a,b)=>b.cantidad-a.cantidad);}
 function abrirWizardTipo(){tiposOmitidosSesion.clear();pendientesTipo=getPendientesTipo({incluirOmitidos:false});pendienteTipoIndex=0;$('wizardTipo').classList.remove('hidden');renderWizardTipo();}
@@ -1566,13 +1572,13 @@ function textoMtbf(m){return m.fallas===0?'Sin fallas':m.mtbf==null?'--':`${fmtN
 function textoMttr(m){return m.mttr==null?'N/A':`${fmtN(m.mttr)} h`;}
 
 function mostrarConfiabilidadTotal(){
-  if(!datosOriginales.length){limpiarResultadosConfiabilidad();return;}const unidad=$('confUnidadFiltro').value,base=construirDatosBase(datosOriginales).filter(r=>tieneClasificacionConfiabilidad(r)&&(!unidad||r.unidad===unidad)),resultado=calcularMetricasAgregadas(base),total=resultado.total;
-  $('confEquipo').textContent=`Todos los equipos (${total.equipos.toLocaleString('es-CL')})`;$('confUnidad').textContent=unidad||'Todas las unidades';$('confFallas').textContent=total.fallas.toLocaleString('es-CL');$('confMtbf').textContent=textoMtbf(total);$('confMttr').textContent=textoMttr(total);$('confDisponibilidad').textContent=total.disponibilidad==null?'--':`${fmtN(total.disponibilidad)} %`;$('kDisponibilidad').textContent=$('confDisponibilidad').textContent;$('historialConfiabilidad').classList.add('hidden');renderGraficoPeriodo(base,null,unidad?`Todos los equipos · ${unidad}`:'Todos los equipos');
+  if(!datosOriginales.length){limpiarResultadosConfiabilidad();return;}const unidad=$('confUnidadFiltro').value,tipo=$('confTipoFiltro')?.value||'',base=construirDatosBase(datosOriginales).filter(r=>tieneClasificacionConfiabilidad(r)&&(!unidad||r.unidad===unidad)&&(!tipo||r.tipoEquipo===tipo)),resultado=calcularMetricasAgregadas(base),total=resultado.total,contexto=[tipo,unidad].filter(Boolean).join(' · ');
+  $('confEquipo').textContent=`Todos los equipos (${total.equipos.toLocaleString('es-CL')})`;$('confUnidad').textContent=unidad||'Todas las unidades';$('confFallas').textContent=total.fallas.toLocaleString('es-CL');$('confMtbf').textContent=textoMtbf(total);$('confMttr').textContent=textoMttr(total);$('confDisponibilidad').textContent=total.disponibilidad==null?'--':`${fmtN(total.disponibilidad)} %`;$('kDisponibilidad').textContent=$('confDisponibilidad').textContent;$('historialConfiabilidad').classList.add('hidden');renderGraficoPeriodo(base,null,contexto?`Todos los equipos · ${contexto}`:'Todos los equipos');
 }
 
 function analizarConfiabilidad({silencioso=false}={}){
   const equipo=$('confBuscarEquipo').value.trim(),ubicacion=$('confBuscarUbicacion').value.trim();if(!equipo&&!ubicacion){mostrarConfiabilidadTotal();return;}if(!datosOriginales.length){if(!silencioso)alert('Los datos SAP todavía no están disponibles.');return;}
-  const unidad=$('confUnidadFiltro').value,en=normalizar(equipo),un=normalizar(ubicacion),registros=construirDatosBase(datosOriginales).filter(r=>{const er=r.denominacionUbicacionTecnica||r.ubicacionTecnica;return tieneClasificacionConfiabilidad(r)&&(!en||normalizar(er)===en)&&(!un||normalizar(r.ubicacionTecnica)===un)&&(!unidad||r.unidad===unidad);}),m=calcularMetricasPeriodo(registros),etiqueta=equipo||ubicacion;
+  const unidad=$('confUnidadFiltro').value,tipo=$('confTipoFiltro')?.value||'',en=normalizar(equipo),un=normalizar(ubicacion),registros=construirDatosBase(datosOriginales).filter(r=>{const er=r.denominacionUbicacionTecnica||r.ubicacionTecnica;return tieneClasificacionConfiabilidad(r)&&(!en||normalizar(er)===en)&&(!un||normalizar(r.ubicacionTecnica)===un)&&(!unidad||r.unidad===unidad)&&(!tipo||r.tipoEquipo===tipo);}),m=calcularMetricasPeriodo(registros),etiqueta=equipo||ubicacion;
   $('confEquipo').textContent=etiqueta;$('confUnidad').textContent=unidad||m.unidad||'-';$('confFallas').textContent=m.fallas.toLocaleString('es-CL');$('confMtbf').textContent=textoMtbf(m);$('confMttr').textContent=textoMttr(m);$('confDisponibilidad').textContent=m.disponibilidad==null?'--':`${fmtN(m.disponibilidad)} %`;$('kDisponibilidad').textContent=$('confDisponibilidad').textContent;$('historialConfiabilidad').classList.remove('hidden');renderCronologiaConfiabilidad(m.historial);renderGraficoPeriodo(registros,m,etiqueta);
 }
 
@@ -1601,10 +1607,10 @@ async function copiarRankingSeleccionados(){
 }
 
 function renderRankingUnidad(){
-  const panel=$('rankingUnidad'),unidad=$('confUnidadFiltro').value;if(!panel||!datosOriginales.length)return;const base=construirDatosBase(datosOriginales).filter(r=>tieneClasificacionConfiabilidad(r)&&(!unidad||r.unidad===unidad)),{metricas}=calcularMetricasAgregadas(base);
+  const panel=$('rankingUnidad'),unidad=$('confUnidadFiltro').value,tipo=$('confTipoFiltro')?.value||'';if(!panel||!datosOriginales.length)return;const base=construirDatosBase(datosOriginales).filter(r=>tieneClasificacionConfiabilidad(r)&&(!unidad||r.unidad===unidad)&&(!tipo||r.tipoEquipo===tipo)),{metricas}=calcularMetricasAgregadas(base);
   const ranking=metricas.map(m=>{const avisosEnTratamiento=new Set(m.registros.filter(r=>r.estadoAviso==='EN TRATAMIENTO').map(r=>r.aviso||r.orden).filter(Boolean)).size;return{equipo:m.equipo,ubicacionTecnica:m.registros[0]?.ubicacionTecnica||'-',tipoClasificado:m.registros[0]?.tipoEquipo||'Sin clasificar',avisosEnTratamiento,...m};}).filter(r=>Number.isFinite(r.disponibilidad)).sort((a,b)=>{const av=a[rankingCampoOrden],bv=b[rankingCampoOrden];if(av==null&&bv==null)return a.equipo.localeCompare(b.equipo,'es');if(av==null)return 1;if(bv==null)return-1;const d=rankingDireccionOrden==='asc'?av-bv:bv-av;return d||a.equipo.localeCompare(b.equipo,'es');});
   ranking.forEach((r,i)=>{r.posicion=i+1;const clave=claveEquipoRanking(r);if(equiposRankingSeleccionados.has(clave))equiposRankingSeleccionados.set(clave,r);});
-  $('rankingTitulo').textContent=`Ranking de disponibilidad — ${unidad||'TODOS LOS EQUIPOS'}`;$('rankingCantidad').textContent=`${ranking.length.toLocaleString('es-CL')} equipos`;$('rankingBody').innerHTML=ranking.length?ranking.map((r,i)=>`<tr class="ranking-equipo-row" role="button" tabindex="0" data-equipo="${escapeHtml(r.equipo)}" onclick="seleccionarEquipoRanking(this.dataset.equipo)" onkeydown="if(event.key==='Enter')seleccionarEquipoRanking(this.dataset.equipo)"><td class="seleccionar-col"><input type="checkbox" class="seleccionar-ranking" data-clave="${escapeHtml(claveEquipoRanking(r))}" aria-label="Seleccionar ${escapeHtml(r.equipo)}" ${equiposRankingSeleccionados.has(claveEquipoRanking(r))?'checked':''} onclick="event.stopPropagation()"></td><td>${i+1}</td><td>${escapeHtml(r.equipo)}</td><td>${celdaCopiable(r.ubicacionTecnica)}</td><td>${escapeHtml(r.tipoClasificado)}</td><td>${r.fallas}</td><td><span class="ranking-tratamiento ${r.avisosEnTratamiento?'activo':'sin-avisos'}" title="Avisos actualmente en tratamiento, sin filtro de período">${r.avisosEnTratamiento?r.avisosEnTratamiento.toLocaleString('es-CL'):'No'}</span></td><td>${textoMtbf(r)}</td><td>${textoMttr(r)}</td><td>${fmtN(r.disponibilidad)} %</td></tr>`).join(''):'<tr><td colspan="10">No hay equipos clasificables para el período.</td></tr>';
+  $('rankingTitulo').textContent=`Ranking de disponibilidad — ${[tipo,unidad].filter(Boolean).join(' · ')||'TODOS LOS EQUIPOS'}`;$('rankingCantidad').textContent=`${ranking.length.toLocaleString('es-CL')} equipos`;$('rankingBody').innerHTML=ranking.length?ranking.map((r,i)=>`<tr class="ranking-equipo-row" role="button" tabindex="0" data-equipo="${escapeHtml(r.equipo)}" onclick="seleccionarEquipoRanking(this.dataset.equipo)" onkeydown="if(event.key==='Enter')seleccionarEquipoRanking(this.dataset.equipo)"><td class="seleccionar-col"><input type="checkbox" class="seleccionar-ranking" data-clave="${escapeHtml(claveEquipoRanking(r))}" aria-label="Seleccionar ${escapeHtml(r.equipo)}" ${equiposRankingSeleccionados.has(claveEquipoRanking(r))?'checked':''} onclick="event.stopPropagation()"></td><td>${i+1}</td><td>${escapeHtml(r.equipo)}</td><td>${celdaCopiable(r.ubicacionTecnica)}</td><td>${escapeHtml(r.tipoClasificado)}</td><td>${r.fallas}</td><td><span class="ranking-tratamiento ${r.avisosEnTratamiento?'activo':'sin-avisos'}" title="Avisos actualmente en tratamiento, sin filtro de período">${r.avisosEnTratamiento?r.avisosEnTratamiento.toLocaleString('es-CL'):'No'}</span></td><td>${textoMtbf(r)}</td><td>${textoMttr(r)}</td><td>${fmtN(r.disponibilidad)} %</td></tr>`).join(''):'<tr><td colspan="10">No hay equipos clasificables para el período.</td></tr>';
   const porClave=new Map(ranking.map(r=>[claveEquipoRanking(r),r])),checks=[...$('rankingBody').querySelectorAll('.seleccionar-ranking')];checks.forEach(check=>check.onchange=()=>{const registro=porClave.get(check.dataset.clave);if(check.checked&&registro)equiposRankingSeleccionados.set(check.dataset.clave,registro);else equiposRankingSeleccionados.delete(check.dataset.clave);actualizarSeleccionRanking(checks);});const todos=$('seleccionarTodosRanking');if(todos)todos.onchange=()=>checks.forEach(check=>{if(check.checked!==todos.checked){check.checked=todos.checked;check.onchange();}});actualizarSeleccionRanking(checks);$('rankingBody').querySelectorAll('.copyable').forEach(el=>{el.onclick=event=>{event.stopPropagation();copiarTexto(el,el.dataset.copy);};el.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();copiarTexto(el,el.dataset.copy);}};});
   panel.classList.toggle('ranking-minimized',rankingMinimizado);$('btnToggleRanking').textContent=rankingMinimizado?'Mostrar ranking':'Minimizar ranking';document.querySelectorAll('.ranking-sort-btn').forEach(b=>b.classList.toggle('active',b.dataset.campo===rankingCampoOrden&&b.dataset.direccion===rankingDireccionOrden));panel.classList.remove('hidden');
 }
