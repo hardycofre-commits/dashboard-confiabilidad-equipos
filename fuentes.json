@@ -1,4 +1,8 @@
 {
+  "costo": {
+    "nombre": "EXPORT - 2026-08-27T221441.435.xlsx",
+    "ruta": "costo/EXPORT - 2026-08-27T221441.435.xlsx"
+  },
   "sap": {
     "nombre": "EXPORT - 2026-08-27T083234.303.xlsx",
     "ruta": "datos/EXPORT - 2026-08-27T083234.303.xlsx"
@@ -10,9 +14,5 @@
   "gantt": {
     "nombre": "Gantt Uso Salas 2026.xlsx",
     "ruta": "gantt_uso_salas/Gantt Uso Salas 2026.xlsx"
-  },
-  "costo": {
-    "nombre": "EXPORT - 2026-08-27T221441.435.xlsx",
-    "ruta": "costo/EXPORT - 2026-08-27T221441.435.xlsx"
   }
 }
