@@ -43,3 +43,8 @@ Coloque el Excel SAP en `costo/` y súbalo al repositorio junto con los cambios.
 La fuente se procesa una vez por actualización y se consulta por Aviso en la tabla base y el historial, y por Orden en el Plan Anual. Los importes ya están en USD: se muestran como `US$ 1.250.430,75`, sin conversión. Valores ausentes o inválidos quedan vacíos. Si falta la fuente, las tablas siguen funcionando sin costos asociados.
 
 Cada total usa todas las intervenciones únicas del conjunto filtrado, incluso las que exceden las 300 filas visibles de la tabla base. El historial mantiene su alcance actual: fallas Z2 cerradas con Orden y fechas válidas. El Plan Anual utiliza sus propios filtros existentes. Las filas duplicadas no acumulan costos: se conserva el primer registro válido de la intervención. No se modifican fórmulas de confiabilidad ni avance del plan.
+## Tiempo oficial de detención
+
+La disponibilidad usa `Duración de parada` de SAP, no el tiempo transcurrido entre apertura y cierre del aviso. Una parada de cero horas no genera indisponibilidad; el aviso y su costo permanecen en el historial. El conteo de avisos Z2 se conserva y el MTTR solo incluye detenciones efectivas mayores que cero.
+
+Las horas se ubican desde el Inicio de avería (fecha y hora) durante la duración oficial, se recortan al período seleccionado y se descuentan las superposiciones LYD/Z1. Se unen intervalos para evitar duplicar horas de detención. Las paradas programadas Z1 usan la misma duración oficial. Se mantiene la exclusión de avisos sin Orden o sin fechas de cierre válidas.

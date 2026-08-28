@@ -1152,7 +1152,7 @@ function escapeHtml(texto){
     .replace(/'/g,'&#039;');
 }
 
-function detectarColumnas(cols){const c=cols.map(x=>({original:x,key:normalizar(x)}));return{fechaAviso:buscar(c,['fechadeaviso','fechaaviso']),claseAviso:buscar(c,['clasedeaviso','claseaviso']),statusSistema:buscar(c,['statusdelsistema','estatusdelsistema','statussistema','estatussistema']),aviso:buscarExact(c,['aviso']),orden:buscar(c,['orden','numeroorden','ordensap']),descripcion:buscar(c,['descripcion','descripciondelaviso','textoaviso']),ubicacionTecnica:buscarExact(c,['ubicaciontecnica']),denominacionUbicacionTecnica:buscar(c,['denominaciondelaubicaciontecnica','denominacionubicaciontecnica','denominaciondelubicaciontecnica']),inicioFecha:buscarExact(c,['iniciodeaveria','inicioaveria']),inicioHora:buscar(c,['iniciodeaveriahora','inicioaveriahora','hora inicio averia']),finFecha:buscarExact(c,['findeaveria','finaveria']),finHora:buscar(c,['findelaaveriahora','findeaveriahora','finaveriahora','hora fin averia']),duracionParada:buscar(c,['duraciondeparada','duracionparada'])};}
+function detectarColumnas(cols){const c=cols.map(x=>({original:x,key:normalizar(x)}));return{fechaAviso:buscar(c,['fechadeaviso','fechaaviso']),claseAviso:buscar(c,['clasedeaviso','claseaviso']),statusSistema:buscar(c,['statusdelsistema','estatusdelsistema','statussistema','estatussistema']),aviso:buscarExact(c,['aviso']),orden:buscar(c,['orden','numeroorden','ordensap']),descripcion:buscar(c,['descripcion','descripciondelaviso','textoaviso']),ubicacionTecnica:buscarExact(c,['ubicaciontecnica']),denominacionUbicacionTecnica:buscar(c,['denominaciondelaubicaciontecnica','denominacionubicaciontecnica','denominaciondelubicaciontecnica']),inicioFecha:buscarExact(c,['iniciodeaveria','inicioaveria']),inicioHora:buscarExact(c.filter(x=>x.key.includes('hora')),['iniciodeaveriahora','inicioaveriahora','hora inicio averia']),finFecha:buscarExact(c,['findeaveria','finaveria']),finHora:buscarExact(c.filter(x=>x.key.includes('hora')),['findelaaveriahora','findeaveriahora','finaveriahora','hora fin averia']),duracionParada:buscar(c,['duraciondeparada','duracionparada'])};}
 function buscar(cols,ps){for(const p0 of ps){const p=normalizar(p0);const e=cols.find(c=>c.key.includes(p)||p.includes(c.key));if(e)return e.original;}return null;}
 function buscarExact(cols,ps){for(const p0 of ps){const p=normalizar(p0),e=cols.find(c=>c.key===p);if(e)return e.original;}return buscar(cols,ps);}
 function buscarEquipoPorUbicacion(ubicacion){
@@ -1589,15 +1589,22 @@ function eventosZ2Unicos(registros){
   return[...mapa.values()];
 }
 
+function intervalosParadaSAP(registro){
+  // La duración SAP es oficial; las fechas del aviso por sí solas no prueban detención.
+  const horas=registro.duracionParada,inicio=registro.inicioAveriaFecha;
+  if(!Number.isFinite(horas)||horas<=0||!(inicio instanceof Date)||isNaN(inicio))return[];
+  return [[inicio,new Date(inicio.getTime()+horas*3600000)]];
+}
+
 function calcularMetricasPeriodo(registrosEquipo,ventanas=obtenerIntervalosPeriodo()){
   ventanas=unirIntervalos(ventanas);const unidad=registrosEquipo.find(r=>r.unidad)?.unidad||'Sin clasificar';
   const calendario=horasIntervalos(ventanas);
   const lyd=bloquesLYD.filter(b=>normalizar(nombreUnidad(b.unidad))===normalizar(unidad)).map(b=>[b.inicio,new Date(b.fin.getTime()+86400000)]);
-  const z1=registrosEquipo.filter(esPeriodoZ1FueraOperacion).map(r=>[r.inicioAveriaFecha,r.finAveriaFecha]);
+  const z1=registrosEquipo.filter(esPeriodoZ1FueraOperacion).flatMap(intervalosParadaSAP);
   const programados=intersectarIntervalos([...lyd,...z1],ventanas),horasProgramadas=horasIntervalos(programados),tiempoExigible=Math.max(0,calendario-horasProgramadas);
   const eventos=eventosZ2Unicos(registrosEquipo).filter(r=>intersectarIntervalos([[r.inicioAveriaFecha,r.finAveriaFecha]],ventanas).length);
   const historial=eventos.map(r=>{
-    const fallaPeriodo=intersectarIntervalos([[r.inicioAveriaFecha,r.finAveriaFecha]],ventanas),fallaEfectiva=restarIntervalos(fallaPeriodo,programados);
+    const fallaPeriodo=intersectarIntervalos(intervalosParadaSAP(r),ventanas),fallaEfectiva=restarIntervalos(fallaPeriodo,programados);
     return{...r,horasFallaPeriodo:horasIntervalos(fallaPeriodo),horasProgramadasSuperpuestas:horasIntervalos(fallaPeriodo)-horasIntervalos(fallaEfectiva),horasIndisponibles:horasIntervalos(fallaEfectiva),intervalosIndisponibles:fallaEfectiva};
   });
   const indisponibles=unirIntervalos(historial.flatMap(x=>x.intervalosIndisponibles)),tiempoIndisponible=horasIntervalos(indisponibles),horasOperativas=Math.max(0,tiempoExigible-tiempoIndisponible),fallas=eventos.length;

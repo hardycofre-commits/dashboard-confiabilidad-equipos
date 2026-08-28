@@ -61,6 +61,43 @@ test('costos no cambian métricas de confiabilidad',()=>{
   const {run}=app();
   assert.equal(run(`(()=>{const r={aviso:1,orden:2,claseAviso:'Z2',unidad:'Hatchery',inicioAveriaFecha:new Date(2026,0,2),finAveriaFecha:new Date(2026,0,3)};const ventana=[[new Date(2026,0,1),new Date(2026,1,1)]];const antes=calcularMetricasPeriodo([r],ventana),despues=calcularMetricasPeriodo([{...r,costo:4299.36}],ventana);delete antes.historial;delete despues.historial;return JSON.stringify(antes)===JSON.stringify(despues);})()`),true);
 });
+test('SAP: hora se lee de la columna horaria, nunca de la fecha',()=>{
+  const {run}=app();
+  const result=run(`(()=>{
+    const fila={'Aviso':'10031700','Orden':'10011977','Clase de aviso':'Z2','Inicio de avería':new Date(2026,2,21),'Inicio de avería (hora)':'12:32:00','Fin de avería':new Date(2026,6,30),'Fin de la avería (hora)':'14:00:00','Duración de parada':0};
+    mapaColumnas=detectarColumnas(Object.keys(fila));const r=construirDatosBase([fila])[0];
+    return {inicio:r.inicioAveriaFecha.getHours(),minutos:r.inicioAveriaFecha.getMinutes(),fin:r.finAveriaFecha.getHours(),sinHora:detectarColumnas(['Inicio de avería','Fin de avería']).inicioHora};
+  })()`);
+  assert.equal(result.inicio,12);assert.equal(result.minutos,32);assert.equal(result.fin,14);assert.equal(result.sinHora,null);
+});
+test('generador: avisos con parada cero conservan historial y costos sin bajar disponibilidad',()=>{
+  const {run}=app();
+  const m=run(`(()=>{
+    const r={claseAviso:'Z2',unidad:'ELECTRICO Y GENERACION',duracionParada:0};
+    return calcularMetricasPeriodo([{...r,aviso:'10031700',orden:'10011977',inicioAveriaFecha:new Date(2026,2,21,12,32),finAveriaFecha:new Date(2026,6,30,14),costo:0},{...r,aviso:'10033904',orden:'10013207',inicioAveriaFecha:new Date(2026,6,24,14,55,32),finAveriaFecha:new Date(2026,6,28,16),costo:889.59}],[[new Date(2026,2,1),new Date(2026,8,1)]]);
+  })()`);
+  assert.equal(m.disponibilidad,100);assert.equal(m.tiempoIndisponible,0);assert.equal(m.mttr,null);
+  assert.equal(m.historial.length,2);assert.equal(m.historial[1].costo,889.59);
+  for(const r of m.historial){assert.equal(r.horasFallaPeriodo,0);assert.equal(r.horasProgramadasSuperpuestas,0);assert.equal(r.horasIndisponibles,0);}
+});
+test('parada oficial prevalece sobre fecha de cierre y se recorta por mes',()=>{
+  const {run}=app();
+  const m=run(`(()=>{
+    const r={aviso:1,orden:2,claseAviso:'Z2',duracionParada:4,inicioAveriaFecha:new Date(2026,0,31,22),finAveriaFecha:new Date(2026,1,10)};
+    return [calcularMetricasPeriodo([r],[[new Date(2026,0,1),new Date(2026,1,1)]]),calcularMetricasPeriodo([r],[[new Date(2026,1,1),new Date(2026,2,1)]]),calcularMetricasPeriodo([r],[[new Date(2026,0,1),new Date(2026,2,1)]])];
+  })()`);
+  assert.equal(m[0].tiempoIndisponible,2);assert.equal(m[1].tiempoIndisponible,2);assert.equal(m[2].tiempoIndisponible,4);
+  assert.equal(m[2].mttr,4);
+});
+test('paradas oficiales superpuestas y programadas no se duplican',()=>{
+  const {run}=app();
+  const m=run(`(()=>{
+    const base={unidad:'U',inicioAveriaFecha:new Date(2026,0,1,2),finAveriaFecha:new Date(2026,0,2),duracionParada:6};
+    return calcularMetricasPeriodo([{...base,aviso:1,orden:1,claseAviso:'Z2'},{...base,aviso:2,orden:2,claseAviso:'Z2',inicioAveriaFecha:new Date(2026,0,1,4)},{...base,aviso:3,orden:3,claseAviso:'Z1',duracionParada:2}],[[new Date(2026,0,1),new Date(2026,0,2)]]);
+  })()`);
+  assert.equal(m.horasProgramadas,2);assert.equal(m.tiempoIndisponible,6);assert.equal(m.tiempoExigible,22);
+  assert.equal(m.historial[0].horasProgramadasSuperpuestas,2);
+});
 test('manifiesto y alternativa GitHub seleccionan la fuente vigente',async()=>{
   const {ctx,run}=app();
   ctx.fetch=async()=>({ok:true,json:async()=>({costo:{nombre:'SAP nuevo.xlsx',ruta:'costo/SAP nuevo.xlsx'}})});
