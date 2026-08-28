@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'costo/*.xlsx'
+      - 'costo/*.XLSX'
       - 'datos/*.xlsx'
       - 'datos/*.XLSX'
       - 'plan_anual/*.xlsx'
@@ -29,6 +31,7 @@ jobs:
           import json, pathlib, subprocess
 
           fuentes = {
+              'costo': pathlib.Path('costo'),
               'sap': pathlib.Path('datos'),
               'plan': pathlib.Path('plan_anual'),
               'gantt': pathlib.Path('gantt_uso_salas'),

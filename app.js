@@ -28,7 +28,48 @@ function celdaCopiable(valor){
 }
 
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main'};
-const CARPETAS_FUENTE={sap:'datos',plan:'plan_anual',gantt:'gantt_uso_salas'};
+const CARPETAS_FUENTE={sap:'datos',plan:'plan_anual',gantt:'gantt_uso_salas',costo:'costo'};
+let costosPorAviso=new Map(),costosPorOrden=new Map();
+function normalizarIdIntervencion(v){
+  const texto=String(v??'').replace(/\s+/g,'');
+  return /^\d+(?:[.,]0+)?$/.test(texto)?texto.replace(/[.,]0+$/,'').replace(/^0+(?=\d)/,''):texto;
+}
+function interpretarCosto(v){
+  if(typeof v==='number')return Number.isFinite(v)?v:null;
+  let texto=String(v??'').replace(/\s+/g,'');
+  if(!texto)return null;
+  if(texto.endsWith('-'))texto='-'+texto.slice(0,-1);
+  if(texto.includes(',')){
+    if(!/^-?(?:\d+|\d{1,3}(?:\.\d{3})+),\d+$/.test(texto))return null;
+    texto=texto.replace(/\./g,'').replace(',','.');
+  }else if(/^-?\d{1,3}(?:\.\d{3})+$/.test(texto))texto=texto.replace(/\./g,'');
+  if(!/^-?\d+(?:\.\d+)?$/.test(texto))return null;
+  const costo=Number(texto);return Number.isFinite(costo)?costo:null;
+}
+function procesarCostos(filas){
+  const porAviso=new Map(),porOrden=new Map();
+  const columnas=Object.keys(filas[0]||{}),col=nombres=>columnas.find(c=>nombres.includes(normalizar(c)));
+  const avisoCol=col(['aviso']),ordenCol=col(['orden']),costoCol=col(['sumcostpln','sumacostoplan','sumadecostesplan','sumcostplnsumacostoplan']);
+  if(filas.length&&(!avisoCol||!ordenCol||!costoCol))throw new Error('El Excel de costo debe contener Aviso, Orden y SumCostPln / Suma costo plan.');
+  for(const fila of filas){
+    const aviso=normalizarIdIntervencion(fila[avisoCol]),orden=normalizarIdIntervencion(fila[ordenCol]),costo=interpretarCosto(fila[costoCol]);
+    if(costo===null||!aviso||!orden)continue;
+    // Una intervención corresponde al mismo registro en ambos índices; no sumar filas duplicadas.
+    if((aviso&&porAviso.has(aviso))||(orden&&porOrden.has(orden)))continue;
+    const registro={aviso,orden,costo};
+    if(aviso)porAviso.set(aviso,registro);
+    if(orden)porOrden.set(orden,registro);
+  }
+  costosPorAviso=porAviso;costosPorOrden=porOrden;
+}
+function costoIntervencion(id,tipo='aviso'){return (tipo==='orden'?costosPorOrden:costosPorAviso).get(normalizarIdIntervencion(id))?.costo??null;}
+function formatoCosto(costo){return Number.isFinite(costo)?`US$ ${costo.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'';}
+function totalCostoIntervenciones(registros,tipo='aviso'){
+  const vistos=new Set();let centavos=0;
+  for(const r of registros){const id=normalizarIdIntervencion(r[tipo]);if(!id||vistos.has(id))continue;vistos.add(id);const costo=costoIntervencion(id,tipo);if(costo!==null)centavos+=Math.round(costo*100);}
+  return centavos/100;
+}
+function mostrarTotalCosto(elemento,registros,tipo='aviso'){$(elemento).textContent=`Costo total intervenciones: ${formatoCosto(totalCostoIntervenciones(registros,tipo))}`;}
 const FECHA_INICIO_CONFIABILIDAD=new Date(2025,0,1);
 const KEY_REGLAS='confEq_reglas_v21', KEY_UNIDADES='confEq_unidades_v21', KEY_NOMBRES='confEq_nombresUnidades_v23';
 let reglasUsuario=JSON.parse(localStorage.getItem(KEY_REGLAS)||'[]');
@@ -152,23 +193,25 @@ async function cargarDesdeGitHub(){
  try{
   setEstado('Buscando','warning','Consultando las carpetas de fuentes en GitHub...');
   const manifiesto=await cargarManifestFuentes();
-  const [sap,plan,gantt]=manifiesto?[manifiesto.sap,manifiesto.plan,manifiesto.gantt]:await Promise.all([
+  const [sap,plan,gantt,costo]=manifiesto?[manifiesto.sap,manifiesto.plan,manifiesto.gantt,manifiesto.costo]:await Promise.all([
     seleccionarExcelMasReciente(CARPETAS_FUENTE.sap),
     seleccionarExcelMasReciente(CARPETAS_FUENTE.plan),
-    seleccionarExcelMasReciente(CARPETAS_FUENTE.gantt)
+    seleccionarExcelMasReciente(CARPETAS_FUENTE.gantt),
+    seleccionarExcelMasReciente(CARPETAS_FUENTE.costo)
   ]);
   if(!sap) throw new Error('No se encontró un archivo Excel SAP en datos/.');
   await cargarMaestroUbicaciones();
+  procesarCostos(costo?await leerExcel(costo.download_url,'json'):[]);
   await cargarSAP(sap);
   if(gantt)await cargarGantt(gantt);else{archivoGanttSalas='';$('kArchivoGantt').textContent='No encontrado';$('txtGantt').textContent='Sin archivo Gantt';renderTablaLYD([]);}
   if(plan)await cargarPlanAnual(plan);else renderPlanAnual();
   inicializarSelectorPeriodo();
   $('txtLectura').textContent=new Date().toLocaleString('es-CL');
-  setEstado('Validado','ok',`SAP: ${sap.name}<br>Maestro: ${archivoMaestro||'No encontrado'}<br>Gantt Uso de Salas: ${gantt?gantt.name:'No encontrado'}<br>Plan anual: ${plan?plan.name:'No encontrado'}${conflictosMaestro.size?`<br>Conflictos del maestro: ${conflictosMaestro.size}`:''}`);
+  setEstado('Validado','ok',`SAP: ${sap.name}<br>Maestro: ${archivoMaestro||'No encontrado'}<br>Gantt Uso de Salas: ${gantt?gantt.name:'No encontrado'}<br>Costos: ${costo?escapeHtml(costo.name):'No encontrado'}<br>Plan anual: ${plan?plan.name:'No encontrado'}${conflictosMaestro.size?`<br>Conflictos del maestro: ${conflictosMaestro.size}`:''}`);
  }catch(e){mostrarError(e.message);console.error(e);}
 }
 async function listarArchivosCarpeta(carpeta){const r=await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${carpeta}?ref=${CONFIG.branch}&t=${Date.now()}`);if(r.status===404)return[];if(!r.ok)throw new Error(`No fue posible leer ${carpeta}/ desde GitHub.`);return r.json();}
-async function cargarManifestFuentes(){try{const r=await fetch(`fuentes.json?v=${Date.now()}`,{cache:'no-store'});if(!r.ok)return null;const datos=await r.json(),crear=entrada=>entrada?.ruta&&entrada?.nombre?{name:entrada.nombre,download_url:entrada.ruta}:null;return{sap:crear(datos.sap),plan:crear(datos.plan),gantt:crear(datos.gantt)};}catch(error){return null;}}
+async function cargarManifestFuentes(){try{const r=await fetch(`fuentes.json?v=${Date.now()}`,{cache:'no-store'});if(!r.ok)return null;const datos=await r.json(),crear=entrada=>entrada?.ruta&&entrada?.nombre?{name:entrada.nombre,download_url:entrada.ruta}:null;return{sap:crear(datos.sap),plan:crear(datos.plan),gantt:crear(datos.gantt),costo:crear(datos.costo)};}catch(error){return null;}}
 async function fechaUltimaModificacion(archivo){try{const ruta=archivo.path.split('/').map(encodeURIComponent).join('/'),r=await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/commits?path=${ruta}&sha=${CONFIG.branch}&per_page=1&t=${Date.now()}`);if(!r.ok)return 0;const [commit]=await r.json();return Date.parse(commit?.commit?.committer?.date||commit?.commit?.author?.date||'')||0;}catch(error){return 0;}}
 async function seleccionarExcelMasReciente(carpeta){const archivos=(await listarArchivosCarpeta(carpeta)).filter(i=>i.type==='file'&&/\.xlsx$/i.test(i.name));if(!archivos.length)return null;await Promise.all(archivos.map(async archivo=>{archivo.fechaModificacion=await fechaUltimaModificacion(archivo);}));return archivos.sort((a,b)=>b.fechaModificacion-a.fechaModificacion||b.name.localeCompare(a.name,'es',{numeric:true}))[0];}
 async function listarArchivosRaiz(){const r=await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents?ref=${CONFIG.branch}&t=${Date.now()}`);if(!r.ok)throw new Error('No fue posible leer la raíz del proyecto desde GitHub.');return r.json();}
@@ -269,8 +312,9 @@ function renderPlanAnual(){
   const texto=normalizar($('planBuscar').value),ubicacion=normalizar($('planUbicacion').value),mes=$('planMes').value,estado=estadoPlanSeleccionado;
   const filtradas=planVigente.filter(x=>(!texto||[x.equipo,x.plan,x.operacion,x.orden].some(v=>normalizar(v).includes(texto)))&&(!ubicacion||normalizar(x.ubicacion).includes(ubicacion))&&(!mes||`${x.fecha?.getFullYear()}-${String((x.fecha?.getMonth()??-1)+1).padStart(2,'0')}`===mes)&&(!estado||x.estado===estado)).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
   $('planFilas').textContent=`${filtradas.length.toLocaleString('es-CL')} filas`;$('planContexto').textContent=(texto||ubicacion||mes||estado)?'Resultados según los filtros aplicados':'Todas las actividades del plan anual';
+  mostrarTotalCosto('costoTotalPlan',filtradas,'orden');
   const tbody=$('tablaPlan').querySelector('tbody');
-  tbody.innerHTML=filtradas.length?filtradas.map(x=>`<tr><td class="seleccionar-col"><input type="checkbox" class="seleccionar-plan" data-clave="${escapeHtml(claveActividadPlan(x))}" aria-label="Seleccionar actividad ${escapeHtml(x.equipo||x.plan||'-')}" ${actividadesPlanSeleccionadas.has(claveActividadPlan(x))?'checked':''}></td><td>${fmtF(x.fecha)}</td><td><span class="plan-status ${normalizar(x.estado)}">${x.estado}</span></td><td>${celdaCopiable(x.orden)}</td><td>${celdaCopiable(x.equipo)}</td><td class="descripcion">${escapeHtml(x.plan||'-')}</td><td class="descripcion">${escapeHtml(x.operacion||'-')}</td><td>${celdaCopiable(x.ubicacion)}</td></tr>`).join(''):'<tr><td colspan="8">No hay actividades que coincidan con la búsqueda.</td></tr>';
+  tbody.innerHTML=filtradas.length?filtradas.map(x=>`<tr><td class="seleccionar-col"><input type="checkbox" class="seleccionar-plan" data-clave="${escapeHtml(claveActividadPlan(x))}" aria-label="Seleccionar actividad ${escapeHtml(x.equipo||x.plan||'-')}" ${actividadesPlanSeleccionadas.has(claveActividadPlan(x))?'checked':''}></td><td>${fmtF(x.fecha)}</td><td><span class="plan-status ${normalizar(x.estado)}">${x.estado}</span></td><td>${celdaCopiable(x.orden)}</td><td>${celdaCopiable(x.equipo)}</td><td class="descripcion">${escapeHtml(x.plan||'-')}</td><td class="descripcion">${escapeHtml(x.operacion||'-')}</td><td>${celdaCopiable(x.ubicacion)}</td><td>${formatoCosto(costoIntervencion(x.orden,'orden'))}</td></tr>`).join(''):'<tr><td colspan="9">No hay actividades que coincidan con la búsqueda.</td></tr>';
   const porClavePlan=new Map(filtradas.map(x=>[claveActividadPlan(x),x]));
   const checksPlan=[...tbody.querySelectorAll('.seleccionar-plan')];
   checksPlan.forEach(check=>check.onchange=()=>{
@@ -367,6 +411,7 @@ function aplicarFiltros(){
 
   base=ordenarRegistrosPorFecha(base);
   datosBase=base;
+  mostrarTotalCosto('costoTotalBase',base);
   renderTablaBase(base.slice(0,300));
   renderTablaUnidades();
   $('filasBase').textContent=`${base.length.toLocaleString('es-CL')} filas`;
@@ -384,7 +429,7 @@ async function copiarPlanSeleccionados(){
   const seleccionadas=[...actividadesPlanSeleccionadas.values()];
   if(!seleccionadas.length)return;
   const limpiar=v=>String(v??'').replace(/[\t\r\n]+/g,' ').trim();
-  const filas=seleccionadas.map(x=>[fmtF(x.fecha),x.estado,x.orden,x.equipo,x.plan,x.operacion,x.ubicacion]);
+  const filas=seleccionadas.map(x=>[fmtF(x.fecha),x.estado,x.orden,x.equipo,x.plan,x.operacion,x.ubicacion,formatoCosto(costoIntervencion(x.orden,'orden'))]);
   const texto=filas.map(f=>f.map(limpiar).join('\t')).join('\n');
   let copiado=false;
   if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(texto);copiado=true;}catch(error){}}
@@ -406,7 +451,7 @@ async function copiarRegistrosSeleccionados(){
   const filas=seleccionados.map(r=>[
     fmtF(r.fechaAviso),r.claseAviso,r.aviso,r.statusSistema,r.estadoAviso,r.orden,r.descripcion,
     r.ubicacionTecnica,r.denominacionUbicacionTecnica,r.tipoEquipo,r.unidad,
-    r.estadoUnidad,r.estadoTipo,r.inicioAveria,r.finAveria,r.duracionParada
+    r.estadoUnidad,r.estadoTipo,r.inicioAveria,r.finAveria,r.duracionParada,formatoCosto(r.costo)
   ]);
   const texto=filas.map(f=>f.map(limpiar).join('\t')).join('\n');
   let copiado=false;
@@ -416,7 +461,7 @@ async function copiarRegistrosSeleccionados(){
   boton.textContent=copiado?'Copiado para Excel':'No se pudo copiar';
   setTimeout(()=>{boton.textContent=original;},1200);
 }
-function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const fechaAviso=convertirFecha(r[mapaColumnas.fechaAviso]),inicioOriginal=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]),fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]),ini=inicioOriginal||fechaAviso;const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]),ubi=valor(r[mapaColumnas.ubicacionTecnica]),des=valor(r[mapaColumnas.descripcion]).toLocaleUpperCase('es-CL'),aviso=valor(r[mapaColumnas.aviso]),orden=valor(r[mapaColumnas.orden]).trim(),statusSistema=valor(r[mapaColumnas.statusSistema]),clasificacion=clasificarPorMaestro(ubi);return{fechaAviso,claseAviso:valor(r[mapaColumnas.claseAviso]),aviso,statusSistema,estadoAviso:obtenerEstadoAviso(statusSistema),orden,descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:`${den} ${ubi} ${des}`,unidad:clasificacion.unidad,estadoUnidad:clasificacion.unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:clasificacion.tipoEquipo,estadoTipo:clasificacion.tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,inicioAveriaOriginal:inicioOriginal,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||fechaAviso,duracionParada:numero(r[mapaColumnas.duracionParada])};});}
+function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const fechaAviso=convertirFecha(r[mapaColumnas.fechaAviso]),inicioOriginal=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]),fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]),ini=inicioOriginal||fechaAviso;const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]),ubi=valor(r[mapaColumnas.ubicacionTecnica]),des=valor(r[mapaColumnas.descripcion]).toLocaleUpperCase('es-CL'),aviso=valor(r[mapaColumnas.aviso]),orden=valor(r[mapaColumnas.orden]).trim(),statusSistema=valor(r[mapaColumnas.statusSistema]),clasificacion=clasificarPorMaestro(ubi);return{fechaAviso,costo:costoIntervencion(aviso),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso,statusSistema,estadoAviso:obtenerEstadoAviso(statusSistema),orden,descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:`${den} ${ubi} ${des}`,unidad:clasificacion.unidad,estadoUnidad:clasificacion.unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:clasificacion.tipoEquipo,estadoTipo:clasificacion.tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,inicioAveriaOriginal:inicioOriginal,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||fechaAviso,duracionParada:numero(r[mapaColumnas.duracionParada])};});}
 function obtenerEstadoAviso(statusSistema){const codigos=normalizarFrase(statusSistema).split(' ');return codigos.includes('mece')?'CERRADO':'EN TRATAMIENTO';}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
 function normalizarFrase(texto){return String(texto??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
@@ -644,6 +689,7 @@ function analizarConfiabilidad({silencioso=false}={}){
 }
 
 function limpiarResultadosConfiabilidad(){
+  mostrarTotalCosto('costoTotalHistorial',[]);
   window.datosConfiabilidad=[];
   window.periodosZ1Confiabilidad=[];
   $('confEquipo').textContent='-';
@@ -655,7 +701,7 @@ function limpiarResultadosConfiabilidad(){
   $('kDisponibilidad').textContent='--';
   $('graficoDisponibilidad').classList.add('hidden');
   $('graficoDisponibilidadSvg').innerHTML='';
-  $('confBody').innerHTML='<tr><td colspan="7">Busque o seleccione un equipo para calcular sus indicadores.</td></tr>';
+  $('confBody').innerHTML='<tr><td colspan="9">Busque o seleccione un equipo para calcular sus indicadores.</td></tr>';
 }
 
 function construirCronologiaConfiabilidad(registros,periodosZ1=[]){
@@ -1273,6 +1319,7 @@ function renderTablaBase(base){
       <th>Inicio avería</th>
       <th>Fin avería</th>
       <th>Duración parada</th>
+      <th>Costo</th>
     </tr>
   `;
 
@@ -1292,9 +1339,10 @@ function renderTablaBase(base){
         <td>${r.inicioAveria}</td>
         <td>${r.finAveria}</td>
         <td>${fmtN(r.duracionParada)}</td>
+        <td>${formatoCosto(r.costo)}</td>
       </tr>
     `).join('')
-    : '<tr><td colspan="13">No hay datos</td></tr>';
+    : '<tr><td colspan="14">No hay datos</td></tr>';
   const porClave=new Map(base.map(r=>[claveRegistroBase(r),r]));
   const checks=[...$('tablaBase').querySelectorAll('.seleccionar-registro')];
   checks.forEach(check=>check.onchange=()=>{
@@ -1583,8 +1631,9 @@ function analizarConfiabilidad({silencioso=false}={}){
 }
 
 function renderCronologiaConfiabilidad(filas){
-  if(!filas.length){$('confBody').innerHTML='<tr><td colspan="8">No se encontraron fallas Z2 cerradas, con Orden y fechas válidas en el período seleccionado.</td></tr>';return;}
-  $('confBody').innerHTML=filas.map(f=>`<tr><td>${celdaCopiable(f.aviso||'-')}</td><td>${celdaCopiable(f.ubicacionTecnica||'-')}</td><td class="descripcion">${escapeHtml(f.descripcion||'-')}</td><td>${escapeHtml(f.inicioAveria||'-')}</td><td>${escapeHtml(f.finAveria||'-')}</td><td>${fmtN(f.horasFallaPeriodo)}</td><td>${fmtN(f.horasProgramadasSuperpuestas)}</td><td><strong>${fmtN(f.horasIndisponibles)}</strong></td></tr>`).join('');
+  mostrarTotalCosto('costoTotalHistorial',filas);
+  if(!filas.length){$('confBody').innerHTML='<tr><td colspan="9">No se encontraron fallas Z2 cerradas, con Orden y fechas válidas en el período seleccionado.</td></tr>';return;}
+  $('confBody').innerHTML=filas.map(f=>`<tr><td>${celdaCopiable(f.aviso||'-')}</td><td>${celdaCopiable(f.ubicacionTecnica||'-')}</td><td class="descripcion">${escapeHtml(f.descripcion||'-')}</td><td>${escapeHtml(f.inicioAveria||'-')}</td><td>${escapeHtml(f.finAveria||'-')}</td><td>${fmtN(f.horasFallaPeriodo)}</td><td>${fmtN(f.horasProgramadasSuperpuestas)}</td><td><strong>${fmtN(f.horasIndisponibles)}</strong></td><td>${formatoCosto(f.costo)}</td></tr>`).join('');
   $('confBody').querySelectorAll('.copyable').forEach(el=>{el.onclick=()=>copiarTexto(el,el.dataset.copy);});
 }
 
