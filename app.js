@@ -284,6 +284,7 @@ function construirOrdenesZ1(rows){
   return mapa;
 }
 function claveOrden(orden){return normalizarFrase(orden).replace(/\s+/g,'');}
+function tieneOrdenTrabajo(actividad){return Boolean(claveOrden(actividad?.orden));}
 function obtenerOrdenesCerradasSAP(){
   return new Set(construirDatosBase(datosOriginales).filter(r=>r.estadoAviso==='CERRADO'&&r.orden).map(r=>claveOrden(r.orden)).filter(Boolean));
 }
@@ -304,7 +305,7 @@ function cambiarFiltroEstadoPlan(estado){
 }
 function renderPlanAnual(){
   if(!$('tablaPlan'))return;
-  const planVigente=obtenerPlanActualizadoConSAP(),actualizadasSAP=planVigente.filter(x=>x.cerradoSAP).length;
+  const planVigente=obtenerPlanActualizadoConSAP().filter(tieneOrdenTrabajo),actualizadasSAP=planVigente.filter(x=>x.cerradoSAP).length;
   const total=planVigente.length,completados=planVigente.filter(x=>x.estado==='Completado').length,pendientes=planVigente.filter(x=>x.estado==='Pendiente').length,vencidos=planVigente.filter(x=>x.estado==='Vencido').length;
   const avance=total?Math.round(completados/total*100):0;
   $('planAvance').textContent=$('planAvanceCabecera').textContent=`${avance}%`;$('planCompletado').textContent=completados.toLocaleString('es-CL');$('planPendiente').textContent=pendientes.toLocaleString('es-CL');$('planVencido').textContent=vencidos.toLocaleString('es-CL');$('planConteoAvance').textContent=`${completados.toLocaleString('es-CL')} de ${total.toLocaleString('es-CL')} actividades`;$('planProgressBar').style.width=`${avance}%`;$('planFuente').textContent=archivoPlanAnual?`Fuente: ${archivoPlanAnual}. ${actualizadasSAP.toLocaleString('es-CL')} actividades marcadas como realizadas según el SAP de Resumen.`:'No se encontró un archivo de plan anual en plan_anual/.';
