@@ -29,7 +29,7 @@ function celdaCopiable(valor){
 
 const CONFIG={owner:'hardycofre-commits',repo:'dashboard-confiabilidad-equipos',branch:'main'};
 const CARPETAS_FUENTE={sap:'datos',plan:'plan_anual',gantt:'gantt_uso_salas',costo:'costo'};
-let costosPorAviso=new Map(),costosPorOrden=new Map();
+let costosPorAviso=new Map(),costosPorOrden=new Map(),ordenesCostoPorAviso=new Map();
 function normalizarIdIntervencion(v){
   const texto=String(v??'').replace(/\s+/g,'');
   return /^\d+(?:[.,]0+)?$/.test(texto)?texto.replace(/[.,]0+$/,'').replace(/^0+(?=\d)/,''):texto;
@@ -47,22 +47,25 @@ function interpretarCosto(v){
   const costo=Number(texto);return Number.isFinite(costo)?costo:null;
 }
 function procesarCostos(filas){
-  const porAviso=new Map(),porOrden=new Map();
+  const porAviso=new Map(),porOrden=new Map(),ordenesPorAviso=new Map();
   const columnas=Object.keys(filas[0]||{}),col=nombres=>columnas.find(c=>nombres.includes(normalizar(c)));
-  const avisoCol=col(['aviso']),ordenCol=col(['orden']),costoCol=col(['sumcostpln','sumacostoplan','sumadecostesplan','sumcostplnsumacostoplan']);
+  const avisoCol=col(['aviso']),ordenCol=col(['orden']),costoCol=col(['sumcostpln','sumacostoplan','sumadecostesplan','sumcostplnsumacostoplan']),statusCol=col(['statusdelsistema','estatusdelsistema','statussistema','estatussistema']);
   if(filas.length&&(!avisoCol||!ordenCol||!costoCol))throw new Error('El Excel de costo debe contener Aviso, Orden y SumCostPln / Suma costo plan.');
   for(const fila of filas){
-    const aviso=normalizarIdIntervencion(fila[avisoCol]),orden=normalizarIdIntervencion(fila[ordenCol]),costo=interpretarCosto(fila[costoCol]);
+    const aviso=normalizarIdIntervencion(fila[avisoCol]),orden=normalizarIdIntervencion(fila[ordenCol]),costo=interpretarCosto(fila[costoCol]),statusOrden=valor(fila[statusCol]).trim();
+    if(aviso&&orden&&!ordenesPorAviso.has(aviso))ordenesPorAviso.set(aviso,{aviso,orden,statusOrden});
     if(costo===null||!aviso||!orden)continue;
     // Una intervención corresponde al mismo registro en ambos índices; no sumar filas duplicadas.
     if((aviso&&porAviso.has(aviso))||(orden&&porOrden.has(orden)))continue;
-    const registro={aviso,orden,costo};
+    const registro={aviso,orden,costo,statusOrden};
     if(aviso)porAviso.set(aviso,registro);
     if(orden)porOrden.set(orden,registro);
   }
-  costosPorAviso=porAviso;costosPorOrden=porOrden;
+  costosPorAviso=porAviso;costosPorOrden=porOrden;ordenesCostoPorAviso=ordenesPorAviso;
 }
 function costoIntervencion(id,tipo='aviso'){return (tipo==='orden'?costosPorOrden:costosPorAviso).get(normalizarIdIntervencion(id))?.costo??null;}
+function ordenCostoPorAviso(aviso){return ordenesCostoPorAviso.get(normalizarIdIntervencion(aviso))||null;}
+function tieneEstadoOrden(status,codigo){return normalizarFrase(status).split(' ').includes(normalizarFrase(codigo));}
 function formatoCosto(costo){return Number.isFinite(costo)?`US$ ${costo.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'';}
 function totalCostoIntervenciones(registros,tipo='aviso'){
   const vistos=new Set();let centavos=0;
@@ -86,6 +89,7 @@ let ordenFecha='asc';
 let rankingCampoOrden='disponibilidad',rankingDireccionOrden='desc',rankingMinimizado=true;
 let estadoPlanSeleccionado='';
 let estadoAvisoSeleccionado='';
+let estadoOrdenSeleccionado='';
 const $=id=>document.getElementById(id);
 
 document.addEventListener('DOMContentLoaded',()=>{
@@ -118,6 +122,8 @@ function setupEventos(){
   configurarMacroAvisos('cardAvisos','');
   configurarMacroAvisos('cardAvisosCerrados','CERRADO');
   configurarMacroAvisos('cardAvisosTratamiento','EN TRATAMIENTO');
+  configurarMacroOrdenes('cardOrdenesNotificadas','NOTI');
+  configurarMacroOrdenes('cardOrdenesLiberadas','LIB');
   configurarBuscadorEquipos('busquedaEquipo','sugerenciasEquipo','btnAbrirEquipos',{
     alEscribir:aplicarFiltros,
     alSeleccionar:aplicarFiltros,
@@ -215,7 +221,7 @@ async function cargarManifestFuentes(){try{const r=await fetch(`fuentes.json?v=$
 async function fechaUltimaModificacion(archivo){try{const ruta=archivo.path.split('/').map(encodeURIComponent).join('/'),r=await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/commits?path=${ruta}&sha=${CONFIG.branch}&per_page=1&t=${Date.now()}`);if(!r.ok)return 0;const [commit]=await r.json();return Date.parse(commit?.commit?.committer?.date||commit?.commit?.author?.date||'')||0;}catch(error){return 0;}}
 async function seleccionarExcelMasReciente(carpeta){const archivos=(await listarArchivosCarpeta(carpeta)).filter(i=>i.type==='file'&&/\.xlsx$/i.test(i.name));if(!archivos.length)return null;await Promise.all(archivos.map(async archivo=>{archivo.fechaModificacion=await fechaUltimaModificacion(archivo);}));return archivos.sort((a,b)=>b.fechaModificacion-a.fechaModificacion||b.name.localeCompare(a.name,'es',{numeric:true}))[0];}
 async function listarArchivosRaiz(){const r=await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents?ref=${CONFIG.branch}&t=${Date.now()}`);if(!r.ok)throw new Error('No fue posible leer la raíz del proyecto desde GitHub.');return r.json();}
-async function cargarSAP(a){$('kArchivo').textContent=a.name;$('txtArchivo').textContent=a.name;const rows=await leerExcel(a.download_url,'json');mapaColumnas=detectarColumnas(Object.keys(rows[0]||{}));ordenesZ1PorPlan=construirOrdenesZ1(rows);datosOriginales=rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='');$('txtRegistros').textContent=`${rows.length.toLocaleString('es-CL')} registros SAP leídos`;cargarListaEquipos(rows);cargarFiltroUnidades();cargarFiltroTipos();aplicarFiltros();}
+async function cargarSAP(a){$('kArchivo').textContent=a.name;$('txtArchivo').textContent=a.name;const rows=await leerExcel(a.download_url,'json');mapaColumnas=detectarColumnas(Object.keys(rows[0]||{}));ordenesZ1PorPlan=construirOrdenesZ1(rows);datosOriginales=rows;$('txtRegistros').textContent=`${rows.length.toLocaleString('es-CL')} registros SAP leídos`;cargarListaEquipos(rows);cargarFiltroUnidades();cargarFiltroTipos();aplicarFiltros();}
 async function cargarGantt(a){archivoGanttSalas=a.name;$('kArchivoGantt').textContent=a.name;$('txtGantt').textContent=a.name;const m=await leerExcel(a.download_url,'array');bloquesLYD=extraerBloquesLYD(m);renderTablaLYD(bloquesLYD);renderTablaUnidades();}
 async function cargarPlanAnual(a){archivoPlanAnual=a.name;const rows=await leerExcel(a.download_url,'json');planAnual=rows.map(normalizarFilaPlan).filter(x=>(x.fecha||x.equipo||x.plan));cargarMesesPlan();renderPlanAnual();renderGanttPlanAnual();}
 async function leerExcel(url,modo){const r=await fetch(url+'?v='+Date.now());if(!r.ok)throw new Error('No fue posible descargar archivo.');const b=await r.arrayBuffer(), wb=XLSX.read(b,{type:'array',cellDates:true}), sh=wb.Sheets[wb.SheetNames[0]];return modo==='array'?XLSX.utils.sheet_to_json(sh,{header:1,defval:''}):XLSX.utils.sheet_to_json(sh,{defval:''});}
@@ -264,7 +270,13 @@ function normalizarFilaPlan(r){
 }
 function configurarMacroAvisos(id,estado){
   const card=$(id);
-  const activar=()=>{estadoAvisoSeleccionado=estado&&estadoAvisoSeleccionado===estado?'':estado;aplicarFiltros();};
+  const activar=()=>{estadoOrdenSeleccionado='';estadoAvisoSeleccionado=estado&&estadoAvisoSeleccionado===estado?'':estado;aplicarFiltros();};
+  card.onclick=activar;
+  card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activar();}};
+}
+function configurarMacroOrdenes(id,estado){
+  const card=$(id);if(!card)return;
+  const activar=()=>{estadoAvisoSeleccionado='';estadoOrdenSeleccionado=estadoOrdenSeleccionado===estado?'':estado;aplicarFiltros();};
   card.onclick=activar;
   card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activar();}};
 }
@@ -409,6 +421,10 @@ function aplicarFiltros(){
     base=base.filter(r=>r.estadoAviso===estadoAvisoSeleccionado);
     $('txtFiltro').textContent=`Estado: ${estadoAvisoSeleccionado}`;
   }
+  if(estadoOrdenSeleccionado){
+    base=base.filter(r=>tieneEstadoOrden(r.statusOrden,estadoOrdenSeleccionado));
+    $('txtFiltro').textContent=`Estado OT: ${estadoOrdenSeleccionado==='NOTI'?'NOTIFICADA':'LIBERADA'}`;
+  }
 
   base=ordenarRegistrosPorFecha(base);
   datosBase=base;
@@ -462,7 +478,7 @@ async function copiarRegistrosSeleccionados(){
   boton.textContent=copiado?'Copiado para Excel':'No se pudo copiar';
   setTimeout(()=>{boton.textContent=original;},1200);
 }
-function construirDatosBase(rows){return rows.filter(r=>valor(r[mapaColumnas.orden]).trim()!=='').map(r=>{const fechaAviso=convertirFecha(r[mapaColumnas.fechaAviso]),inicioOriginal=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]),fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]),ini=inicioOriginal||fechaAviso;const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]),ubi=valor(r[mapaColumnas.ubicacionTecnica]),des=valor(r[mapaColumnas.descripcion]).toLocaleUpperCase('es-CL'),aviso=valor(r[mapaColumnas.aviso]),orden=valor(r[mapaColumnas.orden]).trim(),statusSistema=valor(r[mapaColumnas.statusSistema]),clasificacion=clasificarPorMaestro(ubi);return{fechaAviso,costo:costoIntervencion(aviso),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso,statusSistema,estadoAviso:obtenerEstadoAviso(statusSistema),orden,descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:`${den} ${ubi} ${des}`,unidad:clasificacion.unidad,estadoUnidad:clasificacion.unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:clasificacion.tipoEquipo,estadoTipo:clasificacion.tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,inicioAveriaOriginal:inicioOriginal,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||fechaAviso,duracionParada:numero(r[mapaColumnas.duracionParada])};});}
+function construirDatosBase(rows){return rows.map(r=>{const fechaAviso=convertirFecha(r[mapaColumnas.fechaAviso]),inicioOriginal=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]),fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]),ini=inicioOriginal||fechaAviso;const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]),ubi=valor(r[mapaColumnas.ubicacionTecnica]),des=valor(r[mapaColumnas.descripcion]).toLocaleUpperCase('es-CL'),aviso=valor(r[mapaColumnas.aviso]),ordenCosto=ordenCostoPorAviso(aviso),orden=ordenCosto?.orden||valor(r[mapaColumnas.orden]).trim(),statusOrden=ordenCosto?.statusOrden||'',statusSistema=valor(r[mapaColumnas.statusSistema]),clasificacion=clasificarPorMaestro(ubi);return{fechaAviso,costo:costoIntervencion(aviso),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso,statusSistema,statusOrden,estadoAviso:obtenerEstadoAviso(statusSistema),orden,descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:`${den} ${ubi} ${des}`,unidad:clasificacion.unidad,estadoUnidad:clasificacion.unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:clasificacion.tipoEquipo,estadoTipo:clasificacion.tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,inicioAveriaOriginal:inicioOriginal,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||fechaAviso,duracionParada:numero(r[mapaColumnas.duracionParada])};}).filter(r=>r.orden);}
 function obtenerEstadoAviso(statusSistema){const codigos=normalizarFrase(statusSistema).split(' ');return codigos.includes('mece')?'CERRADO':'EN TRATAMIENTO';}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
 function normalizarFrase(texto){return String(texto??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
@@ -540,12 +556,20 @@ async function fetchConTimeout(url,opciones={},milisegundos=10000){
 function nombreUnidad(u){return normalizarUnidadGantt(u);}
 function actualizarKPIs(base=datosBase){
   const avisosUnicos=estado=>new Set(base.filter(r=>!estado||r.estadoAviso===estado).map(r=>r.aviso).filter(Boolean)).size;
+  const ordenesUnicas=estado=>new Set(base.filter(r=>tieneEstadoOrden(r.statusOrden,estado)).map(r=>r.orden).filter(Boolean)).size;
   $('kEquipos').textContent=new Set(base.map(r=>r.ubicacionTecnica).filter(Boolean)).size.toLocaleString('es-CL');
   $('kAvisos').textContent=avisosUnicos('').toLocaleString('es-CL');
   $('kAvisosCerrados').textContent=avisosUnicos('CERRADO').toLocaleString('es-CL');
   $('kAvisosTratamiento').textContent=avisosUnicos('EN TRATAMIENTO').toLocaleString('es-CL');
+  $('kOrdenesNotificadas').textContent=ordenesUnicas('NOTI').toLocaleString('es-CL');
+  $('kOrdenesLiberadas').textContent=ordenesUnicas('LIB').toLocaleString('es-CL');
   [['cardAvisos',''],['cardAvisosCerrados','CERRADO'],['cardAvisosTratamiento','EN TRATAMIENTO']].forEach(([id,estado])=>{
     const activa=estadoAvisoSeleccionado===estado;
+    $(id).classList.toggle('active',activa);
+    $(id).setAttribute('aria-pressed',String(activa));
+  });
+  [['cardOrdenesNotificadas','NOTI'],['cardOrdenesLiberadas','LIB']].forEach(([id,estado])=>{
+    const activa=estadoOrdenSeleccionado===estado;
     $(id).classList.toggle('active',activa);
     $(id).setAttribute('aria-pressed',String(activa));
   });
@@ -1311,6 +1335,7 @@ function renderTablaBase(base){
       <th>Fecha aviso</th>
       <th>Clase aviso</th>
       <th>Aviso</th>
+      <th>Orden</th>
       <th>Estado aviso</th>
       <th>Descripción</th>
       <th>Ubicación técnica</th>
@@ -1331,6 +1356,7 @@ function renderTablaBase(base){
         <td>${fmtF(r.fechaAviso)}</td>
         <td>${r.claseAviso}</td>
         <td>${celdaCopiable(r.aviso)}</td>
+        <td>${celdaCopiable(r.orden)}</td>
         <td><span class="estado-aviso ${r.estadoAviso==='CERRADO'?'cerrado':'tratamiento'}" title="Status SAP: ${escapeHtml(r.statusSistema||'-')}">${r.estadoAviso}</span></td>
         <td class="descripcion">${celdaCopiable(r.descripcion)}</td>
         <td>${celdaCopiable(r.ubicacionTecnica)}</td>
@@ -1343,7 +1369,7 @@ function renderTablaBase(base){
         <td>${formatoCosto(r.costo)}</td>
       </tr>
     `).join('')
-    : '<tr><td colspan="14">No hay datos</td></tr>';
+    : '<tr><td colspan="15">No hay datos</td></tr>';
   const porClave=new Map(base.map(r=>[claveRegistroBase(r),r]));
   const checks=[...$('tablaBase').querySelectorAll('.seleccionar-registro')];
   checks.forEach(check=>check.onchange=()=>{
