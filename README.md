@@ -25,7 +25,7 @@ Coloque el Excel SAP en `costo/` y súbalo al repositorio junto con los cambios.
 
 La fuente se procesa una vez por actualización y se consulta por Aviso en la tabla base y el historial, y por Orden en el Plan Anual. Los importes ya están en USD: se muestran como `US$ 1.250.430,75`, sin conversión. Valores ausentes o inválidos quedan vacíos. Si falta la fuente, las tablas siguen funcionando sin costos asociados.
 
-La tabla base obtiene la Orden desde la relación `Aviso` → `Orden` del archivo de `costo/` (con respaldo del dato SAP principal si no existe coincidencia). Las tarjetas **Órdenes notificadas** y **Órdenes liberadas** cuentan órdenes únicas según los estados SAP `NOTI` y `LIB.` del mismo archivo; respetan todos los filtros de la vista y permiten filtrar la tabla al hacer clic.
+La tabla base obtiene la Orden desde la relación `Aviso` → `Orden` del archivo de `costo/` (con respaldo del dato SAP principal si no existe coincidencia). Las tarjetas **Órdenes NOTI** y **Órdenes NOTP** cuentan órdenes únicas según esos estados SAP del mismo archivo; respetan todos los filtros de la vista y permiten mostrar cada lista en la tabla al hacer clic. La tabla incluye además la columna **Estado OT**. Cuando SAP conserva también `LIB.`, los estados `NOTI` o `NOTP` tienen prioridad para evitar clasificaciones duplicadas.
 
 Cada total usa todas las intervenciones únicas del conjunto filtrado, incluso las que exceden las 300 filas visibles de la tabla base. El historial mantiene su alcance actual: fallas Z2 cerradas con Orden y fechas válidas. El Plan Anual utiliza sus propios filtros existentes. Las filas duplicadas no acumulan costos: se conserva el primer registro válido de la intervención. No se modifican fórmulas de confiabilidad ni avance del plan.
 

@@ -65,7 +65,16 @@ function procesarCostos(filas){
 }
 function costoIntervencion(id,tipo='aviso'){return (tipo==='orden'?costosPorOrden:costosPorAviso).get(normalizarIdIntervencion(id))?.costo??null;}
 function ordenCostoPorAviso(aviso){return ordenesCostoPorAviso.get(normalizarIdIntervencion(aviso))||null;}
-function tieneEstadoOrden(status,codigo){return normalizarFrase(status).split(' ').includes(normalizarFrase(codigo));}
+function obtenerEstadoOrden(status){
+  const estados=new Set(normalizarFrase(status).split(' ').filter(Boolean));
+  // SAP conserva LIB en el listado de estados aun después de notificar la OT.
+  // Para el dashboard, NOTI/NOTP son estados vigentes y prevalecen sobre LIB.
+  if(estados.has('noti'))return 'NOTI';
+  if(estados.has('notp'))return 'NOTP';
+  if(estados.has('lib'))return 'LIB';
+  return '';
+}
+function tieneEstadoOrden(status,codigo){return obtenerEstadoOrden(status)===normalizarFrase(codigo).toLocaleUpperCase('es-CL');}
 function formatoCosto(costo){return Number.isFinite(costo)?`US$ ${costo.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'';}
 function totalCostoIntervenciones(registros,tipo='aviso'){
   const vistos=new Set();let centavos=0;
@@ -123,7 +132,7 @@ function setupEventos(){
   configurarMacroAvisos('cardAvisosCerrados','CERRADO');
   configurarMacroAvisos('cardAvisosTratamiento','EN TRATAMIENTO');
   configurarMacroOrdenes('cardOrdenesNotificadas','NOTI');
-  configurarMacroOrdenes('cardOrdenesLiberadas','LIB');
+  configurarMacroOrdenes('cardOrdenesNotp','NOTP');
   configurarBuscadorEquipos('busquedaEquipo','sugerenciasEquipo','btnAbrirEquipos',{
     alEscribir:aplicarFiltros,
     alSeleccionar:aplicarFiltros,
@@ -423,7 +432,7 @@ function aplicarFiltros(){
   }
   if(estadoOrdenSeleccionado){
     base=base.filter(r=>tieneEstadoOrden(r.statusOrden,estadoOrdenSeleccionado));
-    $('txtFiltro').textContent=`Estado OT: ${estadoOrdenSeleccionado==='NOTI'?'NOTIFICADA':'LIBERADA'}`;
+    $('txtFiltro').textContent=`Estado OT: ${estadoOrdenSeleccionado}`;
   }
 
   base=ordenarRegistrosPorFecha(base);
@@ -562,13 +571,13 @@ function actualizarKPIs(base=datosBase){
   $('kAvisosCerrados').textContent=avisosUnicos('CERRADO').toLocaleString('es-CL');
   $('kAvisosTratamiento').textContent=avisosUnicos('EN TRATAMIENTO').toLocaleString('es-CL');
   $('kOrdenesNotificadas').textContent=ordenesUnicas('NOTI').toLocaleString('es-CL');
-  $('kOrdenesLiberadas').textContent=ordenesUnicas('LIB').toLocaleString('es-CL');
+  $('kOrdenesNotp').textContent=ordenesUnicas('NOTP').toLocaleString('es-CL');
   [['cardAvisos',''],['cardAvisosCerrados','CERRADO'],['cardAvisosTratamiento','EN TRATAMIENTO']].forEach(([id,estado])=>{
     const activa=estadoAvisoSeleccionado===estado;
     $(id).classList.toggle('active',activa);
     $(id).setAttribute('aria-pressed',String(activa));
   });
-  [['cardOrdenesNotificadas','NOTI'],['cardOrdenesLiberadas','LIB']].forEach(([id,estado])=>{
+  [['cardOrdenesNotificadas','NOTI'],['cardOrdenesNotp','NOTP']].forEach(([id,estado])=>{
     const activa=estadoOrdenSeleccionado===estado;
     $(id).classList.toggle('active',activa);
     $(id).setAttribute('aria-pressed',String(activa));
@@ -1336,6 +1345,7 @@ function renderTablaBase(base){
       <th>Clase aviso</th>
       <th>Aviso</th>
       <th>Orden</th>
+      <th>Estado OT</th>
       <th>Estado aviso</th>
       <th>Descripción</th>
       <th>Ubicación técnica</th>
@@ -1357,6 +1367,7 @@ function renderTablaBase(base){
         <td>${r.claseAviso}</td>
         <td>${celdaCopiable(r.aviso)}</td>
         <td>${celdaCopiable(r.orden)}</td>
+        <td><span class="estado-orden ${normalizar(obtenerEstadoOrden(r.statusOrden))}" title="Status SAP: ${escapeHtml(r.statusOrden||'-')}">${obtenerEstadoOrden(r.statusOrden)||'-'}</span></td>
         <td><span class="estado-aviso ${r.estadoAviso==='CERRADO'?'cerrado':'tratamiento'}" title="Status SAP: ${escapeHtml(r.statusSistema||'-')}">${r.estadoAviso}</span></td>
         <td class="descripcion">${celdaCopiable(r.descripcion)}</td>
         <td>${celdaCopiable(r.ubicacionTecnica)}</td>
@@ -1369,7 +1380,7 @@ function renderTablaBase(base){
         <td>${formatoCosto(r.costo)}</td>
       </tr>
     `).join('')
-    : '<tr><td colspan="15">No hay datos</td></tr>';
+    : '<tr><td colspan="16">No hay datos</td></tr>';
   const porClave=new Map(base.map(r=>[claveRegistroBase(r),r]));
   const checks=[...$('tablaBase').querySelectorAll('.seleccionar-registro')];
   checks.forEach(check=>check.onchange=()=>{
