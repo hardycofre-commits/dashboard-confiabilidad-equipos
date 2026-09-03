@@ -477,7 +477,7 @@ async function copiarRegistrosSeleccionados(){
   if(!seleccionados.length)return;
   const limpiar=v=>String(v??'').replace(/[\t\r\n]+/g,' ').trim();
   const filas=seleccionados.map(r=>[
-    fmtF(r.fechaAviso),r.claseAviso,r.aviso,r.statusSistema,r.estadoAviso,r.orden,r.descripcion,
+    fmtF(r.fechaAviso),fmtF(r.inicioDeseadoFecha),r.claseAviso,r.aviso,r.statusSistema,r.estadoAviso,r.orden,r.descripcion,
     r.ubicacionTecnica,r.denominacionUbicacionTecnica,r.tipoEquipo,r.unidad,
     r.estadoUnidad,r.estadoTipo,r.inicioAveria,r.finAveria,r.duracionParada,formatoCosto(r.costo)
   ]);
@@ -489,7 +489,7 @@ async function copiarRegistrosSeleccionados(){
   boton.textContent=copiado?'Copiado para Excel':'No se pudo copiar';
   setTimeout(()=>{boton.textContent=original;},1200);
 }
-function construirDatosBase(rows){return rows.map(r=>{const fechaAviso=convertirFecha(r[mapaColumnas.fechaAviso]),inicioOriginal=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]),fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]),ini=inicioOriginal||fechaAviso;const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]),ubi=valor(r[mapaColumnas.ubicacionTecnica]),des=valor(r[mapaColumnas.descripcion]).toLocaleUpperCase('es-CL'),aviso=valor(r[mapaColumnas.aviso]),ordenCosto=ordenCostoPorAviso(aviso),orden=ordenCosto?.orden||valor(r[mapaColumnas.orden]).trim(),statusOrden=ordenCosto?.statusOrden||'',statusSistema=valor(r[mapaColumnas.statusSistema]),clasificacion=clasificarPorMaestro(ubi);return{fechaAviso,costo:costoIntervencion(aviso),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso,statusSistema,statusOrden,estadoAviso:obtenerEstadoAviso(statusSistema),orden,descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:`${den} ${ubi} ${des}`,unidad:clasificacion.unidad,estadoUnidad:clasificacion.unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:clasificacion.tipoEquipo,estadoTipo:clasificacion.tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,inicioAveriaOriginal:inicioOriginal,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||fechaAviso,duracionParada:numero(r[mapaColumnas.duracionParada])};}).filter(r=>r.orden);}
+function construirDatosBase(rows){return rows.map(r=>{const fechaAviso=convertirFecha(r[mapaColumnas.fechaAviso]),inicioDeseadoFecha=convertirFecha(r[mapaColumnas.inicioDeseado]),inicioOriginal=unirFechaHora(r[mapaColumnas.inicioFecha],r[mapaColumnas.inicioHora]),fin=unirFechaHora(r[mapaColumnas.finFecha],r[mapaColumnas.finHora]),ini=inicioOriginal||fechaAviso;const den=valor(r[mapaColumnas.denominacionUbicacionTecnica]),ubi=valor(r[mapaColumnas.ubicacionTecnica]),des=valor(r[mapaColumnas.descripcion]).toLocaleUpperCase('es-CL'),aviso=valor(r[mapaColumnas.aviso]),ordenCosto=ordenCostoPorAviso(aviso),orden=ordenCosto?.orden||valor(r[mapaColumnas.orden]).trim(),statusOrden=ordenCosto?.statusOrden||'',statusSistema=valor(r[mapaColumnas.statusSistema]),clasificacion=clasificarPorMaestro(ubi);return{fechaAviso,inicioDeseadoFecha,costo:costoIntervencion(aviso),claseAviso:valor(r[mapaColumnas.claseAviso]),aviso,statusSistema,statusOrden,estadoAviso:obtenerEstadoAviso(statusSistema),orden,descripcion:des,ubicacionTecnica:ubi,denominacionUbicacionTecnica:den,textoClasificacion:`${den} ${ubi} ${des}`,unidad:clasificacion.unidad,estadoUnidad:clasificacion.unidad==='Sin clasificar'?'Revisar':'OK',tipoEquipo:clasificacion.tipoEquipo,estadoTipo:clasificacion.tipoEquipo==='Sin clasificar'?'Revisar':'OK',inicioAveria:ini?ini.toLocaleString('es-CL'):'',inicioAveriaFecha:ini,inicioAveriaOriginal:inicioOriginal,finAveria:fin?fin.toLocaleString('es-CL'):'',finAveriaFecha:fin,fechaEvento:ini||fechaAviso,duracionParada:numero(r[mapaColumnas.duracionParada])};}).filter(r=>r.orden);}
 function obtenerEstadoAviso(statusSistema){const codigos=normalizarFrase(statusSistema).split(' ');return codigos.includes('mece')?'CERRADO':'EN TRATAMIENTO';}
 function obtenerUnidad(texto){const n=normalizar(texto);for(const r of [...reglasUsuario,...MAPEO_BASE.map(x=>({buscar:x[0],unidad:x[1]}))]) if(n.includes(normalizar(r.buscar))) return nombreUnidad(r.unidad); return 'Sin clasificar';}
 function normalizarFrase(texto){return String(texto??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
@@ -1189,7 +1189,7 @@ function escapeHtml(texto){
     .replace(/'/g,'&#039;');
 }
 
-function detectarColumnas(cols){const c=cols.map(x=>({original:x,key:normalizar(x)}));return{fechaAviso:buscar(c,['fechadeaviso','fechaaviso']),claseAviso:buscar(c,['clasedeaviso','claseaviso']),statusSistema:buscar(c,['statusdelsistema','estatusdelsistema','statussistema','estatussistema']),aviso:buscarExact(c,['aviso']),orden:buscar(c,['orden','numeroorden','ordensap']),descripcion:buscar(c,['descripcion','descripciondelaviso','textoaviso']),ubicacionTecnica:buscarExact(c,['ubicaciontecnica']),denominacionUbicacionTecnica:buscar(c,['denominaciondelaubicaciontecnica','denominacionubicaciontecnica','denominaciondelubicaciontecnica']),inicioFecha:buscarExact(c,['iniciodeaveria','inicioaveria']),inicioHora:buscarExact(c.filter(x=>x.key.includes('hora')),['iniciodeaveriahora','inicioaveriahora','hora inicio averia']),finFecha:buscarExact(c,['findeaveria','finaveria']),finHora:buscarExact(c.filter(x=>x.key.includes('hora')),['findelaaveriahora','findeaveriahora','finaveriahora','hora fin averia']),duracionParada:buscar(c,['duraciondeparada','duracionparada'])};}
+function detectarColumnas(cols){const c=cols.map(x=>({original:x,key:normalizar(x)}));return{fechaAviso:buscar(c,['fechadeaviso','fechaaviso']),inicioDeseado:buscar(c,['iniciodeseado','fechadeiniciodeseado','fechainiciodeseado']),claseAviso:buscar(c,['clasedeaviso','claseaviso']),statusSistema:buscar(c,['statusdelsistema','estatusdelsistema','statussistema','estatussistema']),aviso:buscarExact(c,['aviso']),orden:buscar(c,['orden','numeroorden','ordensap']),descripcion:buscar(c,['descripcion','descripciondelaviso','textoaviso']),ubicacionTecnica:buscarExact(c,['ubicaciontecnica']),denominacionUbicacionTecnica:buscar(c,['denominaciondelaubicaciontecnica','denominacionubicaciontecnica','denominaciondelubicaciontecnica']),inicioFecha:buscarExact(c,['iniciodeaveria','inicioaveria']),inicioHora:buscarExact(c.filter(x=>x.key.includes('hora')),['iniciodeaveriahora','inicioaveriahora','hora inicio averia']),finFecha:buscarExact(c,['findeaveria','finaveria']),finHora:buscarExact(c.filter(x=>x.key.includes('hora')),['findelaaveriahora','findeaveriahora','finaveriahora','hora fin averia']),duracionParada:buscar(c,['duraciondeparada','duracionparada'])};}
 function buscar(cols,ps){for(const p0 of ps){const p=normalizar(p0);const e=cols.find(c=>c.key.includes(p)||p.includes(c.key));if(e)return e.original;}return null;}
 function buscarExact(cols,ps){for(const p0 of ps){const p=normalizar(p0),e=cols.find(c=>c.key===p);if(e)return e.original;}return buscar(cols,ps);}
 function buscarEquipoPorUbicacion(ubicacion){
@@ -1345,6 +1345,7 @@ function renderTablaBase(base){
     <tr>
       <th class="seleccionar-col">Seleccionar <input type="checkbox" id="seleccionarTodosBase" aria-label="Seleccionar todas las filas visibles"></th>
       <th>Fecha aviso</th>
+      <th>Fecha de inicio deseado</th>
       <th>Clase aviso</th>
       <th>Aviso</th>
       <th>Estado aviso</th>
@@ -1367,6 +1368,7 @@ function renderTablaBase(base){
       <tr class="${r.unidad==='Sin clasificar'?'fila-sin-clasificar':''} ${r.tipoEquipo==='Sin clasificar'?'fila-tipo-sin-clasificar':''}">
         <td class="seleccionar-col"><input type="checkbox" class="seleccionar-registro" data-clave="${escapeHtml(claveRegistroBase(r))}" aria-label="Seleccionar orden ${escapeHtml(r.orden||'-')}" ${registrosSeleccionados.has(claveRegistroBase(r))?'checked':''}></td>
         <td>${fmtF(r.fechaAviso)}</td>
+        <td>${fmtF(r.inicioDeseadoFecha)}</td>
         <td>${r.claseAviso}</td>
         <td>${celdaCopiable(r.aviso)}</td>
         <td><span class="estado-aviso ${r.estadoAviso==='CERRADO'?'cerrado':'tratamiento'}" title="Status SAP: ${escapeHtml(r.statusSistema||'-')}">${r.estadoAviso}</span></td>
@@ -1383,7 +1385,7 @@ function renderTablaBase(base){
         <td>${formatoCosto(r.costo)}</td>
       </tr>
     `).join('')
-    : '<tr><td colspan="16">No hay datos</td></tr>';
+    : '<tr><td colspan="17">No hay datos</td></tr>';
   const porClave=new Map(base.map(r=>[claveRegistroBase(r),r]));
   const checks=[...$('tablaBase').querySelectorAll('.seleccionar-registro')];
   checks.forEach(check=>check.onchange=()=>{
