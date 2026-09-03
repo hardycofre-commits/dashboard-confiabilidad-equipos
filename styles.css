@@ -106,7 +106,9 @@ button{height:34px;border:none;border-radius:5px;background:#0b3b7d;color:white;
 .tipo-badge{display:inline-block;padding:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;text-transform:none;white-space:nowrap}.tipo-badge.pending{padding:4px 8px;border-radius:14px;background:#fee2e2;color:#991b1b;font:inherit;font-weight:inherit}
 .estado-aviso{display:inline-block;padding:4px 8px;border-radius:14px;font-size:10px;font-weight:800;white-space:nowrap}.estado-aviso.cerrado{background:#dcfce7;color:#166534}.estado-aviso.tratamiento{background:#fef3c7;color:#92400e}
 .kpi-card.kpi-macro.notp.active{background:#fff8e7;border-color:#d97706;box-shadow:0 0 0 2px rgba(217,119,6,.14)}
+.kpi-card.kpi-macro.ctec.active{background:#ecfdf5;border-color:#059669;box-shadow:0 0 0 2px rgba(5,150,105,.14)}
 .estado-orden{display:inline-block;padding:4px 8px;border-radius:14px;font-size:10px;font-weight:800;white-space:nowrap;background:#f1f5f9;color:#475569}.estado-orden.noti{background:#ede9fe;color:#6d28d9}.estado-orden.notp{background:#fef3c7;color:#92400e}
+.estado-orden.ctec{background:#dcfce7;color:#166534}
 
 
 /* v2.6.2 - Permitir copiar texto de la tabla */

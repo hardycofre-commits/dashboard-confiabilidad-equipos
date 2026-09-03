@@ -68,7 +68,8 @@ function ordenCostoPorAviso(aviso){return ordenesCostoPorAviso.get(normalizarIdI
 function obtenerEstadoOrden(status){
   const estados=new Set(normalizarFrase(status).split(' ').filter(Boolean));
   // SAP conserva LIB en el listado de estados aun después de notificar la OT.
-  // Para el dashboard, NOTI/NOTP son estados vigentes y prevalecen sobre LIB.
+  // CTEC representa el cierre técnico; NOTI/NOTP prevalecen sobre el LIB residual.
+  if(estados.has('ctec'))return 'CTEC';
   if(estados.has('noti'))return 'NOTI';
   if(estados.has('notp'))return 'NOTP';
   if(estados.has('lib'))return 'LIB';
@@ -133,6 +134,7 @@ function setupEventos(){
   configurarMacroAvisos('cardAvisosTratamiento','EN TRATAMIENTO');
   configurarMacroOrdenes('cardOrdenesNotificadas','NOTI');
   configurarMacroOrdenes('cardOrdenesNotp','NOTP');
+  configurarMacroOrdenes('cardOrdenesCtec','CTEC');
   configurarBuscadorEquipos('busquedaEquipo','sugerenciasEquipo','btnAbrirEquipos',{
     alEscribir:aplicarFiltros,
     alSeleccionar:aplicarFiltros,
@@ -572,12 +574,13 @@ function actualizarKPIs(base=datosBase){
   $('kAvisosTratamiento').textContent=avisosUnicos('EN TRATAMIENTO').toLocaleString('es-CL');
   $('kOrdenesNotificadas').textContent=ordenesUnicas('NOTI').toLocaleString('es-CL');
   $('kOrdenesNotp').textContent=ordenesUnicas('NOTP').toLocaleString('es-CL');
+  $('kOrdenesCtec').textContent=ordenesUnicas('CTEC').toLocaleString('es-CL');
   [['cardAvisos',''],['cardAvisosCerrados','CERRADO'],['cardAvisosTratamiento','EN TRATAMIENTO']].forEach(([id,estado])=>{
     const activa=estadoAvisoSeleccionado===estado;
     $(id).classList.toggle('active',activa);
     $(id).setAttribute('aria-pressed',String(activa));
   });
-  [['cardOrdenesNotificadas','NOTI'],['cardOrdenesNotp','NOTP']].forEach(([id,estado])=>{
+  [['cardOrdenesNotificadas','NOTI'],['cardOrdenesNotp','NOTP'],['cardOrdenesCtec','CTEC']].forEach(([id,estado])=>{
     const activa=estadoOrdenSeleccionado===estado;
     $(id).classList.toggle('active',activa);
     $(id).setAttribute('aria-pressed',String(activa));
@@ -1344,9 +1347,9 @@ function renderTablaBase(base){
       <th>Fecha aviso</th>
       <th>Clase aviso</th>
       <th>Aviso</th>
+      <th>Estado aviso</th>
       <th>Orden</th>
       <th>Estado OT</th>
-      <th>Estado aviso</th>
       <th>Descripción</th>
       <th>Ubicación técnica</th>
       <th>Denominación ubicación técnica</th>
@@ -1366,9 +1369,9 @@ function renderTablaBase(base){
         <td>${fmtF(r.fechaAviso)}</td>
         <td>${r.claseAviso}</td>
         <td>${celdaCopiable(r.aviso)}</td>
+        <td><span class="estado-aviso ${r.estadoAviso==='CERRADO'?'cerrado':'tratamiento'}" title="Status SAP: ${escapeHtml(r.statusSistema||'-')}">${r.estadoAviso}</span></td>
         <td>${celdaCopiable(r.orden)}</td>
         <td><span class="estado-orden ${normalizar(obtenerEstadoOrden(r.statusOrden))}" title="Status SAP: ${escapeHtml(r.statusOrden||'-')}">${obtenerEstadoOrden(r.statusOrden)||'-'}</span></td>
-        <td><span class="estado-aviso ${r.estadoAviso==='CERRADO'?'cerrado':'tratamiento'}" title="Status SAP: ${escapeHtml(r.statusSistema||'-')}">${r.estadoAviso}</span></td>
         <td class="descripcion">${celdaCopiable(r.descripcion)}</td>
         <td>${celdaCopiable(r.ubicacionTecnica)}</td>
         <td>${celdaCopiable(r.denominacionUbicacionTecnica)}</td>
